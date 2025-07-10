@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QGroupBox, QListWidget, QSplitter, QFrame,
     QApplication, QGridLayout, QFormLayout, QListWidgetItem
 )
-from PySide6.QtCore import Qt, QThread, pyqtSignal, QDate, QTimer, Signal
+from PySide6.QtCore import Qt, QThread, Signal, QDate, QTimer
 from PySide6.QtGui import QIcon, QFont, QPixmap, QAction
 
 from ..core.config_manager import ConfigManager
@@ -75,6 +75,9 @@ class MainWindow(QMainWindow):
         
         # Apply styling
         self.apply_styling()
+        
+        # Load saved configuration (after all UI elements are created)
+        self.load_ui_configuration()
     
     def create_menu_bar(self):
         """Create the menu bar."""
@@ -188,7 +191,8 @@ class MainWindow(QMainWindow):
         self.remove_user_btn.clicked.connect(self.remove_user)
         users_buttons_layout.addWidget(self.remove_user_btn)
         
-        self.load_users_btn = QPushButton("Load from Jira")\n        self.load_users_btn.clicked.connect(self.load_users_from_jira)
+        self.load_users_btn = QPushButton("Load from Jira")
+        self.load_users_btn.clicked.connect(self.load_users_from_jira)
         users_buttons_layout.addWidget(self.load_users_btn)
         
         users_layout.addLayout(users_buttons_layout)
@@ -207,8 +211,6 @@ class MainWindow(QMainWindow):
         fetch_layout.addStretch()
         layout.addLayout(fetch_layout)
         
-        # Load saved configuration
-        self.load_ui_configuration()
     
     def create_summary_tab(self):
         """Create the summary generation tab."""
