@@ -1,0 +1,28 @@
+# .github/dependabot.yml
+# Basic Dependabot configuration for Python and GitHub Actions
+
+version: 2
+updates:
+  # Enable version updates for Python (pip)
+  - package-ecosystem: "pip"
+    directory: "/" # Location of pyproject.toml
+    schedule:
+      interval: "daily"
+    # Add labels and assignees to PRs
+    labels:
+      - "dependencies"
+      - "python"
+    assignees:
+      # Add your GitHub username here
+      - "maxamillion"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/" # Location of your .github/workflows directory
+    schedule:
+      interval: "daily"
+    labels:
+      - "dependencies"
+      - "ci"
+    assignees:
+      - "maxamillion"
