@@ -1,6 +1,7 @@
 """Unified credential setup wizard for simplified onboarding."""
 
 import asyncio
+import json
 import threading
 from typing import Dict, List, Optional, Any, Callable
 from pathlib import Path
