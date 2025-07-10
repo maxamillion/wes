@@ -37,10 +37,12 @@ from PySide6.QtCore import Qt, QThread, Signal, QDate, QTimer
 from PySide6.QtGui import QIcon, QFont, QPixmap, QAction
 
 from ..core.config_manager import ConfigManager
+from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
 from ..utils.logging_config import get_logger
 from ..utils.exceptions import WesError
 from .config_dialog import ConfigDialog
 from .progress_dialog import ProgressDialog
+from .setup_wizard import SetupWizard
 
 
 class MainWindow(QMainWindow):
@@ -51,6 +53,14 @@ class MainWindow(QMainWindow):
 
         self.logger = get_logger(__name__)
         self.config_manager = ConfigManager()
+        
+        # Initialize credential monitoring
+        monitoring_config = MonitoringConfig(
+            check_interval_minutes=60,
+            auto_refresh_enabled=True,
+            notification_enabled=True
+        )
+        self.credential_monitor = CredentialMonitor(self.config_manager, monitoring_config)
 
         # Initialize UI
         self.init_ui()
@@ -131,7 +141,11 @@ class MainWindow(QMainWindow):
         # Tools menu
         tools_menu = menubar.addMenu("Tools")
 
-        config_action = QAction("Configuration", self)
+        setup_wizard_action = QAction("Setup Wizard", self)
+        setup_wizard_action.triggered.connect(self.open_setup_wizard)
+        tools_menu.addAction(setup_wizard_action)
+
+        config_action = QAction("Advanced Configuration", self)
         config_action.triggered.connect(self.open_configuration_dialog)
         tools_menu.addAction(config_action)
 
@@ -457,23 +471,47 @@ class MainWindow(QMainWindow):
     def check_initial_setup(self):
         """Check if initial setup is required."""
         if not self.config_manager.is_configured():
-            self.show_initial_setup_dialog()
+            self.show_setup_wizard()
+        else:
+            # Start credential monitoring for existing users
+            self.credential_monitor.start_monitoring()
+            self.setup_credential_notifications()
 
-    def show_initial_setup_dialog(self):
-        """Show initial setup dialog."""
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("Initial Setup Required")
-        msg.setText("Welcome to the Executive Summary Tool!")
-        msg.setInformativeText(
-            "This appears to be your first time using the application. "
-            "Please configure your Jira, Google, and AI settings to get started."
-        )
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
+    def show_setup_wizard(self):
+        """Show the setup wizard for new users."""
+        wizard = SetupWizard(self.config_manager, self)
+        result = wizard.exec()
+        
+        if result == SetupWizard.Accepted:
+            # Setup completed successfully
+            self.credential_monitor.start_monitoring()
+            self.setup_credential_notifications()
+            self.show_info(
+                "Setup Complete",
+                "Your Executive Summary Tool has been configured successfully! "
+                "You can now start creating executive summaries."
+            )
+        else:
+            # User cancelled setup
+            self.show_warning(
+                "Setup Required", 
+                "The application requires configuration to function properly. "
+                "You can access the setup wizard later from File → Setup Wizard."
+            )
 
-        # Open configuration dialog
-        self.open_configuration_dialog()
+    def setup_credential_notifications(self):
+        """Setup credential monitoring notifications."""
+        def show_credential_notification(message: str, severity: str, data: dict):
+            if severity == "error":
+                self.show_error("Credential Issue", message)
+            elif severity == "warning":
+                self.show_warning("Credential Warning", message)
+            else:
+                self.status_label.setText(message)
+        
+        from ..core.credential_monitor import CredentialNotificationManager
+        self.notification_manager = CredentialNotificationManager(self.credential_monitor)
+        self.notification_manager.add_notification_callback(show_credential_notification)
 
     def load_ui_configuration(self):
         """Load configuration into UI elements."""
@@ -681,6 +719,10 @@ class MainWindow(QMainWindow):
         dialog = ConfigDialog(self.config_manager, self)
         if dialog.exec() == ConfigDialog.Accepted:
             self.load_ui_configuration()
+    
+    def open_setup_wizard(self):
+        """Open setup wizard."""
+        self.show_setup_wizard()
 
     def test_connections(self):
         """Test all API connections."""
@@ -759,6 +801,10 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle application close event."""
         try:
+            # Stop credential monitoring
+            if hasattr(self, 'credential_monitor'):
+                self.credential_monitor.stop_monitoring()
+
             # Save configuration before closing
             self.save_ui_configuration()
 

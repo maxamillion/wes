@@ -96,11 +96,13 @@ class ConfigDialog(QDialog):
 
         self.jira_url_edit = QLineEdit()
         self.jira_url_edit.setPlaceholderText("https://your-company.atlassian.net")
+        self.jira_url_edit.textChanged.connect(self._on_jira_url_changed)
         connection_layout.addRow("Jira URL:", self.jira_url_edit)
 
         self.jira_username_edit = QLineEdit()
         self.jira_username_edit.setPlaceholderText("your.email@company.com")
-        connection_layout.addRow("Username:", self.jira_username_edit)
+        self.jira_username_label = QLabel("Username:")
+        connection_layout.addRow(self.jira_username_label, self.jira_username_edit)
 
         self.jira_token_edit = QLineEdit()
         self.jira_token_edit.setEchoMode(QLineEdit.Password)
@@ -397,6 +399,35 @@ class ConfigDialog(QDialog):
         else:
             self.service_account_group.setVisible(False)
             self.oauth_group.setVisible(True)
+    
+    def _on_jira_url_changed(self, text: str):
+        """Handle Jira URL change to update username guidance."""
+        if not text:
+            self._reset_jira_username_guidance()
+            return
+        
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(text.lower())
+            
+            if "atlassian.net" in parsed.netloc:
+                # Jira Cloud - requires email
+                self.jira_username_label.setText("Email Address:")
+                self.jira_username_edit.setPlaceholderText("your.email@company.com")
+                self.jira_username_edit.setToolTip("Jira Cloud requires your email address as the username")
+            else:
+                # On-premise - flexible username
+                self.jira_username_label.setText("Username:")
+                self.jira_username_edit.setPlaceholderText("username or email@company.com")
+                self.jira_username_edit.setToolTip("Enter your Jira username (may be email or username depending on your configuration)")
+        except Exception:
+            self._reset_jira_username_guidance()
+    
+    def _reset_jira_username_guidance(self):
+        """Reset Jira username guidance to default."""
+        self.jira_username_label.setText("Username:")
+        self.jira_username_edit.setPlaceholderText("your.email@company.com")
+        self.jira_username_edit.setToolTip("")
 
     def browse_service_account_file(self):
         """Browse for service account file."""
@@ -482,6 +513,9 @@ class ConfigDialog(QDialog):
 
             # Set initial auth method visibility
             self.on_auth_method_changed(self.auth_method_combo.currentText())
+            
+            # Update Jira username guidance based on URL
+            self._on_jira_url_changed(self.jira_url_edit.text())
 
             self.logger.info("Configuration loaded into dialog")
 
@@ -583,6 +617,27 @@ class ConfigDialog(QDialog):
                     self, "Validation Error", "Jira username is required."
                 )
                 return False
+            
+            # Additional validation for Jira Cloud
+            jira_url = self.jira_url_edit.text().strip()
+            jira_username = self.jira_username_edit.text().strip()
+            
+            if jira_url and jira_username:
+                try:
+                    from urllib.parse import urlparse
+                    import re
+                    
+                    parsed = urlparse(jira_url.lower())
+                    if "atlassian.net" in parsed.netloc:
+                        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                        if not re.match(email_pattern, jira_username):
+                            QMessageBox.warning(
+                                self, "Validation Error", 
+                                "Jira Cloud requires a valid email address as username."
+                            )
+                            return False
+                except Exception:
+                    pass  # Continue with basic validation
 
             if (
                 not self.jira_token_edit.text()
