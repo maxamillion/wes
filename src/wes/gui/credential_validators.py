@@ -16,6 +16,7 @@ from googleapiclient.errors import HttpError
 from jira import JIRA, JIRAError
 
 from ..utils.logging_config import get_logger, get_security_logger
+from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
 from ..utils.exceptions import (
     ValidationError,
     JiraIntegrationError,
@@ -53,28 +54,41 @@ class CredentialValidator:
             if not self._validate_jira_token(api_token):
                 return False, "Invalid API token format"
             
-            # Test connection
+            # Test connection with appropriate client
             url = url.rstrip('/')
             
-            # Try to connect with JIRA library
-            jira_client = JIRA(
-                server=url,
-                basic_auth=(username, api_token),
-                timeout=10,
-                options={'verify': True, 'check_update': False}
-            )
-            
-            # Test with a simple API call
-            current_user = jira_client.current_user()
+            # Check if this is a Red Hat Jira instance
+            if is_redhat_jira(url):
+                # Use Red Hat Jira client for Red Hat instances
+                rh_jira_client = RedHatJiraClient(
+                    url=url,
+                    username=username,
+                    api_token=api_token,
+                    timeout=10,
+                    verify_ssl=True
+                )
+                current_user = rh_jira_client._client.current_user()
+                client_type = "Red Hat Jira"
+            else:
+                # Use standard JIRA library for other instances
+                jira_client = JIRA(
+                    server=url,
+                    basic_auth=(username, api_token),
+                    timeout=10,
+                    options={'verify': True, 'check_update': False}
+                )
+                current_user = jira_client.current_user()
+                client_type = "Jira"
             
             self.security_logger.log_security_event(
                 "jira_credential_validation_success",
                 severity="INFO",
                 url=url,
-                username=username
+                username=username,
+                client_type=client_type
             )
             
-            return True, f"Connected successfully as {current_user}"
+            return True, f"Connected successfully to {client_type} as {current_user}"
             
         except JIRAError as e:
             error_msg = self._parse_jira_error(e)
@@ -231,6 +245,10 @@ class CredentialValidator:
             return 'atlassian.net' in parsed.netloc
         except Exception:
             return False
+    
+    def _is_redhat_jira(self, url: str) -> bool:
+        """Check if URL is a Red Hat Jira instance."""
+        return is_redhat_jira(url)
     
     def _validate_jira_token(self, token: str) -> bool:
         """Validate Jira API token format."""

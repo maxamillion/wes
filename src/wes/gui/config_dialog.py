@@ -28,6 +28,7 @@ from PySide6.QtGui import QFont
 from ..core.config_manager import ConfigManager
 from ..utils.logging_config import get_logger
 from ..utils.exceptions import ConfigurationError
+from ..integrations.redhat_jira_client import is_redhat_jira
 
 
 class ConfigDialog(QDialog):
@@ -415,6 +416,11 @@ class ConfigDialog(QDialog):
                 self.jira_username_label.setText("Email Address:")
                 self.jira_username_edit.setPlaceholderText("your.email@company.com")
                 self.jira_username_edit.setToolTip("Jira Cloud requires your email address as the username")
+            elif is_redhat_jira(text):
+                # Red Hat Jira - specific username format
+                self.jira_username_label.setText("Red Hat Username:")
+                self.jira_username_edit.setPlaceholderText("your-redhat-username")
+                self.jira_username_edit.setToolTip("Enter your Red Hat Jira username (typically your Red Hat employee ID or LDAP username)")
             else:
                 # On-premise - flexible username
                 self.jira_username_label.setText("Username:")
@@ -634,6 +640,21 @@ class ConfigDialog(QDialog):
                             QMessageBox.warning(
                                 self, "Validation Error", 
                                 "Jira Cloud requires a valid email address as username."
+                            )
+                            return False
+                    elif is_redhat_jira(jira_url):
+                        # Red Hat Jira username validation
+                        if len(jira_username.strip()) < 3:
+                            QMessageBox.warning(
+                                self, "Validation Error",
+                                "Red Hat Jira username must be at least 3 characters."
+                            )
+                            return False
+                        username_pattern = r'^[a-zA-Z0-9._-]+$'
+                        if not re.match(username_pattern, jira_username.strip()):
+                            QMessageBox.warning(
+                                self, "Validation Error",
+                                "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens."
                             )
                             return False
                 except Exception:

@@ -100,6 +100,11 @@ build = [
     "cx_Freeze>=6.15.0",
 ]
 
+redhat = [
+    # Red Hat Jira integration - optional dependency for Red Hat environments
+    "rhjira @ git+https://gitlab.com/prarit/rhjira-python.git",
+]
+
 [project.urls]
 Homepage = "https://github.com/company/wes"
 Documentation = "https://docs.company.com/wes"
@@ -240,6 +245,7 @@ module = [
     "atlassian.*",
     "google.*",
     "PySide6.*",
+    "rhjira.*",
 ]
 ignore_missing_imports = true
 

@@ -14,6 +14,7 @@ from jira import JIRA, JIRAError
 from ..utils.exceptions import JiraIntegrationError, RateLimitError, AuthenticationError
 from ..utils.validators import InputValidator
 from ..utils.logging_config import get_logger, get_security_logger
+from .redhat_jira_client import RedHatJiraClient, is_redhat_jira
 
 
 class RateLimiter:
@@ -72,12 +73,28 @@ class JiraClient:
         self.api_token = api_token
         self.timeout = timeout
 
-        # Initialize rate limiter
-        self.rate_limiter = RateLimiter(max_requests=rate_limit, time_window=60)
-
-        # Initialize JIRA client
-        self._jira_client: Optional[JIRA] = None
-        self._initialize_client()
+        # Check if this is a Red Hat Jira instance
+        self.is_redhat = is_redhat_jira(url)
+        
+        if self.is_redhat:
+            # Use Red Hat Jira client for Red Hat instances
+            self._redhat_client = RedHatJiraClient(
+                url=url,
+                username=username,
+                api_token=api_token,
+                rate_limit=rate_limit,
+                timeout=timeout
+            )
+            self._jira_client = self._redhat_client._client
+            self.rate_limiter = self._redhat_client.rate_limiter
+        else:
+            # Initialize rate limiter for standard Jira
+            self.rate_limiter = RateLimiter(max_requests=rate_limit, time_window=60)
+            
+            # Initialize standard JIRA client
+            self._jira_client: Optional[JIRA] = None
+            self._redhat_client = None
+            self._initialize_client()
 
     def _initialize_client(self) -> None:
         """Initialize JIRA client with authentication."""
@@ -132,6 +149,13 @@ class JiraClient:
     ) -> List[Dict[str, Any]]:
         """Get user activities from Jira within date range."""
         try:
+            # Delegate to Red Hat client if this is a Red Hat instance
+            if self.is_redhat and self._redhat_client:
+                return await self._redhat_client.get_user_activities(
+                    users, start_date, end_date, projects, include_comments, max_results
+                )
+
+            # Standard Jira processing
             # Validate inputs
             InputValidator.validate_user_list(users)
 
@@ -322,6 +346,11 @@ class JiraClient:
     async def get_projects(self) -> List[Dict[str, Any]]:
         """Get list of available projects."""
         try:
+            # Delegate to Red Hat client if this is a Red Hat instance
+            if self.is_redhat and self._redhat_client:
+                return await self._redhat_client.get_projects()
+
+            # Standard Jira processing
             await self.rate_limiter.acquire()
 
             projects = self._jira_client.projects()
@@ -414,6 +443,11 @@ class JiraClient:
 
     def get_connection_info(self) -> Dict[str, Any]:
         """Get connection information."""
+        # Delegate to Red Hat client if this is a Red Hat instance
+        if self.is_redhat and self._redhat_client:
+            return self._redhat_client.get_connection_info()
+
+        # Standard Jira connection info
         return {
             "url": self.url,
             "username": self.username,
@@ -421,11 +455,17 @@ class JiraClient:
             "server_info": (
                 self._jira_client.server_info() if self._jira_client else None
             ),
+            "client_type": "jira"
         }
 
     async def close(self) -> None:
         """Close client connections."""
         try:
+            # Close Red Hat client if it's being used
+            if self.is_redhat and self._redhat_client:
+                await self._redhat_client.close()
+                self._redhat_client = None
+
             if self._jira_client:
                 # JIRA client doesn't have explicit close method
                 self._jira_client = None

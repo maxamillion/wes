@@ -36,6 +36,7 @@ from ..utils.logging_config import get_logger
 from ..utils.exceptions import ConfigurationError
 from .credential_validators import CredentialValidator
 from .oauth_handler import GoogleOAuthHandler
+from ..integrations.redhat_jira_client import is_redhat_jira
 
 
 class ValidationWorker(QObject):
@@ -291,6 +292,10 @@ class JiraSetupPage(WizardPage):
                     self.url_status.setText("✅ Valid Jira Cloud URL")
                     self.url_status.setStyleSheet("color: green;")
                     self._set_cloud_username_guidance()
+                elif is_redhat_jira(text):
+                    self.url_status.setText("🔴 Red Hat Jira instance detected")
+                    self.url_status.setStyleSheet("color: #cc0000;")  # Red Hat red
+                    self._set_redhat_username_guidance()
                 else:
                     self.url_status.setText("ℹ️ Server/Data Center instance detected")
                     self.url_status.setStyleSheet("color: blue;")
@@ -315,6 +320,12 @@ class JiraSetupPage(WizardPage):
         self.username_label.setText("Username:")
         self.username_edit.setPlaceholderText("username or email@company.com")
         self.username_edit.setToolTip("Enter your Jira username (may be email or username depending on your configuration)")
+    
+    def _set_redhat_username_guidance(self):
+        """Set username guidance for Red Hat Jira."""
+        self.username_label.setText("Red Hat Username:")
+        self.username_edit.setPlaceholderText("your-redhat-username")
+        self.username_edit.setToolTip("Enter your Red Hat Jira username (typically your Red Hat employee ID or LDAP username)")
     
     def _reset_username_guidance(self):
         """Reset username guidance to default."""
@@ -406,6 +417,15 @@ class JiraSetupPage(WizardPage):
                 email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
                 if not re.match(email_pattern, username):
                     return False, "Jira Cloud requires a valid email address as username"
+            elif is_redhat_jira(url):
+                # Red Hat Jira has specific username requirements
+                if len(username.strip()) < 3:
+                    return False, "Red Hat Jira username must be at least 3 characters"
+                # Red Hat usernames are typically alphanumeric with hyphens
+                import re
+                username_pattern = r'^[a-zA-Z0-9._-]+$'
+                if not re.match(username_pattern, username.strip()):
+                    return False, "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens"
         except Exception:
             pass  # Continue with basic validation
         
