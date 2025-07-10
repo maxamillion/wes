@@ -78,24 +78,28 @@ When you enter a Red Hat Jira URL in the setup wizard, you'll see:
 
 ### Authentication
 
-**⚠️ IMPORTANT: Red Hat Jira instances require OAuth authentication, not API tokens.**
+**✅ Red Hat Jira supports Personal Access Token (PAT) authentication.**
 
-Red Hat Jira instances use OAuth 1.0a authentication instead of API tokens:
+Red Hat Jira instances use Personal Access Tokens for secure API access:
 
-1. **OAuth Setup Required:**
-   - Red Hat Jira instances do not support API token authentication
-   - OAuth 1.0a authentication must be configured by your Red Hat administrator
-   - Contact your Red Hat IT administrator for OAuth setup
+1. **Create Your Personal Access Token:**
+   - Log in to your Red Hat Jira instance (e.g., https://issues.redhat.com)
+   - Click your profile picture at the top right
+   - Select "Personal Access Tokens" from the left panel
+   - Click "Create token"
+   - Give your token a descriptive name
+   - Optionally set an expiration date
+   - Copy the generated token immediately (you won't see it again!)
 
-2. **Alternative Authentication Methods:**
-   - **Red Hat SSO**: Use your Red Hat Single Sign-On credentials
-   - **OAuth Consumer**: Requires consumer key/secret setup by administrator
-   - **Kerberos**: For corporate network environments
+2. **Configure in Application:**
+   - **Jira URL**: `https://issues.redhat.com` (or your Red Hat Jira URL)
+   - **Username**: Your Red Hat username (e.g., rhn-support-username)
+   - **API Token**: The Personal Access Token you just created
 
-3. **Current Limitation:**
-   - This application currently supports API token authentication only
-   - Red Hat Jira integration requires additional OAuth implementation
-   - Contact support for OAuth-enabled version
+3. **Important Notes:**
+   - Use the PAT as-is (do NOT base64 encode it)
+   - The token provides Bearer authentication to the API
+   - Basic authentication was deprecated in December 2021
 
 ## Features
 
@@ -151,16 +155,21 @@ jira:
 
 ### Common Issues
 
-**Q: I get "Red Hat Jira requires OAuth authentication" error**
+**Q: I get "Red Hat Jira authentication failed" error**
 
-A: Red Hat Jira instances require OAuth authentication instead of API tokens. This is by design for security. Contact your Red Hat administrator to:
-- Set up OAuth consumer credentials
-- Configure OAuth access for your application
-- Provide alternative access methods
+A: This usually means your Personal Access Token (PAT) is invalid or expired. Please:
+- Create a new PAT in your Red Hat Jira profile → Personal Access Tokens
+- Ensure you're using the PAT (not your password) in the API Token field
+- Check that the PAT hasn't expired
+- Verify you have the correct Red Hat username
 
 **Q: "Client must be authenticated to access this resource" (HTTP 401)**
 
-A: This error indicates that Red Hat Jira rejected your API token authentication. Red Hat Jira requires OAuth. See above for OAuth setup.
+A: This error indicates authentication failure. Common causes:
+- Using an old/expired Personal Access Token
+- Using your password instead of a PAT
+- Incorrect username format
+- PAT was revoked or doesn't have proper permissions
 
 **Q: Connection fails with SSL errors**
 

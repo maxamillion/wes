@@ -143,17 +143,17 @@ class RedHatJiraClient:
 
             # Add Red Hat specific configurations
             if hasattr(rhjira, "RHJIRA"):
-                # Use Red Hat specific client if available
+                # Use Red Hat specific client if available with Bearer token
                 self._client = rhjira.RHJIRA(
                     server=self.url,
-                    basic_auth=(self.username, self.api_token),
+                    token_auth=self.api_token,  # Use Bearer token instead of basic auth
                     options=options,
                 )
             else:
-                # Fallback to standard JIRA with Red Hat optimizations
+                # Fallback to standard JIRA with Red Hat Bearer token
                 self._client = rhjira.JIRA(
                     server=self.url,
-                    basic_auth=(self.username, self.api_token),
+                    token_auth=self.api_token,  # Use Bearer token instead of basic auth
                     options=options,
                 )
 
@@ -194,14 +194,24 @@ class RedHatJiraClient:
                 session.verify = False
                 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
+            # Red Hat Jira uses Personal Access Tokens with Bearer authentication
+            # Set up Bearer token authentication for Red Hat Jira
+            session.headers.update(
+                {
+                    "Authorization": f"Bearer {self.api_token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+            )
+
             self._client = JIRA(
                 server=self.url,
-                basic_auth=(self.username, self.api_token),
+                token_auth=self.api_token,  # Use token_auth instead of basic_auth
                 options=options,
                 get_server_info=False,  # Skip server info for faster init
             )
 
-            # Override session for better Red Hat compatibility
+            # Override session for Red Hat Bearer token authentication
             self._client._session = session
 
             self.logger.info(
@@ -230,14 +240,14 @@ class RedHatJiraClient:
                     )
 
         except Exception as e:
-            # Check if this is an OAuth authentication error
+            # Check if this is an authentication error with helpful guidance
             error_str = str(e).lower()
-            if "oauth" in error_str or "401" in str(e):
+            if "401" in str(e) or "unauthorized" in error_str:
                 raise AuthenticationError(
-                    "Red Hat Jira requires OAuth authentication. "
-                    "Please contact your Red Hat administrator to set up OAuth access tokens "
-                    "or use Red Hat SSO login. API token authentication is not supported "
-                    "for Red Hat Jira instances."
+                    "Red Hat Jira authentication failed. Please ensure you're using a valid "
+                    "Personal Access Token (PAT). Go to your Red Hat Jira profile → "
+                    "Personal Access Tokens → Create token. Use the token (not your password) "
+                    "in the API Token field."
                 )
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")

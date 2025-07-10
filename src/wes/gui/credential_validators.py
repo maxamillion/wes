@@ -121,13 +121,6 @@ class CredentialValidator:
 
         except Exception as e:
             self.logger.error(f"Jira validation error: {e}")
-            # Check if this is a Red Hat Jira OAuth error
-            if is_redhat_jira(url) and ("oauth" in str(e).lower() or "401" in str(e)):
-                return False, (
-                    "Red Hat Jira requires OAuth authentication. "
-                    "API token authentication is not supported. "
-                    "Please contact your Red Hat administrator for OAuth setup."
-                )
             return False, f"Connection failed: {e}"
 
     def validate_google_credentials(
