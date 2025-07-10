@@ -400,35 +400,44 @@ class ConfigDialog(QDialog):
         else:
             self.service_account_group.setVisible(False)
             self.oauth_group.setVisible(True)
-    
+
     def _on_jira_url_changed(self, text: str):
         """Handle Jira URL change to update username guidance."""
         if not text:
             self._reset_jira_username_guidance()
             return
-        
+
         try:
             from urllib.parse import urlparse
+
             parsed = urlparse(text.lower())
-            
+
             if "atlassian.net" in parsed.netloc:
                 # Jira Cloud - requires email
                 self.jira_username_label.setText("Email Address:")
                 self.jira_username_edit.setPlaceholderText("your.email@company.com")
-                self.jira_username_edit.setToolTip("Jira Cloud requires your email address as the username")
+                self.jira_username_edit.setToolTip(
+                    "Jira Cloud requires your email address as the username"
+                )
             elif is_redhat_jira(text):
                 # Red Hat Jira - specific username format
                 self.jira_username_label.setText("Red Hat Username:")
                 self.jira_username_edit.setPlaceholderText("your-redhat-username")
-                self.jira_username_edit.setToolTip("Enter your Red Hat Jira username (typically your Red Hat employee ID or LDAP username)")
+                self.jira_username_edit.setToolTip(
+                    "Enter your Red Hat Jira username (typically your Red Hat employee ID or LDAP username)"
+                )
             else:
                 # On-premise - flexible username
                 self.jira_username_label.setText("Username:")
-                self.jira_username_edit.setPlaceholderText("username or email@company.com")
-                self.jira_username_edit.setToolTip("Enter your Jira username (may be email or username depending on your configuration)")
+                self.jira_username_edit.setPlaceholderText(
+                    "username or email@company.com"
+                )
+                self.jira_username_edit.setToolTip(
+                    "Enter your Jira username (may be email or username depending on your configuration)"
+                )
         except Exception:
             self._reset_jira_username_guidance()
-    
+
     def _reset_jira_username_guidance(self):
         """Reset Jira username guidance to default."""
         self.jira_username_label.setText("Username:")
@@ -519,7 +528,7 @@ class ConfigDialog(QDialog):
 
             # Set initial auth method visibility
             self.on_auth_method_changed(self.auth_method_combo.currentText())
-            
+
             # Update Jira username guidance based on URL
             self._on_jira_url_changed(self.jira_url_edit.text())
 
@@ -623,38 +632,43 @@ class ConfigDialog(QDialog):
                     self, "Validation Error", "Jira username is required."
                 )
                 return False
-            
+
             # Additional validation for Jira Cloud
             jira_url = self.jira_url_edit.text().strip()
             jira_username = self.jira_username_edit.text().strip()
-            
+
             if jira_url and jira_username:
                 try:
                     from urllib.parse import urlparse
                     import re
-                    
+
                     parsed = urlparse(jira_url.lower())
                     if "atlassian.net" in parsed.netloc:
-                        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                        email_pattern = (
+                            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                        )
                         if not re.match(email_pattern, jira_username):
                             QMessageBox.warning(
-                                self, "Validation Error", 
-                                "Jira Cloud requires a valid email address as username."
+                                self,
+                                "Validation Error",
+                                "Jira Cloud requires a valid email address as username.",
                             )
                             return False
                     elif is_redhat_jira(jira_url):
                         # Red Hat Jira username validation
                         if len(jira_username.strip()) < 3:
                             QMessageBox.warning(
-                                self, "Validation Error",
-                                "Red Hat Jira username must be at least 3 characters."
+                                self,
+                                "Validation Error",
+                                "Red Hat Jira username must be at least 3 characters.",
                             )
                             return False
-                        username_pattern = r'^[a-zA-Z0-9._-]+$'
+                        username_pattern = r"^[a-zA-Z0-9._-]+$"
                         if not re.match(username_pattern, jira_username.strip()):
                             QMessageBox.warning(
-                                self, "Validation Error",
-                                "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens."
+                                self,
+                                "Validation Error",
+                                "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens.",
                             )
                             return False
                 except Exception:

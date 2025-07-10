@@ -75,7 +75,7 @@ class JiraClient:
 
         # Check if this is a Red Hat Jira instance
         self.is_redhat = is_redhat_jira(url)
-        
+
         if self.is_redhat:
             # Use Red Hat Jira client for Red Hat instances
             self._redhat_client = RedHatJiraClient(
@@ -83,14 +83,14 @@ class JiraClient:
                 username=username,
                 api_token=api_token,
                 rate_limit=rate_limit,
-                timeout=timeout
+                timeout=timeout,
             )
             self._jira_client = self._redhat_client._client
             self.rate_limiter = self._redhat_client.rate_limiter
         else:
             # Initialize rate limiter for standard Jira
             self.rate_limiter = RateLimiter(max_requests=rate_limit, time_window=60)
-            
+
             # Initialize standard JIRA client
             self._jira_client: Optional[JIRA] = None
             self._redhat_client = None
@@ -455,7 +455,7 @@ class JiraClient:
             "server_info": (
                 self._jira_client.server_info() if self._jira_client else None
             ),
-            "client_type": "jira"
+            "client_type": "jira",
         }
 
     async def close(self) -> None:

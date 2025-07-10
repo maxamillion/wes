@@ -20,6 +20,7 @@ from urllib3.util.retry import Retry
 # Note: rhjira is an optional dependency for Red Hat Jira optimization
 try:
     import rhjira
+
     RHJIRA_AVAILABLE = True
 except ImportError:
     RHJIRA_AVAILABLE = False
@@ -69,6 +70,7 @@ class RedHatJiraClient:
 
     def _create_rate_limiter(self, max_requests: int):
         """Create rate limiter for Red Hat Jira."""
+
         class RateLimiter:
             def __init__(self, max_requests: int, time_window: int = 60):
                 self.max_requests = max_requests
@@ -80,7 +82,8 @@ class RedHatJiraClient:
                 async with self._lock:
                     now = time.time()
                     self.requests = [
-                        req_time for req_time in self.requests
+                        req_time
+                        for req_time in self.requests
                         if now - req_time < self.time_window
                     ]
 
@@ -106,20 +109,22 @@ class RedHatJiraClient:
             self._test_connection()
 
             self.security_logger.log_authentication_attempt(
-                service="redhat_jira", 
-                username=self.username, 
+                service="redhat_jira",
+                username=self.username,
                 success=True,
-                client_type="rhjira" if self.use_rhjira else "jira"
+                client_type="rhjira" if self.use_rhjira else "jira",
             )
 
-            self.logger.info(f"Red Hat Jira client initialized successfully using {'rhjira' if self.use_rhjira else 'jira'}")
+            self.logger.info(
+                f"Red Hat Jira client initialized successfully using {'rhjira' if self.use_rhjira else 'jira'}"
+            )
 
         except Exception as e:
             self.security_logger.log_authentication_attempt(
-                service="redhat_jira", 
-                username=self.username, 
-                success=False, 
-                error=str(e)
+                service="redhat_jira",
+                username=self.username,
+                success=False,
+                error=str(e),
             )
             raise AuthenticationError(f"Red Hat Jira authentication failed: {e}")
 
@@ -128,26 +133,26 @@ class RedHatJiraClient:
         try:
             # Configure rhjira with Red Hat-specific settings
             options = {
-                'verify': self.verify_ssl,
-                'check_update': False,
-                'agile_rest_path': 'agile',
-                'timeout': self.timeout,
+                "verify": self.verify_ssl,
+                "check_update": False,
+                "agile_rest_path": "agile",
+                "timeout": self.timeout,
             }
 
             # Add Red Hat specific configurations
-            if hasattr(rhjira, 'RHJIRA'):
+            if hasattr(rhjira, "RHJIRA"):
                 # Use Red Hat specific client if available
                 self._client = rhjira.RHJIRA(
                     server=self.url,
                     basic_auth=(self.username, self.api_token),
-                    options=options
+                    options=options,
                 )
             else:
                 # Fallback to standard JIRA with Red Hat optimizations
                 self._client = rhjira.JIRA(
                     server=self.url,
                     basic_auth=(self.username, self.api_token),
-                    options=options
+                    options=options,
                 )
 
             self.logger.info("Initialized Red Hat Jira client with rhjira library")
@@ -161,23 +166,23 @@ class RedHatJiraClient:
         try:
             # Configure with Red Hat enterprise settings
             options = {
-                'verify': self.verify_ssl,
-                'check_update': False,
-                'agile_rest_path': 'agile',
-                'timeout': self.timeout,
+                "verify": self.verify_ssl,
+                "check_update": False,
+                "agile_rest_path": "agile",
+                "timeout": self.timeout,
             }
 
             # Create session with retry strategy for enterprise environments
             session = requests.Session()
-            
+
             # Configure retries for enterprise stability
             retry_strategy = Retry(
                 total=3,
                 status_forcelist=[429, 500, 502, 503, 504],
-                method_whitelist=["HEAD", "GET", "OPTIONS"],
-                backoff_factor=1
+                allowed_methods=["HEAD", "GET", "OPTIONS"],
+                backoff_factor=1,
             )
-            
+
             adapter = HTTPAdapter(max_retries=retry_strategy)
             session.mount("http://", adapter)
             session.mount("https://", adapter)
@@ -185,19 +190,21 @@ class RedHatJiraClient:
             # Handle SSL verification for Red Hat environments
             if not self.verify_ssl:
                 session.verify = False
-                warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+                warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
             self._client = JIRA(
                 server=self.url,
                 basic_auth=(self.username, self.api_token),
                 options=options,
-                get_server_info=False  # Skip server info for faster init
+                get_server_info=False,  # Skip server info for faster init
             )
 
             # Override session for better Red Hat compatibility
             self._client._session = session
 
-            self.logger.info("Initialized Red Hat Jira client with standard jira library")
+            self.logger.info(
+                "Initialized Red Hat Jira client with standard jira library"
+            )
 
         except Exception as e:
             self.logger.error(f"Failed to initialize standard Jira client: {e}")
@@ -211,12 +218,14 @@ class RedHatJiraClient:
             self.logger.info(f"Connected to Red Hat Jira as user: {user}")
 
             # Test Red Hat specific capabilities if using rhjira
-            if self.use_rhjira and hasattr(self._client, 'get_redhat_info'):
+            if self.use_rhjira and hasattr(self._client, "get_redhat_info"):
                 try:
                     rh_info = self._client.get_redhat_info()
                     self.logger.info(f"Red Hat Jira info: {rh_info}")
                 except Exception as e:
-                    self.logger.warning(f"Could not retrieve Red Hat specific info: {e}")
+                    self.logger.warning(
+                        f"Could not retrieve Red Hat specific info: {e}"
+                    )
 
         except Exception as e:
             raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
@@ -242,10 +251,14 @@ class RedHatJiraClient:
             await self.rate_limiter.acquire()
 
             # Build Red Hat optimized JQL query
-            jql = self._build_redhat_activity_query(users, start_date, end_date, projects)
+            jql = self._build_redhat_activity_query(
+                users, start_date, end_date, projects
+            )
 
             # Execute query with Red Hat specific handling
-            activities = await self._execute_redhat_query(jql, max_results, include_comments)
+            activities = await self._execute_redhat_query(
+                jql, max_results, include_comments
+            )
 
             self.security_logger.log_api_request(
                 service="redhat_jira",
@@ -303,13 +316,13 @@ class RedHatJiraClient:
     def _get_redhat_specific_filters(self) -> str:
         """Get Red Hat specific JQL filters."""
         filters = ""
-        
+
         # Add Red Hat specific issue type filters if needed
         # This could include Red Hat specific issue types or custom fields
-        
+
         # Example: Filter for Red Hat specific issue types
         # filters += " AND issuetype not in ('Red Hat Internal', 'RFE')"
-        
+
         return filters
 
     async def _execute_redhat_query(
@@ -319,13 +332,21 @@ class RedHatJiraClient:
         try:
             # Configure fields for Red Hat specific data
             fields = [
-                "summary", "description", "status", "assignee", 
-                "created", "updated", "priority", "issuelinks",
-                "components", "fixVersions", "labels"
+                "summary",
+                "description",
+                "status",
+                "assignee",
+                "created",
+                "updated",
+                "priority",
+                "issuelinks",
+                "components",
+                "fixVersions",
+                "labels",
             ]
 
             # Add Red Hat specific fields if using rhjira
-            if self.use_rhjira and hasattr(self._client, 'get_redhat_fields'):
+            if self.use_rhjira and hasattr(self._client, "get_redhat_fields"):
                 try:
                     redhat_fields = self._client.get_redhat_fields()
                     fields.extend(redhat_fields)
@@ -349,7 +370,7 @@ class RedHatJiraClient:
             return activities
 
         except Exception as e:
-            if hasattr(e, 'status_code') and e.status_code == 429:
+            if hasattr(e, "status_code") and e.status_code == 429:
                 raise RateLimitError(f"Red Hat Jira rate limit exceeded: {e}")
             else:
                 raise JiraIntegrationError(f"Red Hat Jira query failed: {e}")
@@ -382,13 +403,15 @@ class RedHatJiraClient:
             }
 
             # Add Red Hat specific fields
-            if hasattr(issue.fields, 'components') and issue.fields.components:
+            if hasattr(issue.fields, "components") and issue.fields.components:
                 activity["components"] = [comp.name for comp in issue.fields.components]
 
-            if hasattr(issue.fields, 'fixVersions') and issue.fields.fixVersions:
-                activity["fix_versions"] = [ver.name for ver in issue.fields.fixVersions]
+            if hasattr(issue.fields, "fixVersions") and issue.fields.fixVersions:
+                activity["fix_versions"] = [
+                    ver.name for ver in issue.fields.fixVersions
+                ]
 
-            if hasattr(issue.fields, 'labels') and issue.fields.labels:
+            if hasattr(issue.fields, "labels") and issue.fields.labels:
                 activity["labels"] = issue.fields.labels
 
             # Process Red Hat specific custom fields if using rhjira
@@ -423,14 +446,14 @@ class RedHatJiraClient:
         # This would be customized based on Red Hat's Jira configuration
         try:
             # Example Red Hat specific fields
-            if hasattr(issue.fields, 'customfield_10000'):  # Example custom field
+            if hasattr(issue.fields, "customfield_10000"):  # Example custom field
                 redhat_data["redhat_team"] = issue.fields.customfield_10000
 
-            if hasattr(issue.fields, 'customfield_10001'):  # Example custom field
+            if hasattr(issue.fields, "customfield_10001"):  # Example custom field
                 redhat_data["redhat_product"] = issue.fields.customfield_10001
 
             # Add more Red Hat specific field extractions as needed
-            
+
         except Exception as e:
             self.logger.warning(f"Could not extract Red Hat fields: {e}")
 
@@ -502,7 +525,7 @@ class RedHatJiraClient:
                 }
 
                 # Add Red Hat specific project information
-                if hasattr(project, 'category') and project.category:
+                if hasattr(project, "category") and project.category:
                     project_data["category"] = project.category.name
 
                 project_list.append(project_data)
@@ -536,15 +559,15 @@ class RedHatJiraClient:
             try:
                 server_info = self._client.server_info()
                 info["server_info"] = server_info
-                
+
                 # Add Red Hat specific server information
-                if self.use_rhjira and hasattr(self._client, 'get_redhat_server_info'):
+                if self.use_rhjira and hasattr(self._client, "get_redhat_server_info"):
                     try:
                         rh_server_info = self._client.get_redhat_server_info()
                         info["redhat_server_info"] = rh_server_info
                     except Exception as e:
                         self.logger.warning(f"Could not get Red Hat server info: {e}")
-                        
+
             except Exception as e:
                 self.logger.warning(f"Could not get server info: {e}")
 
@@ -555,9 +578,9 @@ class RedHatJiraClient:
         try:
             if self._client:
                 # Clean up any Red Hat specific resources
-                if self.use_rhjira and hasattr(self._client, 'close'):
+                if self.use_rhjira and hasattr(self._client, "close"):
                     self._client.close()
-                
+
                 self._client = None
 
             self.logger.info("Red Hat Jira client closed")
@@ -570,26 +593,28 @@ def is_redhat_jira(url: str) -> bool:
     """Check if the URL is a Red Hat Jira instance."""
     try:
         from urllib.parse import urlparse
+
         parsed = urlparse(url.lower())
-        
+
+        # Only accept HTTP/HTTPS URLs
+        if parsed.scheme not in ["http", "https"]:
+            return False
+
         # Check for Red Hat domains
         redhat_domains = [
-            'redhat.com',
-            'jira.redhat.com',
-            'issues.redhat.com',
-            'bugzilla.redhat.com'
+            "redhat.com",
+            "jira.redhat.com",
+            "issues.redhat.com",
+            "bugzilla.redhat.com",
         ]
-        
+
         return any(domain in parsed.netloc for domain in redhat_domains)
     except Exception:
         return False
 
 
-def get_redhat_jira_client(url: str, username: str, api_token: str, **kwargs) -> RedHatJiraClient:
+def get_redhat_jira_client(
+    url: str, username: str, api_token: str, **kwargs
+) -> RedHatJiraClient:
     """Factory function to create Red Hat Jira client."""
-    return RedHatJiraClient(
-        url=url,
-        username=username,
-        api_token=api_token,
-        **kwargs
-    )
+    return RedHatJiraClient(url=url, username=username, api_token=api_token, **kwargs)

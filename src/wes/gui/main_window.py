@@ -53,14 +53,16 @@ class MainWindow(QMainWindow):
 
         self.logger = get_logger(__name__)
         self.config_manager = ConfigManager()
-        
+
         # Initialize credential monitoring
         monitoring_config = MonitoringConfig(
             check_interval_minutes=60,
             auto_refresh_enabled=True,
-            notification_enabled=True
+            notification_enabled=True,
         )
-        self.credential_monitor = CredentialMonitor(self.config_manager, monitoring_config)
+        self.credential_monitor = CredentialMonitor(
+            self.config_manager, monitoring_config
+        )
 
         # Initialize UI
         self.init_ui()
@@ -481,7 +483,7 @@ class MainWindow(QMainWindow):
         """Show the setup wizard for new users."""
         wizard = SetupWizard(self.config_manager, self)
         result = wizard.exec()
-        
+
         if result == SetupWizard.Accepted:
             # Setup completed successfully
             self.credential_monitor.start_monitoring()
@@ -489,18 +491,19 @@ class MainWindow(QMainWindow):
             self.show_info(
                 "Setup Complete",
                 "Your Executive Summary Tool has been configured successfully! "
-                "You can now start creating executive summaries."
+                "You can now start creating executive summaries.",
             )
         else:
             # User cancelled setup
             self.show_warning(
-                "Setup Required", 
+                "Setup Required",
                 "The application requires configuration to function properly. "
-                "You can access the setup wizard later from File → Setup Wizard."
+                "You can access the setup wizard later from File → Setup Wizard.",
             )
 
     def setup_credential_notifications(self):
         """Setup credential monitoring notifications."""
+
         def show_credential_notification(message: str, severity: str, data: dict):
             if severity == "error":
                 self.show_error("Credential Issue", message)
@@ -508,10 +511,15 @@ class MainWindow(QMainWindow):
                 self.show_warning("Credential Warning", message)
             else:
                 self.status_label.setText(message)
-        
+
         from ..core.credential_monitor import CredentialNotificationManager
-        self.notification_manager = CredentialNotificationManager(self.credential_monitor)
-        self.notification_manager.add_notification_callback(show_credential_notification)
+
+        self.notification_manager = CredentialNotificationManager(
+            self.credential_monitor
+        )
+        self.notification_manager.add_notification_callback(
+            show_credential_notification
+        )
 
     def load_ui_configuration(self):
         """Load configuration into UI elements."""
@@ -719,7 +727,7 @@ class MainWindow(QMainWindow):
         dialog = ConfigDialog(self.config_manager, self)
         if dialog.exec() == ConfigDialog.Accepted:
             self.load_ui_configuration()
-    
+
     def open_setup_wizard(self):
         """Open setup wizard."""
         self.show_setup_wizard()
@@ -802,7 +810,7 @@ class MainWindow(QMainWindow):
         """Handle application close event."""
         try:
             # Stop credential monitoring
-            if hasattr(self, 'credential_monitor'):
+            if hasattr(self, "credential_monitor"):
                 self.credential_monitor.stop_monitoring()
 
             # Save configuration before closing

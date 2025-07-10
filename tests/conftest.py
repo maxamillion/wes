@@ -62,6 +62,21 @@ def sample_jira_config():
 
 
 @pytest.fixture
+def sample_redhat_jira_config():
+    """Sample Red Hat Jira configuration data."""
+    return {
+        "url": "https://issues.redhat.com",
+        "username": "testuser",
+        "api_token": "test_api_token_12345",
+        "default_project": "RH",
+        "default_users": ["testuser", "rh-engineer"],
+        "default_query": "project = RH AND updated >= -1w",
+        "rate_limit": 100,
+        "timeout": 30,
+    }
+
+
+@pytest.fixture
 def sample_ai_config():
     """Sample AI configuration data."""
     return {
@@ -201,6 +216,26 @@ def mock_jira_client():
 
 
 @pytest.fixture
+def mock_redhat_jira_client():
+    """Mock Red Hat Jira client for testing."""
+    mock_client = Mock()
+    mock_client.get_user_activities.return_value = []
+    mock_client.get_projects.return_value = []
+    mock_client.get_users.return_value = []
+    mock_client.validate_jql.return_value = True
+    mock_client.get_connection_info.return_value = {
+        "connected": True,
+        "client_type": "rhjira",
+        "rhjira_available": True,
+        "url": "https://issues.redhat.com",
+        "username": "testuser",
+    }
+    mock_client.close.return_value = None
+    mock_client.use_rhjira = True
+    return mock_client
+
+
+@pytest.fixture
 def mock_gemini_client():
     """Mock Gemini client for testing."""
     mock_client = Mock()
@@ -273,6 +308,7 @@ pytest_markers = [
     "gui: GUI tests",
     "slow: Slow-running tests",
     "api: API integration tests",
+    "redhat: Red Hat Jira integration tests",
 ]
 
 
@@ -297,3 +333,5 @@ def setup_test_logging():
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("google").setLevel(logging.WARNING)
+    logging.getLogger("rhjira").setLevel(logging.WARNING)
+    logging.getLogger("jira").setLevel(logging.WARNING)

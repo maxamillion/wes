@@ -34,6 +34,11 @@ jobs:
       run: |
         uv sync --frozen --extra dev
 
+    - name: Install Red Hat Jira dependencies
+      run: |
+        uv sync --frozen --extra redhat || echo "Red Hat dependencies not available, continuing with standard tests"
+      continue-on-error: true
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -66,6 +71,7 @@ jobs:
       env:
         DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
 
     - name: Run end-to-end tests
       run: |
@@ -75,6 +81,20 @@ jobs:
       env:
         DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
+
+    - name: Run comprehensive Red Hat Jira tests
+      run: |
+        echo "Running Red Hat Jira integration tests..."
+        uv run pytest tests/unit/test_redhat_jira_client.py \
+          --junitxml=test-results-redhat-comprehensive.xml \
+          -v
+      env:
+        DISPLAY: ":99"
+        QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
+        RHJIRA_COMPREHENSIVE_TEST: "true"
+      continue-on-error: true
 
     - name: Run comprehensive security scanning
       run: |
@@ -177,7 +197,10 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
 
     - name: Install build dependencies
-      run: uv sync --frozen --extra build
+      run: |
+        uv sync --frozen --extra build
+        uv sync --frozen --extra redhat || echo "Red Hat dependencies not available for build"
+      continue-on-error: true
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'

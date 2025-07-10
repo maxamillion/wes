@@ -30,6 +30,11 @@ jobs:
       run: |
         uv sync --frozen --extra dev
 
+    - name: Install Red Hat Jira dependencies (optional)
+      run: |
+        uv sync --frozen --extra redhat || echo "Red Hat dependencies not available, continuing with standard tests"
+      continue-on-error: true
+
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
@@ -65,6 +70,7 @@ jobs:
       env:
         DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
 
     - name: Run integration tests  
       run: |
@@ -73,6 +79,7 @@ jobs:
       env:
         DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
 
     - name: Run security tests
       run: |
@@ -81,6 +88,18 @@ jobs:
       env:
         DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
+
+    - name: Run Red Hat Jira tests
+      run: |
+        uv run pytest tests/unit/test_redhat_jira_client.py \
+          -m "not integration" \
+          --junitxml=test-results-redhat.xml
+      env:
+        DISPLAY: ":99"
+        QT_QPA_PLATFORM: "offscreen"
+        RHJIRA_TEST_MODE: "true"
+      continue-on-error: true
 
     - name: Run security scanning
       run: |
