@@ -1,14 +1,14 @@
 [project]
-name = "executive-summary-tool"
+name = "wes"
 version = "1.0.0"
-description = "Cross-platform desktop application for automated executive summary generation"
+description = "Wes - Cross-platform desktop application for automated executive summary generation"
 authors = [
     {name = "Engineering Team", email = "engineering@company.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
-keywords = ["executive", "summary", "jira", "gemini", "automation"]
+keywords = ["wes", "executive", "summary", "jira", "gemini", "automation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
@@ -101,23 +101,23 @@ build = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/company/executive-summary-tool"
-Documentation = "https://docs.company.com/executive-summary-tool"
-Repository = "https://github.com/company/executive-summary-tool"
-Issues = "https://github.com/company/executive-summary-tool/issues"
+Homepage = "https://github.com/company/wes"
+Documentation = "https://docs.company.com/wes"
+Repository = "https://github.com/company/wes"
+Issues = "https://github.com/company/wes/issues"
 
 [project.scripts]
-executive-summary-tool = "executive_summary_tool.main:main"
+wes = "wes.main:main"
 
 [project.gui-scripts]
-executive-summary-tool-gui = "executive_summary_tool.main:main"
+wes-gui = "wes.main:main"
 
 [build-system]
 requires = ["hatchling>=1.18.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/executive_summary_tool"]
+packages = ["src/wes"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -137,7 +137,7 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "--cov=src/executive_summary_tool",
+    "--cov=src/wes",
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov-fail-under=95",

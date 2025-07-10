@@ -38,7 +38,7 @@ from PySide6.QtGui import QIcon, QFont, QPixmap, QAction
 
 from ..core.config_manager import ConfigManager
 from ..utils.logging_config import get_logger
-from ..utils.exceptions import ExecutiveSummaryToolError
+from ..utils.exceptions import WesError
 from .config_dialog import ConfigDialog
 from .progress_dialog import ProgressDialog
 

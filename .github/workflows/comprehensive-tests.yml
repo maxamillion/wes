@@ -57,7 +57,7 @@ jobs:
     - name: Run all tests with coverage
       run: |
         uv run pytest tests/ \
-          --cov=src/executive_summary_tool \
+          --cov=src/wes \
           --cov-report=html:htmlcov \
           --cov-report=xml:coverage.xml \
           --cov-report=term-missing \
@@ -213,13 +213,13 @@ jobs:
       run: |
         case "${{ runner.os }}" in
           "Linux")
-            ./dist/linux/executive-summary-tool-linux-1.0.0 --version
+            ./dist/linux/wes-linux-1.0.0 --version
             ;;
           "Windows")
-            ./dist/windows/executive-summary-tool-windows-1.0.0.exe --version
+            ./dist/windows/wes-windows-1.0.0.exe --version
             ;;
           "macOS")
-            ./dist/macos/executive-summary-tool-macos-1.0.0 --version
+            ./dist/macos/wes-macos-1.0.0 --version
             ;;
         esac
       env:

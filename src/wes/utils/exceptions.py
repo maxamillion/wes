@@ -3,7 +3,7 @@
 from typing import Any, Dict, Optional
 
 
-class ExecutiveSummaryToolError(Exception):
+class WesError(Exception):
     """Base exception for Executive Summary Tool."""
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
@@ -12,37 +12,37 @@ class ExecutiveSummaryToolError(Exception):
         self.details = details or {}
 
 
-class SecurityError(ExecutiveSummaryToolError):
+class SecurityError(WesError):
     """Security-related errors."""
 
     pass
 
 
-class AuthenticationError(ExecutiveSummaryToolError):
+class AuthenticationError(WesError):
     """Authentication failures."""
 
     pass
 
 
-class AuthorizationError(ExecutiveSummaryToolError):
+class AuthorizationError(WesError):
     """Authorization failures."""
 
     pass
 
 
-class ValidationError(ExecutiveSummaryToolError):
+class ValidationError(WesError):
     """Input validation errors."""
 
     pass
 
 
-class ConfigurationError(ExecutiveSummaryToolError):
+class ConfigurationError(WesError):
     """Configuration-related errors."""
 
     pass
 
 
-class IntegrationError(ExecutiveSummaryToolError):
+class IntegrationError(WesError):
     """External integration errors."""
 
     pass
@@ -72,7 +72,7 @@ class RateLimitError(IntegrationError):
     pass
 
 
-class NetworkError(ExecutiveSummaryToolError):
+class NetworkError(WesError):
     """Network connectivity errors."""
 
     pass

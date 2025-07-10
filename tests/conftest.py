@@ -10,8 +10,8 @@ from unittest.mock import Mock
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from src.executive_summary_tool.core.config_manager import ConfigManager
-from src.executive_summary_tool.core.security_manager import SecurityManager
+from src.wes.core.config_manager import ConfigManager
+from src.wes.core.security_manager import SecurityManager
 
 
 @pytest.fixture(scope="session")

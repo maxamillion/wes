@@ -27,7 +27,7 @@ BUILD_MODE ?= dev
 TARGET_OS ?= current
 SKIP_TESTS ?= false
 VERBOSE ?= false
-PROJECT_NAME := executive-summary-tool
+PROJECT_NAME := wes
 VERSION := $(shell grep '^version = ' pyproject.toml | cut -d '"' -f 2)
 DIST_DIR := dist
 BUILD_DIR := build
@@ -94,11 +94,11 @@ dev: install-dev ## Setup development environment
 
 run: ## Run the application in development mode
 	@echo "Starting application in development mode..."
-	$(UV) run $(PYTHON_EXECUTABLE) -m executive_summary_tool.main $(VERBOSE_FLAG)
+	$(UV) run $(PYTHON_EXECUTABLE) -m wes.main $(VERBOSE_FLAG)
 
 debug: ## Run the application with debug logging
 	@echo "Starting application in debug mode..."
-	DEBUG=1 $(UV) run $(PYTHON_EXECUTABLE) -m executive_summary_tool.main -v
+	DEBUG=1 $(UV) run $(PYTHON_EXECUTABLE) -m wes.main -v
 
 # Testing targets
 test: test-unit test-integration ## Run all tests
@@ -107,7 +107,7 @@ test: test-unit test-integration ## Run all tests
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	$(UV) run pytest $(TESTS_DIR)/unit/ $(VERBOSE_FLAG) \
-		--cov=$(SRC_DIR)/executive_summary_tool \
+		--cov=$(SRC_DIR)/wes \
 		--cov-report=html:htmlcov \
 		--cov-report=term-missing \
 		--cov-fail-under=95 \
@@ -131,7 +131,7 @@ test-e2e: ## Run end-to-end tests
 coverage: ## Generate test coverage report
 	@echo "Generating coverage report..."
 	$(UV) run pytest $(TESTS_DIR)/ \
-		--cov=$(SRC_DIR)/executive_summary_tool \
+		--cov=$(SRC_DIR)/wes \
 		--cov-report=html:htmlcov \
 		--cov-report=term-missing \
 		--cov-report=xml:coverage.xml \
@@ -142,7 +142,7 @@ coverage: ## Generate test coverage report
 lint: ## Run linting
 	@echo "Running linting..."
 	$(UV) run flake8 $(SRC_DIR) $(TESTS_DIR) $(VERBOSE_FLAG)
-	$(UV) run pylint $(SRC_DIR)/executive_summary_tool $(VERBOSE_FLAG)
+	$(UV) run pylint $(SRC_DIR)/wes $(VERBOSE_FLAG)
 
 format: ## Format code
 	@echo "Formatting code..."
@@ -151,7 +151,7 @@ format: ## Format code
 
 typecheck: ## Run type checking
 	@echo "Running type checking..."
-	$(UV) run mypy $(SRC_DIR)/executive_summary_tool $(VERBOSE_FLAG)
+	$(UV) run mypy $(SRC_DIR)/wes $(VERBOSE_FLAG)
 
 # Security targets
 security-scan: ## Run security scans
@@ -196,8 +196,8 @@ build-linux: ## Build Linux executable
 		--hidden-import cryptography \
 		--hidden-import google.auth \
 		--hidden-import jira \
-		--collect-all executive_summary_tool \
-		$(SRC_DIR)/executive_summary_tool/main.py
+		--collect-all wes \
+		$(SRC_DIR)/wes/main.py
 	@echo "Linux executable built: $(DIST_DIR)/linux/$(PROJECT_NAME)-linux-$(VERSION)"
 
 build-windows: ## Build Windows executable
@@ -215,8 +215,8 @@ build-windows: ## Build Windows executable
 		--hidden-import cryptography \
 		--hidden-import google.auth \
 		--hidden-import jira \
-		--collect-all executive_summary_tool \
-		$(SRC_DIR)/executive_summary_tool/main.py
+		--collect-all wes \
+		$(SRC_DIR)/wes/main.py
 	@echo "Windows executable built: $(DIST_DIR)/windows/$(PROJECT_NAME)-windows-$(VERSION).exe"
 
 build-macos: ## Build macOS executable
@@ -234,8 +234,8 @@ build-macos: ## Build macOS executable
 		--hidden-import cryptography \
 		--hidden-import google.auth \
 		--hidden-import jira \
-		--collect-all executive_summary_tool \
-		$(SRC_DIR)/executive_summary_tool/main.py
+		--collect-all wes \
+		$(SRC_DIR)/wes/main.py
 	@echo "macOS executable built: $(DIST_DIR)/macos/$(PROJECT_NAME)-macos-$(VERSION)"
 
 # Release targets

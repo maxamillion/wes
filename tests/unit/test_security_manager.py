@@ -4,8 +4,8 @@ import pytest
 from unittest.mock import Mock, patch, mock_open
 from pathlib import Path
 
-from src.executive_summary_tool.core.security_manager import SecurityManager
-from src.executive_summary_tool.utils.exceptions import SecurityError
+from src.wes.core.security_manager import SecurityManager
+from src.wes.utils.exceptions import SecurityError
 
 
 class TestSecurityManager:
@@ -14,7 +14,7 @@ class TestSecurityManager:
     @pytest.fixture
     def mock_keyring(self):
         """Mock keyring module."""
-        with patch('src.executive_summary_tool.core.security_manager.keyring') as mock:
+        with patch('src.wes.core.security_manager.keyring') as mock:
             mock.get_password.return_value = None
             mock.set_password.return_value = None
             mock.delete_password.return_value = None
@@ -118,7 +118,7 @@ class TestSecurityManager:
         with pytest.raises(SecurityError, match="Failed to decrypt credential"):
             manager.decrypt_credential("invalid_encrypted_data")
     
-    @patch('src.executive_summary_tool.core.security_manager.secrets.token_bytes')
+    @patch('src.wes.core.security_manager.secrets.token_bytes')
     def test_salt_creation(self, mock_token_bytes, mock_keyring, mock_home_path):
         """Test salt file creation."""
         mock_token_bytes.return_value = b'test_salt_32_bytes_long_exactly'
@@ -182,7 +182,7 @@ class TestSecurityManager:
         manager.secure_delete("")
         manager.secure_delete(None)
     
-    @patch('src.executive_summary_tool.core.security_manager.keyring')
+    @patch('src.wes.core.security_manager.keyring')
     def test_keyring_failure_fallback(self, mock_keyring, mock_home_path):
         """Test fallback when keyring operations fail."""
         # Mock keyring to raise exception
@@ -200,7 +200,7 @@ class TestSecurityManager:
     
     def test_initialization_failure(self, mock_keyring, mock_home_path):
         """Test handling of initialization failures."""
-        with patch('src.executive_summary_tool.core.security_manager.PBKDF2HMAC') as mock_kdf:
+        with patch('src.wes.core.security_manager.PBKDF2HMAC') as mock_kdf:
             mock_kdf.side_effect = Exception("Crypto initialization failed")
             
             with pytest.raises(SecurityError, match="Failed to initialize encryption"):

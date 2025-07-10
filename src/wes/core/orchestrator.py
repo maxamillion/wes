@@ -11,7 +11,7 @@ from ..integrations.gemini_client import GeminiClient, SummaryFormatter
 from ..integrations.google_docs_client import GoogleDocsClient, DocumentTemplate
 from ..core.config_manager import ConfigManager
 from ..utils.exceptions import (
-    ExecutiveSummaryToolError,
+    WesError,
     JiraIntegrationError,
     GeminiIntegrationError,
     GoogleDocsIntegrationError,
@@ -217,23 +217,23 @@ class WorkflowOrchestrator:
 
         except Exception as e:
             self.logger.error(f"Stage {stage_number} failed: {stage_name} - {e}")
-            raise ExecutiveSummaryToolError(f"Stage {stage_name} failed: {e}")
+            raise WesError(f"Stage {stage_name} failed: {e}")
 
     async def _stage_validate_configuration(self) -> None:
         """Stage 1: Validate configuration."""
         self._update_progress("Validating configuration...")
 
         if not self.config_manager.validate_configuration():
-            raise ExecutiveSummaryToolError("Configuration validation failed")
+            raise WesError("Configuration validation failed")
 
         # Check essential credentials
         jira_token = self.config_manager.retrieve_credential("jira", "api_token")
         if not jira_token:
-            raise ExecutiveSummaryToolError("Jira API token not configured")
+            raise WesError("Jira API token not configured")
 
         gemini_key = self.config_manager.retrieve_credential("ai", "gemini_api_key")
         if not gemini_key:
-            raise ExecutiveSummaryToolError("Gemini API key not configured")
+            raise WesError("Gemini API key not configured")
 
         self.logger.info("Configuration validation passed")
 
@@ -295,7 +295,7 @@ class WorkflowOrchestrator:
             self.logger.info("API clients initialized successfully")
 
         except Exception as e:
-            raise ExecutiveSummaryToolError(f"Failed to initialize clients: {e}")
+            raise WesError(f"Failed to initialize clients: {e}")
 
     async def _stage_fetch_jira_data(
         self, users: List[str], start_date: datetime, end_date: datetime

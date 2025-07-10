@@ -37,7 +37,7 @@ jobs:
 
     - name: Run type checking
       run: |
-        uv run mypy src/executive_summary_tool --fast
+        uv run mypy src/wes --fast
 
     - name: Run quick unit tests
       run: |
@@ -55,11 +55,11 @@ jobs:
         test -f pyproject.toml
         test -f Makefile
         test -f README.md
-        test -d src/executive_summary_tool
+        test -d src/wes
         test -d tests
         
         # Check that main module is importable
-        uv run python -c "import executive_summary_tool.main"
+        uv run python -c "import wes.main"
 
   pre-commit:
     runs-on: ubuntu-latest

@@ -1,4 +1,4 @@
-"""Main application entry point for the Executive Summary Tool."""
+"""Main application entry point for Wes."""
 
 import sys
 import os
@@ -11,10 +11,16 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QDir, qInstallMessageHandler, QtMsgType
 from PySide6.QtGui import QIcon
 
-from .gui.main_window import MainWindow
-from .core.config_manager import ConfigManager
-from .utils.logging_config import setup_logging, get_logger
-from .utils.exceptions import ExecutiveSummaryToolError
+try:
+    from .gui.main_window import MainWindow
+    from .core.config_manager import ConfigManager
+    from .utils.logging_config import setup_logging, get_logger
+    from .utils.exceptions import WesError
+except ImportError:
+    from wes.gui.main_window import MainWindow
+    from wes.core.config_manager import ConfigManager
+    from wes.utils.logging_config import setup_logging, get_logger
+    from wes.utils.exceptions import WesError
 
 
 def qt_message_handler(mode: QtMsgType, context, message: str):
@@ -34,7 +40,7 @@ def qt_message_handler(mode: QtMsgType, context, message: str):
 def setup_application_paths():
     """Setup application directories and paths."""
     # Ensure application directory exists
-    app_dir = Path.home() / ".executive-summary-tool"
+    app_dir = Path.home() / ".wes"
     app_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup subdirectories
@@ -48,7 +54,7 @@ def setup_application_paths():
 def setup_environment():
     """Setup application environment."""
     # Set application properties
-    QApplication.setApplicationName("Executive Summary Tool")
+    QApplication.setApplicationName("Wes")
     QApplication.setApplicationVersion("1.0.0")
     QApplication.setOrganizationName("Company")
     QApplication.setOrganizationDomain("company.com")
@@ -63,7 +69,7 @@ def setup_environment():
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Executive Summary Tool - Automated executive summary generation"
+        description="Wes - Automated executive summary generation"
     )
 
     parser.add_argument("--config", type=str, help="Path to configuration file")
@@ -78,7 +84,7 @@ def parse_arguments():
     parser.add_argument(
         "--log-file",
         type=str,
-        help="Log file path (default: ~/.executive-summary-tool/logs/app.log)",
+        help="Log file path (default: ~/.wes/logs/app.log)",
     )
 
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
@@ -94,7 +100,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--version", action="version", version="Executive Summary Tool 1.0.0"
+        "--version", action="version", version="Wes 1.0.0"
     )
 
     return parser.parse_args()
@@ -124,7 +130,7 @@ def initialize_logging(args, app_dir: Path):
     qInstallMessageHandler(qt_message_handler)
 
     logger = get_logger(__name__)
-    logger.info(f"Executive Summary Tool starting - Version 1.0.0")
+    logger.info(f"Wes starting - Version 1.0.0")
     logger.info(f"Log level: {log_level}")
     logger.info(f"Log file: {log_file}")
 
@@ -179,7 +185,10 @@ def setup_application_style(app: QApplication):
 
 async def test_connections_cli(config_manager: ConfigManager) -> bool:
     """Test all connections in CLI mode."""
-    from .core.orchestrator import WorkflowOrchestrator
+    try:
+        from .core.orchestrator import WorkflowOrchestrator
+    except ImportError:
+        from wes.core.orchestrator import WorkflowOrchestrator
 
     logger = get_logger(__name__)
     logger.info("Testing API connections...")
@@ -283,7 +292,7 @@ def main():
         logger.info(f"Application exiting with code: {exit_code}")
         return exit_code
 
-    except ExecutiveSummaryToolError as e:
+    except WesError as e:
         logger.error(f"Application error: {e}")
         if QApplication.instance():
             QMessageBox.critical(None, "Application Error", str(e))

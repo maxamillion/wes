@@ -117,7 +117,7 @@ uv sync --extra dev
 # Run quick checks
 uv run black --check src tests
 uv run flake8 src tests
-uv run mypy src/executive_summary_tool
+uv run mypy src/wes
 uv run pytest tests/unit/ -x
 
 # Run comprehensive tests
