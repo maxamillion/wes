@@ -57,7 +57,7 @@ def sample_jira_config():
         "default_users": ["test.user1", "test.user2"],
         "default_query": "project = TEST AND updated >= -1w",
         "rate_limit": 100,
-        "timeout": 30
+        "timeout": 30,
     }
 
 
@@ -71,7 +71,7 @@ def sample_ai_config():
         "max_tokens": 2048,
         "rate_limit": 60,
         "timeout": 60,
-        "custom_prompt": "Generate an executive summary based on: {activity_data}"
+        "custom_prompt": "Generate an executive summary based on: {activity_data}",
     }
 
 
@@ -85,7 +85,7 @@ def sample_google_config():
         "oauth_refresh_token": "test_refresh_token",
         "docs_folder_id": "test_folder_id_12345",
         "rate_limit": 100,
-        "timeout": 30
+        "timeout": 30,
     }
 
 
@@ -112,7 +112,7 @@ def sample_jira_activity_data():
                     "from": "To Do",
                     "to": "In Progress",
                     "author": "john.doe",
-                    "created": "2024-01-16T09:00:00Z"
+                    "created": "2024-01-16T09:00:00Z",
                 }
             ],
             "comments": [
@@ -121,9 +121,9 @@ def sample_jira_activity_data():
                     "author": "jane.smith",
                     "body": "This looks related to the recent SSO changes",
                     "created": "2024-01-16T11:00:00Z",
-                    "updated": "2024-01-16T11:00:00Z"
+                    "updated": "2024-01-16T11:00:00Z",
                 }
-            ]
+            ],
         },
         {
             "id": "TEST-124",
@@ -144,11 +144,11 @@ def sample_jira_activity_data():
                     "from": "In Progress",
                     "to": "Done",
                     "author": "jane.smith",
-                    "created": "2024-01-16T16:00:00Z"
+                    "created": "2024-01-16T16:00:00Z",
                 }
             ],
-            "comments": []
-        }
+            "comments": [],
+        },
     ]
 
 
@@ -180,10 +180,10 @@ The team has been actively working on critical infrastructure issues and documen
         "usage": {
             "prompt_token_count": 150,
             "candidates_token_count": 200,
-            "total_token_count": 350
+            "total_token_count": 350,
         },
         "generated_at": 1705507200.0,
-        "safety_ratings": []
+        "safety_ratings": [],
     }
 
 
@@ -206,7 +206,7 @@ def mock_gemini_client():
     mock_client = Mock()
     mock_client.generate_summary.return_value = {
         "content": "Test executive summary",
-        "model": "gemini-pro"
+        "model": "gemini-pro",
     }
     mock_client.validate_api_key.return_value = True
     mock_client.close.return_value = None
@@ -219,7 +219,9 @@ def mock_google_docs_client():
     mock_client = Mock()
     mock_client.create_document.return_value = "test_document_id"
     mock_client.create_formatted_summary.return_value = "test_document_id"
-    mock_client.get_document_url.return_value = "https://docs.google.com/document/d/test_document_id/edit"
+    mock_client.get_document_url.return_value = (
+        "https://docs.google.com/document/d/test_document_id/edit"
+    )
     mock_client.share_document.return_value = None
     mock_client.close.return_value = None
     return mock_client
@@ -244,16 +246,16 @@ def environment_variables():
     old_values = {}
     test_vars = {
         "EXECUTIVE_SUMMARY_TEST_MODE": "true",
-        "EXECUTIVE_SUMMARY_LOG_LEVEL": "DEBUG"
+        "EXECUTIVE_SUMMARY_LOG_LEVEL": "DEBUG",
     }
-    
+
     # Set test environment variables
     for key, value in test_vars.items():
         old_values[key] = os.environ.get(key)
         os.environ[key] = value
-    
+
     yield test_vars
-    
+
     # Restore original environment variables
     for key, old_value in old_values.items():
         if old_value is None:
@@ -265,12 +267,12 @@ def environment_variables():
 # Pytest markers for test categorization
 pytest_markers = [
     "unit: Unit tests",
-    "integration: Integration tests", 
+    "integration: Integration tests",
     "security: Security tests",
     "e2e: End-to-end tests",
     "gui: GUI tests",
     "slow: Slow-running tests",
-    "api: API integration tests"
+    "api: API integration tests",
 ]
 
 
@@ -284,13 +286,13 @@ def pytest_configure(config):
 def setup_test_logging():
     """Setup logging for tests."""
     import logging
-    
+
     # Set up test logging
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     # Suppress some noisy loggers during tests
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
