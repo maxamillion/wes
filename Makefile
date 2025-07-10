@@ -190,7 +190,6 @@ build-linux: ## Build Linux executable
 		--distpath $(DIST_DIR)/linux \
 		--workpath $(BUILD_DIR)/linux \
 		--specpath $(BUILD_DIR)/linux \
-		--add-data "src/executive_summary_tool/gui/resources:resources" \
 		--hidden-import PySide6.QtCore \
 		--hidden-import PySide6.QtGui \
 		--hidden-import PySide6.QtWidgets \
@@ -210,7 +209,6 @@ build-windows: ## Build Windows executable
 		--distpath $(DIST_DIR)/windows \
 		--workpath $(BUILD_DIR)/windows \
 		--specpath $(BUILD_DIR)/windows \
-		--add-data "src/executive_summary_tool/gui/resources;resources" \
 		--hidden-import PySide6.QtCore \
 		--hidden-import PySide6.QtGui \
 		--hidden-import PySide6.QtWidgets \
@@ -218,7 +216,6 @@ build-windows: ## Build Windows executable
 		--hidden-import google.auth \
 		--hidden-import jira \
 		--collect-all executive_summary_tool \
-		--icon src/executive_summary_tool/gui/resources/icon.ico \
 		$(SRC_DIR)/executive_summary_tool/main.py
 	@echo "Windows executable built: $(DIST_DIR)/windows/$(PROJECT_NAME)-windows-$(VERSION).exe"
 
@@ -231,7 +228,6 @@ build-macos: ## Build macOS executable
 		--distpath $(DIST_DIR)/macos \
 		--workpath $(BUILD_DIR)/macos \
 		--specpath $(BUILD_DIR)/macos \
-		--add-data "src/executive_summary_tool/gui/resources:resources" \
 		--hidden-import PySide6.QtCore \
 		--hidden-import PySide6.QtGui \
 		--hidden-import PySide6.QtWidgets \
@@ -239,7 +235,6 @@ build-macos: ## Build macOS executable
 		--hidden-import google.auth \
 		--hidden-import jira \
 		--collect-all executive_summary_tool \
-		--icon src/executive_summary_tool/gui/resources/icon.icns \
 		$(SRC_DIR)/executive_summary_tool/main.py
 	@echo "macOS executable built: $(DIST_DIR)/macos/$(PROJECT_NAME)-macos-$(VERSION)"
 

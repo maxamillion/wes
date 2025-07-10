@@ -24,44 +24,35 @@ classifiers = [
 dependencies = [
     # GUI Framework
     "PySide6>=6.6.0",
-    
     # HTTP and API clients
     "requests>=2.31.0",
     "httpx>=0.25.0",
-    
     # Security and encryption
     "cryptography>=41.0.0",
     "keyring>=24.0.0",
-    
     # Configuration and data handling
     "pydantic>=2.5.0",
     "toml>=0.10.2",
     "python-dotenv>=1.0.0",
-    
     # Google API clients
     "google-api-python-client>=2.110.0",
     "google-auth>=2.25.0",
     "google-auth-oauthlib>=1.1.0",
-    
     # Jira API
     "jira>=3.5.0",
     "atlassian-python-api>=3.41.0",
-    
     # AI/ML
     "google-generativeai>=0.3.0",
-    
     # Date/time handling
     "python-dateutil>=2.8.0",
-    
     # Logging and monitoring
     "structlog>=23.2.0",
-    
     # Data validation
     "validators>=0.22.0",
-    
     # Async support
     "asyncio>=3.4.3",
     "aiohttp>=3.9.0",
+    "pyinstaller>=6.14.2",
 ]
 
 [project.optional-dependencies]
