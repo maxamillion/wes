@@ -1,4 +1,5 @@
 # Executive Summary Tool
+[![Quick Checks](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml/badge.svg)](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml)
 
 A cross-platform desktop application that automates the creation of executive summaries by integrating Jira activity data with Google's Gemini AI and outputting formatted Google Docs.
 
