@@ -135,41 +135,58 @@ class GoogleOAuthHandler(QObject):
             if self.config_manager:
                 google_config = self.config_manager.get_google_config()
                 client_id = google_config.oauth_client_id
-                client_secret = self.config_manager.retrieve_credential("google", "oauth_client_secret")
-                
+                client_secret = self.config_manager.retrieve_credential(
+                    "google", "oauth_client_secret"
+                )
+
                 if client_id and client_secret:
                     self.CLIENT_CONFIG["web"]["client_id"] = client_id
                     self.CLIENT_CONFIG["web"]["client_secret"] = client_secret
-                    self.logger.info("Loaded OAuth client configuration from config manager")
+                    self.logger.info(
+                        "Loaded OAuth client configuration from config manager"
+                    )
                     return
-            
+
             # Try to load from environment variables
             import os
+
             client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
             client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
-            
+
             if client_id and client_secret:
                 self.CLIENT_CONFIG["web"]["client_id"] = client_id
                 self.CLIENT_CONFIG["web"]["client_secret"] = client_secret
-                self.logger.info("Loaded OAuth client configuration from environment variables")
+                self.logger.info(
+                    "Loaded OAuth client configuration from environment variables"
+                )
                 return
-                
+
             # Try to load from a credentials file
             from pathlib import Path
+
             cred_file = Path.home() / ".wes" / "google_oauth_credentials.json"
             if cred_file.exists():
                 with open(cred_file, "r") as f:
                     creds = json.load(f)
                     if "client_id" in creds and "client_secret" in creds:
                         self.CLIENT_CONFIG["web"]["client_id"] = creds["client_id"]
-                        self.CLIENT_CONFIG["web"]["client_secret"] = creds["client_secret"]
-                        self.logger.info("Loaded OAuth client configuration from credentials file")
+                        self.CLIENT_CONFIG["web"]["client_secret"] = creds[
+                            "client_secret"
+                        ]
+                        self.logger.info(
+                            "Loaded OAuth client configuration from credentials file"
+                        )
                         return
-            
+
             # Log warning if no valid credentials found
-            if self.CLIENT_CONFIG["web"]["client_id"] == "your-client-id.apps.googleusercontent.com":
-                self.logger.warning("No valid OAuth client credentials found. Please configure Google OAuth credentials.")
-                
+            if (
+                self.CLIENT_CONFIG["web"]["client_id"]
+                == "your-client-id.apps.googleusercontent.com"
+            ):
+                self.logger.warning(
+                    "No valid OAuth client credentials found. Please configure Google OAuth credentials."
+                )
+
         except Exception as e:
             self.logger.error(f"Failed to load OAuth client configuration: {e}")
 

@@ -531,21 +531,25 @@ class GoogleSetupPage(WizardPage):
         if not self.oauth_handler:
             # Get config manager from parent wizard
             wizard = self.window()
-            if hasattr(wizard, 'config_manager'):
+            if hasattr(wizard, "config_manager"):
                 self.oauth_handler = GoogleOAuthHandler(wizard.config_manager)
             else:
                 self.oauth_handler = GoogleOAuthHandler()
-            
+
             self.oauth_handler.auth_complete.connect(self.on_oauth_complete)
             self.oauth_handler.auth_error.connect(self.on_oauth_error)
-        
+
         # Check if OAuth client is configured
-        if (self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] == "your-client-id.apps.googleusercontent.com" or
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] == "your-client-secret"):
+        if (
+            self.oauth_handler.CLIENT_CONFIG["web"]["client_id"]
+            == "your-client-id.apps.googleusercontent.com"
+            or self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"]
+            == "your-client-secret"
+        ):
             # Show configuration dialog
             self.show_oauth_config_dialog()
             return
-        
+
         self.oauth_btn.setEnabled(False)
         self.oauth_status.setText("🔄 Opening browser for Google authentication...")
         self.oauth_status.setStyleSheet("color: blue;")
@@ -565,22 +569,22 @@ class GoogleSetupPage(WizardPage):
         self.oauth_btn.setEnabled(True)
         self.oauth_status.setText(f"❌ Authentication failed: {error}")
         self.oauth_status.setStyleSheet("color: red;")
-    
+
     def show_oauth_config_dialog(self):
         """Show dialog to configure OAuth client credentials."""
         dialog = QDialog(self)
         dialog.setWindowTitle("Configure Google OAuth")
         dialog.setModal(True)
         dialog.resize(700, 600)  # Set a reasonable default size
-        
+
         main_layout = QVBoxLayout(dialog)
-        
+
         # Create a scroll area for the content
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_widget = QWidget()
         scroll_layout = QVBoxLayout(scroll_widget)
-        
+
         # Title
         title = QLabel("Google OAuth Setup Required")
         title_font = QFont()
@@ -588,7 +592,7 @@ class GoogleSetupPage(WizardPage):
         title_font.setBold(True)
         title.setFont(title_font)
         scroll_layout.addWidget(title)
-        
+
         # Main instructions
         intro = QLabel(
             "Google OAuth client credentials are required to authenticate with Google services. "
@@ -596,26 +600,26 @@ class GoogleSetupPage(WizardPage):
         )
         intro.setWordWrap(True)
         scroll_layout.addWidget(intro)
-        
+
         # Add some spacing
         scroll_layout.addSpacing(20)
-        
+
         # Step-by-step instructions with clickable links
         steps_group = QGroupBox("Setup Instructions")
         steps_layout = QVBoxLayout(steps_group)
-        
+
         # Step 1
         step1_layout = QVBoxLayout()
         step1_label = QLabel("<b>Step 1: Go to Google Cloud Console</b>")
         step1_layout.addWidget(step1_label)
-        
+
         console_link = QLabel(
             '<a href="https://console.cloud.google.com">https://console.cloud.google.com</a>'
         )
         console_link.setOpenExternalLinks(True)
         console_link.setTextInteractionFlags(Qt.TextBrowserInteraction)
         step1_layout.addWidget(console_link)
-        
+
         # Quick link to credentials page
         quick_link = QLabel(
             'Or go directly to: <a href="https://console.cloud.google.com/apis/credentials">Credentials Page</a>'
@@ -624,10 +628,10 @@ class GoogleSetupPage(WizardPage):
         quick_link.setTextInteractionFlags(Qt.TextBrowserInteraction)
         quick_link.setStyleSheet("margin-left: 20px;")
         step1_layout.addWidget(quick_link)
-        
+
         steps_layout.addLayout(step1_layout)
         steps_layout.addSpacing(10)
-        
+
         # Step 2
         step2 = QLabel(
             "<b>Step 2: Create a Project</b><br>"
@@ -638,7 +642,7 @@ class GoogleSetupPage(WizardPage):
         step2.setWordWrap(True)
         steps_layout.addWidget(step2)
         steps_layout.addSpacing(10)
-        
+
         # Step 3
         step3 = QLabel(
             "<b>Step 3: Enable Required APIs</b><br>"
@@ -650,7 +654,7 @@ class GoogleSetupPage(WizardPage):
         step3.setWordWrap(True)
         steps_layout.addWidget(step3)
         steps_layout.addSpacing(10)
-        
+
         # Step 4
         step4 = QLabel(
             "<b>Step 4: Create OAuth Credentials</b><br>"
@@ -667,7 +671,7 @@ class GoogleSetupPage(WizardPage):
         step4.setWordWrap(True)
         steps_layout.addWidget(step4)
         steps_layout.addSpacing(10)
-        
+
         # Step 5
         step5 = QLabel(
             "<b>Step 5: Copy Your Credentials</b><br>"
@@ -676,105 +680,115 @@ class GoogleSetupPage(WizardPage):
         )
         step5.setWordWrap(True)
         steps_layout.addWidget(step5)
-        
+
         scroll_layout.addWidget(steps_group)
         scroll_layout.addSpacing(20)
-        
+
         # Credentials form
         cred_group = QGroupBox("Enter Your OAuth Credentials")
         form_layout = QFormLayout(cred_group)
-        
+
         self.client_id_edit = QLineEdit()
-        self.client_id_edit.setPlaceholderText("e.g., 123456789-abcdef.apps.googleusercontent.com")
+        self.client_id_edit.setPlaceholderText(
+            "e.g., 123456789-abcdef.apps.googleusercontent.com"
+        )
         form_layout.addRow("Client ID:", self.client_id_edit)
-        
+
         self.client_secret_edit = QLineEdit()
         self.client_secret_edit.setEchoMode(QLineEdit.Password)
         self.client_secret_edit.setPlaceholderText("Your OAuth Client Secret")
         form_layout.addRow("Client Secret:", self.client_secret_edit)
-        
+
         scroll_layout.addWidget(cred_group)
-        
+
         # Important note
         note_label = QLabel(
             "<b>Note:</b> The application will use <code>http://localhost:8080/callback</code> "
             "as the redirect URI. This is automatically configured for Desktop applications."
         )
         note_label.setWordWrap(True)
-        note_label.setStyleSheet("background-color: #f0f0f0; padding: 10px; border-radius: 5px;")
+        note_label.setStyleSheet(
+            "background-color: #f0f0f0; padding: 10px; border-radius: 5px;"
+        )
         scroll_layout.addWidget(note_label)
-        
+
         # Add stretch to push content up
         scroll_layout.addStretch()
-        
+
         # Set the scroll widget
         scroll_area.setWidget(scroll_widget)
         main_layout.addWidget(scroll_area)
-        
+
         # Buttons (outside scroll area)
         button_layout = QHBoxLayout()
-        
+
         help_btn = QPushButton("🌐 Open Google Console")
         help_btn.clicked.connect(lambda: self._open_google_console())
         button_layout.addWidget(help_btn)
-        
+
         button_layout.addStretch()
-        
+
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(dialog.reject)
         button_layout.addWidget(cancel_btn)
-        
+
         save_btn = QPushButton("Save and Continue")
-        save_btn.clicked.connect(lambda: self._save_oauth_config(
-            dialog, self.client_id_edit.text(), self.client_secret_edit.text()
-        ))
+        save_btn.clicked.connect(
+            lambda: self._save_oauth_config(
+                dialog, self.client_id_edit.text(), self.client_secret_edit.text()
+            )
+        )
         save_btn.setDefault(True)
         button_layout.addWidget(save_btn)
-        
+
         main_layout.addLayout(button_layout)
-        
+
         dialog.exec()
-    
+
     def _open_google_console(self):
         """Open Google Cloud Console in browser."""
         import webbrowser
+
         webbrowser.open("https://console.cloud.google.com/apis/credentials")
-    
+
     def _save_oauth_config(self, dialog, client_id, client_secret):
         """Save OAuth configuration."""
         if not client_id or not client_secret:
-            QMessageBox.warning(dialog, "Missing Credentials", 
-                              "Please enter both Client ID and Client Secret")
+            QMessageBox.warning(
+                dialog,
+                "Missing Credentials",
+                "Please enter both Client ID and Client Secret",
+            )
             return
-        
+
         try:
             # Update OAuth handler configuration
             self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
             self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
-            
+
             # Save to config manager if available
             wizard = self.window()
-            if hasattr(wizard, 'config_manager'):
+            if hasattr(wizard, "config_manager"):
                 wizard.config_manager.update_google_config(oauth_client_id=client_id)
-                wizard.config_manager.store_credential("google", "oauth_client_secret", client_secret)
-            
+                wizard.config_manager.store_credential(
+                    "google", "oauth_client_secret", client_secret
+                )
+
             # Also save to credentials file for persistence
             from pathlib import Path
+
             cred_dir = Path.home() / ".wes"
             cred_dir.mkdir(exist_ok=True)
             cred_file = cred_dir / "google_oauth_credentials.json"
-            
+
             with open(cred_file, "w") as f:
-                json.dump({
-                    "client_id": client_id,
-                    "client_secret": client_secret
-                }, f)
-            
+                json.dump({"client_id": client_id, "client_secret": client_secret}, f)
+
             dialog.accept()
-            
+
             # Restart OAuth flow
             self.start_oauth_flow()
-            
+
         except Exception as e:
             QMessageBox.critical(dialog, "Error", f"Failed to save credentials: {e}")
 
