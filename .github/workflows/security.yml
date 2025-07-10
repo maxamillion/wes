@@ -1,0 +1,172 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Install dependencies
+      run: |
+        uv sync --frozen --extra security
+
+    - name: Run Bandit security scan
+      run: |
+        uv run bandit -r src/ -f json -o bandit-report.json
+        uv run bandit -r src/ -f sarif -o bandit-results.sarif
+      continue-on-error: true
+
+    - name: Run Safety dependency scan
+      run: |
+        uv run safety check --json --output safety-report.json
+        uv run safety check --output safety-report.txt
+      continue-on-error: true
+
+    - name: Run Semgrep security scan
+      run: |
+        uv run semgrep --config=auto src/ --json --output=semgrep-report.json
+        uv run semgrep --config=auto src/ --sarif --output=semgrep-results.sarif
+      continue-on-error: true
+
+    - name: Upload Bandit SARIF results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: bandit-results.sarif
+        category: bandit
+      continue-on-error: true
+
+    - name: Upload Semgrep SARIF results  
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: semgrep-results.sarif
+        category: semgrep
+      continue-on-error: true
+
+    - name: Run security tests
+      run: |
+        uv run pytest tests/security/ \
+          --junitxml=security-test-results.xml \
+          -v
+      env:
+        QT_QPA_PLATFORM: "offscreen"
+
+    - name: Generate security report
+      if: always()
+      run: |
+        echo "# Security Scan Report" > security-report.md
+        echo "" >> security-report.md
+        echo "## Bandit Results" >> security-report.md
+        if [ -f bandit-report.json ]; then
+          echo "Bandit scan completed. See artifacts for detailed results." >> security-report.md
+        else
+          echo "Bandit scan failed or was skipped." >> security-report.md
+        fi
+        echo "" >> security-report.md
+        
+        echo "## Safety Results" >> security-report.md
+        if [ -f safety-report.txt ]; then
+          echo '```' >> security-report.md
+          cat safety-report.txt >> security-report.md
+          echo '```' >> security-report.md
+        else
+          echo "Safety scan failed or was skipped." >> security-report.md
+        fi
+        echo "" >> security-report.md
+        
+        echo "## Semgrep Results" >> security-report.md
+        if [ -f semgrep-report.json ]; then
+          echo "Semgrep scan completed. See artifacts for detailed results." >> security-report.md
+        else
+          echo "Semgrep scan failed or was skipped." >> security-report.md
+        fi
+
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          bandit-report.json
+          bandit-results.sarif
+          safety-report.json
+          safety-report.txt
+          semgrep-report.json
+          semgrep-results.sarif
+          security-test-results.xml
+          security-report.md
+
+    - name: Comment PR with security results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🔒 Security Scan Results\n\n';
+          
+          try {
+            const banditReport = fs.readFileSync('bandit-report.json', 'utf8');
+            const bandit = JSON.parse(banditReport);
+            const highSeverity = bandit.results.filter(r => r.issue_severity === 'HIGH').length;
+            const mediumSeverity = bandit.results.filter(r => r.issue_severity === 'MEDIUM').length;
+            const lowSeverity = bandit.results.filter(r => r.issue_severity === 'LOW').length;
+            
+            comment += `### Bandit Static Analysis\n`;
+            comment += `- 🔴 High severity: ${highSeverity}\n`;
+            comment += `- 🟡 Medium severity: ${mediumSeverity}\n`;
+            comment += `- 🟢 Low severity: ${lowSeverity}\n\n`;
+          } catch (e) {
+            comment += `### Bandit Static Analysis\n❌ Scan failed or no results\n\n`;
+          }
+          
+          try {
+            const safetyReport = fs.readFileSync('safety-report.json', 'utf8');
+            const safety = JSON.parse(safetyReport);
+            comment += `### Safety Dependency Scan\n`;
+            comment += `- 🛡️ Vulnerabilities found: ${safety.length || 0}\n\n`;
+          } catch (e) {
+            comment += `### Safety Dependency Scan\n❌ Scan failed or no results\n\n`;
+          }
+          
+          try {
+            const semgrepReport = fs.readFileSync('semgrep-report.json', 'utf8');
+            const semgrep = JSON.parse(semgrepReport);
+            comment += `### Semgrep Security Scan\n`;
+            comment += `- 🔍 Issues found: ${semgrep.results.length || 0}\n\n`;
+          } catch (e) {
+            comment += `### Semgrep Security Scan\n❌ Scan failed or no results\n\n`;
+          }
+          
+          comment += '📋 Detailed results are available in the workflow artifacts.';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
