@@ -529,6 +529,11 @@ class MainWindow(QMainWindow):
             self.jira_url_edit.setText(jira_config.url)
             self.jira_username_edit.setText(jira_config.username)
 
+            # Load API token from secure storage
+            api_token = self.config_manager.retrieve_credential("jira", "api_token")
+            if api_token:
+                self.jira_token_edit.setText(api_token)
+
             # Load users
             self.users_list.clear()
             for user in jira_config.default_users:
