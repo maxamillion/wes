@@ -22,6 +22,7 @@ from ..utils.exceptions import (
     JiraIntegrationError,
     GoogleDocsIntegrationError,
     GeminiIntegrationError,
+    AuthenticationError,
 )
 
 
@@ -106,8 +107,27 @@ class CredentialValidator:
             )
             return False, error_msg
 
+        except AuthenticationError as e:
+            # Handle Red Hat Jira OAuth authentication errors specifically
+            error_msg = str(e)
+            self.security_logger.log_security_event(
+                "jira_credential_validation_failed",
+                severity="WARNING",
+                url=url,
+                username=username,
+                error=error_msg,
+            )
+            return False, error_msg
+
         except Exception as e:
             self.logger.error(f"Jira validation error: {e}")
+            # Check if this is a Red Hat Jira OAuth error
+            if is_redhat_jira(url) and ("oauth" in str(e).lower() or "401" in str(e)):
+                return False, (
+                    "Red Hat Jira requires OAuth authentication. "
+                    "API token authentication is not supported. "
+                    "Please contact your Red Hat administrator for OAuth setup."
+                )
             return False, f"Connection failed: {e}"
 
     def validate_google_credentials(

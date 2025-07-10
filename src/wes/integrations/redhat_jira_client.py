@@ -45,6 +45,7 @@ class RedHatJiraClient:
         timeout: int = 30,
         verify_ssl: bool = True,
         use_rhjira: bool = True,
+        oauth_config: Optional[Dict[str, str]] = None,
     ):
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
@@ -60,6 +61,7 @@ class RedHatJiraClient:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
         self.use_rhjira = use_rhjira and RHJIRA_AVAILABLE
+        self.oauth_config = oauth_config
 
         # Initialize rate limiter
         self.rate_limiter = self._create_rate_limiter(rate_limit)
@@ -228,7 +230,17 @@ class RedHatJiraClient:
                     )
 
         except Exception as e:
-            raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
+            # Check if this is an OAuth authentication error
+            error_str = str(e).lower()
+            if "oauth" in error_str or "401" in str(e):
+                raise AuthenticationError(
+                    "Red Hat Jira requires OAuth authentication. "
+                    "Please contact your Red Hat administrator to set up OAuth access tokens "
+                    "or use Red Hat SSO login. API token authentication is not supported "
+                    "for Red Hat Jira instances."
+                )
+            else:
+                raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
 
     async def get_user_activities(
         self,

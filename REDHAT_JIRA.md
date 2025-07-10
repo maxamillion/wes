@@ -78,18 +78,24 @@ When you enter a Red Hat Jira URL in the setup wizard, you'll see:
 
 ### Authentication
 
-Red Hat Jira instances use API token authentication:
+**⚠️ IMPORTANT: Red Hat Jira instances require OAuth authentication, not API tokens.**
 
-1. **Get Your API Token:**
-   - Go to your Red Hat Jira instance
-   - Navigate to Personal Settings → Security → API Tokens
-   - Create a new API token
-   - Copy the generated token
+Red Hat Jira instances use OAuth 1.0a authentication instead of API tokens:
 
-2. **Configure in Application:**
-   - **Jira URL**: `https://issues.redhat.com` (or your Red Hat Jira URL)
-   - **Username**: Your Red Hat username (not email)
-   - **API Token**: The token you generated
+1. **OAuth Setup Required:**
+   - Red Hat Jira instances do not support API token authentication
+   - OAuth 1.0a authentication must be configured by your Red Hat administrator
+   - Contact your Red Hat IT administrator for OAuth setup
+
+2. **Alternative Authentication Methods:**
+   - **Red Hat SSO**: Use your Red Hat Single Sign-On credentials
+   - **OAuth Consumer**: Requires consumer key/secret setup by administrator
+   - **Kerberos**: For corporate network environments
+
+3. **Current Limitation:**
+   - This application currently supports API token authentication only
+   - Red Hat Jira integration requires additional OAuth implementation
+   - Contact support for OAuth-enabled version
 
 ## Features
 
@@ -145,9 +151,16 @@ jira:
 
 ### Common Issues
 
-**Q: I get "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens"**
+**Q: I get "Red Hat Jira requires OAuth authentication" error**
 
-A: Red Hat usernames have specific format requirements. Use your Red Hat employee ID or LDAP username, not your email address.
+A: Red Hat Jira instances require OAuth authentication instead of API tokens. This is by design for security. Contact your Red Hat administrator to:
+- Set up OAuth consumer credentials
+- Configure OAuth access for your application
+- Provide alternative access methods
+
+**Q: "Client must be authenticated to access this resource" (HTTP 401)**
+
+A: This error indicates that Red Hat Jira rejected your API token authentication. Red Hat Jira requires OAuth. See above for OAuth setup.
 
 **Q: Connection fails with SSL errors**
 
@@ -155,7 +168,7 @@ A: Red Hat corporate networks may require specific SSL configuration. The applic
 
 **Q: Can I use my email address as username?**
 
-A: No, Red Hat Jira typically uses employee IDs or LDAP usernames. Use your Red Hat username, not your email.
+A: Username format is less relevant since OAuth is required. However, Red Hat typically uses employee IDs or LDAP usernames.
 
 ### Performance Optimization
 
