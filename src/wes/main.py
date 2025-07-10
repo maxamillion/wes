@@ -99,9 +99,7 @@ def parse_arguments():
         help="Test all API connections and exit",
     )
 
-    parser.add_argument(
-        "--version", action="version", version="Wes 1.0.0"
-    )
+    parser.add_argument("--version", action="version", version="Wes 1.0.0")
 
     return parser.parse_args()
 
