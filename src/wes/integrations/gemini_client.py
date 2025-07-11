@@ -43,7 +43,7 @@ class GeminiClient:
     def __init__(
         self,
         api_key: str,
-        model_name: str = "gemini-2.0-flash-exp",
+        model_name: str = "gemini-2.5-flash",
         rate_limit: int = 60,
         timeout: int = 60,
     ):

@@ -236,7 +236,7 @@ class ConfigDialog(QDialog):
         api_layout.addRow("Gemini API Key:", self.gemini_api_key_edit)
 
         self.ai_model_combo = QComboBox()
-        self.ai_model_combo.addItems(["gemini-2.0-flash-exp"])
+        self.ai_model_combo.addItems(["gemini-2.5-flash", "gemini-2.5-pro"])
         api_layout.addRow("Model:", self.ai_model_combo)
 
         layout.addWidget(api_group)

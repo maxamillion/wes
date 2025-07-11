@@ -842,8 +842,8 @@ class GeminiSetupPage(WizardPage):
         model_layout = QFormLayout(model_group)
 
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["gemini-2.0-flash-exp"])
-        self.model_combo.setCurrentText("gemini-2.0-flash-exp")
+        self.model_combo.addItems(["gemini-2.5-flash", "gemini-2.5-pro"])
+        self.model_combo.setCurrentText("gemini-2.5-flash")
         model_layout.addRow("Model:", self.model_combo)
 
         self.content_layout.addWidget(model_group)
