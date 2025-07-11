@@ -12,12 +12,12 @@ from PySide6.QtCore import QDir, qInstallMessageHandler, QtMsgType
 from PySide6.QtGui import QIcon
 
 try:
-    from .gui.main_window import MainWindow
+    from .gui.main_window_single import SingleWindowMainWindow as MainWindow
     from .core.config_manager import ConfigManager
     from .utils.logging_config import setup_logging, get_logger
     from .utils.exceptions import WesError
 except ImportError:
-    from wes.gui.main_window import MainWindow
+    from wes.gui.main_window_single import SingleWindowMainWindow as MainWindow
     from wes.core.config_manager import ConfigManager
     from wes.utils.logging_config import setup_logging, get_logger
     from wes.utils.exceptions import WesError
@@ -56,8 +56,8 @@ def setup_environment():
     # Set application properties
     QApplication.setApplicationName("Wes")
     QApplication.setApplicationVersion("1.0.0")
-    QApplication.setOrganizationName("Company")
-    QApplication.setOrganizationDomain("company.com")
+    QApplication.setOrganizationName("Red Hat")
+    QApplication.setOrganizationDomain("redhat.com")
 
     # Setup Qt settings location
     app_dir = setup_application_paths()
