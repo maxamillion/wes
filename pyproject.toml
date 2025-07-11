@@ -160,6 +160,7 @@ markers = [
     "security: marks tests as security tests",
     "e2e: marks tests as end-to-end tests",
     "unit: marks tests as unit tests",
+    "asyncio: marks tests as asyncio tests",
 ]
 filterwarnings = [
     "error",
@@ -295,4 +296,10 @@ exclude = [
     ".mypy_cache/",
     ".pytest_cache/",
     "__pycache__/",
+]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.2.1",
+    "vulture>=2.14",
 ]

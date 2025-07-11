@@ -24,16 +24,12 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QProgressBar,
     QStatusBar,
-    QMenuBar,
     QMessageBox,
     QGroupBox,
     QListWidget,
-    QSplitter,
     QFrame,
     QApplication,
-    QGridLayout,
     QFormLayout,
-    QListWidgetItem,
     QScrollArea,
     QTabWidget,
 )
@@ -43,9 +39,6 @@ from PySide6.QtCore import (
     Signal,
     QDate,
     QTimer,
-    QPropertyAnimation,
-    QRect,
-    QEasingCurve,
 )
 from PySide6.QtGui import QIcon, QFont, QPixmap, QAction
 
@@ -1318,7 +1311,7 @@ class SingleWindowMainWindow(QMainWindow):
             return
 
         # Run validation in background
-        def on_validation_complete(svc: str, success: bool, message: str):
+        def on_validation_complete(_svc: str, success: bool, message: str):
             self.hide_progress_message()
             if success:
                 status_label.setText(f"✓ {message}")

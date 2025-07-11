@@ -1,17 +1,14 @@
 """Credential health monitoring and automatic maintenance."""
 
 import asyncio
-import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, asdict
-from pathlib import Path
 import json
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
 from ..utils.logging_config import get_logger, get_security_logger
-from ..utils.exceptions import SecurityError, ConfigurationError
 from .config_manager import ConfigManager
 from ..gui.credential_validators import CredentialValidator, CredentialHealthMonitor
 
@@ -362,7 +359,6 @@ class CredentialMonitor(QObject):
                 credentials.append(("google", "oauth"))
 
         # Check Gemini
-        ai_config = self.config_manager.get_ai_config()
         if self.config_manager.retrieve_credential("ai", "gemini_api_key"):
             credentials.append(("gemini", "api_key"))
 
@@ -415,73 +411,6 @@ class CredentialMonitor(QObject):
         except Exception as e:
             self.logger.error(f"Failed to get credentials for {service}: {e}")
             return None
-
-    def get_credential_status(
-        self, service: str, credential_type: str
-    ) -> Optional[CredentialStatus]:
-        """Get status for a specific credential."""
-        status_key = f"{service}:{credential_type}"
-        return self.credential_statuses.get(status_key)
-
-    def get_all_statuses(self) -> Dict[str, CredentialStatus]:
-        """Get all credential statuses."""
-        return self.credential_statuses.copy()
-
-    def get_health_summary(self) -> Dict[str, Any]:
-        """Get overall credential health summary."""
-        total_credentials = len(self.credential_statuses)
-        healthy_credentials = sum(
-            1 for status in self.credential_statuses.values() if status.healthy
-        )
-
-        expiring_soon = []
-        failed_credentials = []
-
-        for status_key, status in self.credential_statuses.items():
-            if status.expires_at:
-                days_until_expiry = (status.expires_at - datetime.now()).days
-                if days_until_expiry <= self.monitoring_config.expiration_warning_days:
-                    expiring_soon.append(status_key)
-
-            if not status.healthy:
-                failed_credentials.append(status_key)
-
-        return {
-            "total_credentials": total_credentials,
-            "healthy_credentials": healthy_credentials,
-            "health_percentage": (
-                (healthy_credentials / total_credentials * 100)
-                if total_credentials > 0
-                else 0
-            ),
-            "expiring_soon": expiring_soon,
-            "failed_credentials": failed_credentials,
-            "last_check": max(
-                (status.last_checked for status in self.credential_statuses.values()),
-                default=None,
-            ),
-            "monitoring_active": self.monitoring_active,
-        }
-
-    def force_check(self, service: str, credential_type: str):
-        """Force immediate check of specific credential."""
-        asyncio.create_task(self._check_credential(service, credential_type))
-
-    def force_check_all(self):
-        """Force immediate check of all credentials."""
-        asyncio.create_task(self.check_all_credentials())
-
-    def update_monitoring_config(self, new_config: MonitoringConfig):
-        """Update monitoring configuration."""
-        self.monitoring_config = new_config
-
-        # Restart timer with new interval if monitoring is active
-        if self.monitoring_active:
-            self.monitor_timer.stop()
-            interval_ms = self.monitoring_config.check_interval_minutes * 60 * 1000
-            self.monitor_timer.start(interval_ms)
-
-        self.logger.info(f"Monitoring configuration updated: {new_config}")
 
     def _load_status_from_disk(self):
         """Load credential status from disk."""

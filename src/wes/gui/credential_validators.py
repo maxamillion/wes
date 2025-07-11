@@ -5,7 +5,6 @@ import re
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 import requests
-from requests.auth import HTTPBasicAuth
 
 import google.generativeai as genai
 from google.oauth2.credentials import Credentials
@@ -380,92 +379,6 @@ class CredentialValidator:
             return "Network error. Please check your internet connection."
         else:
             return f"Gemini API error: {error}"
-
-
-class ServiceDiscovery:
-    """Discover and auto-configure service connections."""
-
-    def __init__(self):
-        self.logger = get_logger(__name__)
-
-    def discover_jira_url(self, company_name: str) -> List[str]:
-        """Discover possible Jira URLs for a company."""
-        possible_urls = []
-
-        if company_name:
-            # Clean company name
-            clean_name = re.sub(r"[^a-zA-Z0-9]", "", company_name.lower())
-
-            # Common Jira Cloud patterns
-            patterns = [
-                f"https://{clean_name}.atlassian.net",
-                f"https://{company_name.lower()}.atlassian.net",
-                f"https://{company_name.replace(' ', '')}.atlassian.net",
-                f"https://{company_name.replace(' ', '-')}.atlassian.net",
-            ]
-
-            for url in patterns:
-                if self._test_jira_url_accessibility(url):
-                    possible_urls.append(url)
-
-        return possible_urls
-
-    def _test_jira_url_accessibility(self, url: str) -> bool:
-        """Test if a Jira URL is accessible."""
-        try:
-            response = requests.get(f"{url}/status", timeout=5)
-            return response.status_code == 200
-        except Exception:
-            return False
-
-    def suggest_oauth_scopes(
-        self, service: str, use_case: str = "executive_summary"
-    ) -> List[str]:
-        """Suggest appropriate OAuth scopes for a service."""
-        scope_suggestions = {
-            "google": {
-                "executive_summary": [
-                    "https://www.googleapis.com/auth/documents",
-                    "https://www.googleapis.com/auth/drive.file",
-                ],
-                "full_access": [
-                    "https://www.googleapis.com/auth/documents",
-                    "https://www.googleapis.com/auth/drive",
-                    "https://www.googleapis.com/auth/spreadsheets",
-                ],
-            }
-        }
-
-        return scope_suggestions.get(service, {}).get(use_case, [])
-
-    def detect_existing_credentials(self) -> Dict[str, bool]:
-        """Detect if there are existing credentials in common locations."""
-        detected = {
-            "google_application_credentials": False,
-            "jira_config": False,
-            "browser_saved_passwords": False,
-        }
-
-        # Check for Google Application Credentials
-        import os
-
-        if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-            detected["google_application_credentials"] = True
-
-        # Check for common Jira config files
-        from pathlib import Path
-
-        jira_config_paths = [
-            Path.home() / ".jira" / "config",
-            Path.home() / ".config" / "jira" / "config.json",
-        ]
-
-        for path in jira_config_paths:
-            if path.exists():
-                detected["jira_config"] = True
-                break
-
-        return detected
 
 
 class CredentialHealthMonitor:

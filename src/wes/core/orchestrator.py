@@ -1,14 +1,14 @@
 """Workflow orchestrator for executive summary generation."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
 from enum import Enum
 
 from ..integrations.jira_client import JiraClient, JiraActivitySummary
 from ..integrations.gemini_client import GeminiClient, SummaryFormatter
-from ..integrations.google_docs_client import GoogleDocsClient, DocumentTemplate
+from ..integrations.google_docs_client import GoogleDocsClient
 from ..core.config_manager import ConfigManager
 from ..utils.exceptions import (
     WesError,

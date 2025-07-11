@@ -4,7 +4,6 @@ import json
 import secrets
 import threading
 import time
-import urllib.parse
 from typing import Dict, Optional
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -465,7 +464,7 @@ class OAuthManager:
         return None
 
     def handle_callback(
-        self, provider: str, callback_data: Dict[str, str]
+        self, provider: str, _callback_data: Dict[str, str]
     ) -> tuple[bool, str, Optional[Dict]]:
         """Handle OAuth callback."""
         handler = self.handlers.get(provider)

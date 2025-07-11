@@ -26,8 +26,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QScrollArea,
-    QSpacerItem,
-    QSizePolicy,
 )
 from PySide6.QtCore import Qt, QThread, QTimer, Signal, QObject
 from PySide6.QtGui import QFont, QPixmap, QIcon

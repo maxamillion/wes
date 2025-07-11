@@ -1,17 +1,15 @@
 """Configuration management with secure storage and validation."""
 
 import json
-import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from ..utils.exceptions import ConfigurationError, ValidationError
+from ..utils.exceptions import ConfigurationError
 from ..utils.validators import InputValidator
 from ..utils.logging_config import get_logger
 from .security_manager import SecurityManager
-from .config_templates import TemplateManager, SmartDefaults
 
 
 @dataclass
@@ -106,10 +104,6 @@ class ConfigManager:
 
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.config_file = self.config_dir / "config.json"
-
-        # Initialize template manager and smart defaults
-        self.template_manager = TemplateManager()
-        self.smart_defaults = SmartDefaults()
 
         # Initialize configuration
         self._config = Configuration()
@@ -236,14 +230,6 @@ class ConfigManager:
         """Get AI configuration."""
         return self._config.ai
 
-    def get_app_config(self) -> AppConfig:
-        """Get application configuration."""
-        return self._config.app
-
-    def get_security_config(self) -> SecurityConfig:
-        """Get security configuration."""
-        return self._config.security
-
     def update_jira_config(self, **kwargs) -> None:
         """Update Jira configuration."""
         try:
@@ -361,55 +347,6 @@ class ConfigManager:
             self.logger.error(f"Configuration validation failed: {e}")
             return False
 
-    def export_configuration(
-        self, file_path: Path, include_secrets: bool = False
-    ) -> None:
-        """Export configuration to file."""
-        try:
-            config_dict = asdict(self._config)
-
-            if not include_secrets:
-                config_dict = self._sanitize_config_for_storage(config_dict)
-
-            with open(file_path, "w") as f:
-                json.dump(config_dict, f, indent=2)
-
-            self.logger.info(f"Configuration exported to {file_path}")
-
-        except Exception as e:
-            self.logger.error(f"Failed to export configuration: {e}")
-            raise ConfigurationError(f"Failed to export configuration: {e}")
-
-    def import_configuration(self, file_path: Path) -> None:
-        """Import configuration from file."""
-        try:
-            with open(file_path, "r") as f:
-                config_data = json.load(f)
-
-            # Validate configuration
-            InputValidator.validate_config_dict(config_data)
-
-            # Update configuration
-            self._update_config_from_dict(config_data)
-            self._save_configuration()
-
-            self.logger.info(f"Configuration imported from {file_path}")
-
-        except Exception as e:
-            self.logger.error(f"Failed to import configuration: {e}")
-            raise ConfigurationError(f"Failed to import configuration: {e}")
-
-    def reset_configuration(self) -> None:
-        """Reset configuration to defaults."""
-        try:
-            self._config = Configuration()
-            self._save_configuration()
-            self.logger.info("Configuration reset to defaults")
-
-        except Exception as e:
-            self.logger.error(f"Failed to reset configuration: {e}")
-            raise ConfigurationError(f"Failed to reset configuration: {e}")
-
     def is_configured(self) -> bool:
         """Check if application is properly configured."""
         try:
@@ -425,225 +362,3 @@ class ConfigManager:
 
         except Exception:
             return False
-
-    def setup_with_wizard_data(self, wizard_data: Dict[str, Any]) -> None:
-        """Setup configuration using data from setup wizard."""
-        try:
-            services = wizard_data.get("services", {})
-
-            # Apply Jira configuration
-            if services.get("jira", {}).get("enabled", False):
-                jira_data = services["jira"]
-                self.update_jira_config(
-                    url=jira_data.get("url", ""),
-                    username=jira_data.get("username", ""),
-                    default_project=jira_data.get("default_project", ""),
-                    default_query=jira_data.get("default_query", ""),
-                    rate_limit=jira_data.get("rate_limit", 100),
-                    timeout=jira_data.get("timeout", 30),
-                )
-
-                # Store API token securely
-                if jira_data.get("api_token"):
-                    self.store_credential("jira", "api_token", jira_data["api_token"])
-
-            # Apply Google configuration
-            if services.get("google", {}).get("enabled", False):
-                google_data = services["google"]
-                self.update_google_config(
-                    oauth_client_id=google_data.get("client_id", ""),
-                    docs_folder_id=google_data.get("docs_folder_id", ""),
-                    rate_limit=google_data.get("rate_limit", 100),
-                    timeout=google_data.get("timeout", 60),
-                )
-
-                # Store OAuth credentials securely
-                if google_data.get("client_secret"):
-                    self.store_credential(
-                        "google", "oauth_client_secret", google_data["client_secret"]
-                    )
-                if google_data.get("refresh_token"):
-                    self.store_credential(
-                        "google", "oauth_refresh_token", google_data["refresh_token"]
-                    )
-                if google_data.get("access_token"):
-                    self.store_credential(
-                        "google", "oauth_access_token", google_data["access_token"]
-                    )
-
-            # Apply AI configuration
-            if services.get("gemini", {}).get("enabled", False):
-                gemini_data = services["gemini"]
-                self.update_ai_config(
-                    model_name=gemini_data.get("model_name", "gemini-2.5-pro"),
-                    temperature=gemini_data.get("temperature", 0.7),
-                    max_tokens=gemini_data.get("max_tokens", 2048),
-                    rate_limit=gemini_data.get("rate_limit", 60),
-                    timeout=gemini_data.get("timeout", 120),
-                    custom_prompt=gemini_data.get("custom_prompt", ""),
-                )
-
-                # Store API key securely
-                if gemini_data.get("api_key"):
-                    self.store_credential(
-                        "ai", "gemini_api_key", gemini_data["api_key"]
-                    )
-
-            self.logger.info("Configuration setup completed via wizard")
-
-        except Exception as e:
-            self.logger.error(f"Failed to setup configuration from wizard: {e}")
-            raise ConfigurationError(f"Failed to setup configuration from wizard: {e}")
-
-    def apply_template(self, service: str, template_inputs: Dict[str, Any]) -> None:
-        """Apply configuration template for a service."""
-        try:
-            template = self.template_manager.get_template(service)
-            if not template:
-                raise ConfigurationError(f"No template found for service: {service}")
-
-            # Generate configuration from template
-            template_config = template.generate_config(template_inputs)
-
-            # Apply configuration based on service
-            if service == "jira":
-                self.update_jira_config(**template_config)
-            elif service == "google":
-                self.update_google_config(**template_config)
-            elif service == "ai":
-                self.update_ai_config(**template_config)
-
-            self.logger.info(f"Applied template configuration for {service}")
-
-        except Exception as e:
-            self.logger.error(f"Failed to apply template for {service}: {e}")
-            raise ConfigurationError(f"Failed to apply template for {service}: {e}")
-
-    def get_smart_defaults(
-        self, service: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Get smart defaults for a service based on context."""
-        try:
-            if service == "jira":
-                use_case = context.get("use_case", "executive_summary")
-                project_key = context.get("project_key", "PROJ")
-
-                return {
-                    "default_query": self.smart_defaults.get_jira_query_suggestions(
-                        project_key, use_case
-                    )[0],
-                    "rate_limit": self.smart_defaults.get_rate_limit_recommendations(
-                        service, context.get("usage_pattern", "moderate")
-                    ),
-                    "timeout": self.smart_defaults.suggest_optimal_timeouts(
-                        service, context.get("data_volume", "medium")
-                    ),
-                }
-
-            elif service == "google":
-                usage_pattern = context.get("usage_pattern", "moderate")
-                data_volume = context.get("data_volume", "medium")
-
-                return {
-                    "rate_limit": self.smart_defaults.get_rate_limit_recommendations(
-                        service, usage_pattern
-                    ),
-                    "timeout": self.smart_defaults.suggest_optimal_timeouts(
-                        service, data_volume
-                    ),
-                }
-
-            elif service == "gemini":
-                usage_pattern = context.get("usage_pattern", "moderate")
-                data_volume = context.get("data_volume", "medium")
-
-                return {
-                    "rate_limit": self.smart_defaults.get_rate_limit_recommendations(
-                        service, usage_pattern
-                    ),
-                    "timeout": self.smart_defaults.suggest_optimal_timeouts(
-                        service, data_volume
-                    ),
-                    "temperature": 0.3,  # Good default for executive summaries
-                    "max_tokens": 2048,  # Reasonable default
-                }
-
-            return {}
-
-        except Exception as e:
-            self.logger.error(f"Failed to get smart defaults for {service}: {e}")
-            return {}
-
-    def get_setup_suggestions(
-        self, organization_info: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Get setup suggestions based on organization information."""
-        if organization_info:
-            return self.template_manager.suggest_defaults_for_organization(
-                organization_info
-            )
-
-        # Default suggestions
-        return {
-            "security_level": "standard",
-            "rate_limits": {"jira": 100, "google": 100, "ai": 60},
-            "complexity": "standard",
-        }
-
-    def validate_wizard_setup(self) -> Dict[str, Any]:
-        """Validate setup completed via wizard."""
-        validation_result = {
-            "complete": False,
-            "services_configured": {},
-            "missing_services": [],
-            "issues": [],
-        }
-
-        try:
-            # Check Jira setup
-            jira_config = self.get_jira_config()
-            jira_token = self.retrieve_credential("jira", "api_token")
-            jira_complete = bool(
-                jira_config.url and jira_config.username and jira_token
-            )
-
-            validation_result["services_configured"]["jira"] = jira_complete
-            if not jira_complete:
-                validation_result["missing_services"].append("jira")
-
-            # Check Google setup
-            google_config = self.get_google_config()
-            google_secret = self.retrieve_credential("google", "oauth_client_secret")
-            google_refresh = self.retrieve_credential("google", "oauth_refresh_token")
-            google_complete = bool(
-                google_config.oauth_client_id and google_secret and google_refresh
-            )
-
-            validation_result["services_configured"]["google"] = google_complete
-            if not google_complete:
-                validation_result["missing_services"].append("google")
-
-            # Check Gemini setup
-            gemini_key = self.retrieve_credential("ai", "gemini_api_key")
-            gemini_complete = bool(gemini_key)
-
-            validation_result["services_configured"]["gemini"] = gemini_complete
-            if not gemini_complete:
-                validation_result["missing_services"].append("gemini")
-
-            # Overall completeness
-            validation_result["complete"] = (
-                jira_complete and gemini_complete
-            )  # Google is optional
-
-            # Check for common issues
-            if not validation_result["complete"]:
-                validation_result["issues"].append(
-                    "Essential services (Jira, Gemini) are not fully configured"
-                )
-
-            return validation_result
-
-        except Exception as e:
-            validation_result["issues"].append(f"Validation failed: {e}")
-            return validation_result

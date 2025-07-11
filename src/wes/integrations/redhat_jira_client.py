@@ -4,14 +4,10 @@ import asyncio
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
-from urllib.parse import urljoin
 import json
-import ssl
 import warnings
 
-import aiohttp
 import requests
-from requests.auth import HTTPBasicAuth
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 

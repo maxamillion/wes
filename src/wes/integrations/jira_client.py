@@ -4,10 +4,8 @@ import asyncio
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
-from urllib.parse import urljoin
 import json
 
-import aiohttp
 import requests
 from jira import JIRA, JIRAError
 

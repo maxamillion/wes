@@ -9,7 +9,6 @@ import json
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -601,69 +600,3 @@ class GoogleDocsClient:
 
         except Exception as e:
             self.logger.error(f"Error closing Google Docs client: {e}")
-
-
-class DocumentTemplate:
-    """Template for creating structured executive summary documents."""
-
-    EXECUTIVE_SUMMARY_TEMPLATE = """
-    # Executive Summary
-    
-    **Report Period:** {report_period}
-    **Generated:** {generated_date}
-    **Prepared for:** {recipient}
-    
-    ## Key Highlights
-    
-    {key_highlights}
-    
-    ## Team Performance
-    
-    {team_performance}
-    
-    ## Progress Updates
-    
-    {progress_updates}
-    
-    ## Risks and Blockers
-    
-    {risks_and_blockers}
-    
-    ## Recommendations
-    
-    {recommendations}
-    
-    ## Action Items
-    
-    {action_items}
-    
-    ---
-    
-    *This report was generated automatically by the Executive Summary Tool.*
-    *For questions or additional information, please contact the project team.*
-    """
-
-    @classmethod
-    def format_summary(cls, summary_data: Dict[str, Any]) -> str:
-        """Format summary data using template."""
-        return cls.EXECUTIVE_SUMMARY_TEMPLATE.format(
-            report_period=summary_data.get("report_period", "N/A"),
-            generated_date=time.strftime("%B %d, %Y"),
-            recipient=summary_data.get("recipient", "Executive Team"),
-            key_highlights=summary_data.get(
-                "key_highlights", "No highlights available"
-            ),
-            team_performance=summary_data.get(
-                "team_performance", "No performance data available"
-            ),
-            progress_updates=summary_data.get(
-                "progress_updates", "No progress updates available"
-            ),
-            risks_and_blockers=summary_data.get(
-                "risks_and_blockers", "No risks identified"
-            ),
-            recommendations=summary_data.get(
-                "recommendations", "No recommendations available"
-            ),
-            action_items=summary_data.get("action_items", "No action items identified"),
-        )
