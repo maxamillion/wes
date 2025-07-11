@@ -96,7 +96,7 @@ class ConfigDialog(QDialog):
         connection_layout = QFormLayout(connection_group)
 
         self.jira_url_edit = QLineEdit()
-        self.jira_url_edit.setPlaceholderText("https://your-company.atlassian.net")
+        self.jira_url_edit.setPlaceholderText("https://issues.redhat.com")
         self.jira_url_edit.textChanged.connect(self._on_jira_url_changed)
         connection_layout.addRow("Jira URL:", self.jira_url_edit)
 

@@ -242,7 +242,7 @@ class JiraSetupPage(WizardPage):
         url_layout = QFormLayout(url_group)
 
         self.url_edit = QLineEdit()
-        self.url_edit.setPlaceholderText("https://your-company.atlassian.net")
+        self.url_edit.setPlaceholderText("https://issues.redhat.com")
         self.url_edit.textChanged.connect(self.on_url_changed)
         url_layout.addRow("Jira URL:", self.url_edit)
 

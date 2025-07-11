@@ -174,7 +174,7 @@ class MainWindow(QMainWindow):
         jira_layout = QFormLayout(jira_group)
 
         self.jira_url_edit = QLineEdit()
-        self.jira_url_edit.setPlaceholderText("https://your-company.atlassian.net")
+        self.jira_url_edit.setPlaceholderText("https://issues.redhat.com")
         jira_layout.addRow("Jira URL:", self.jira_url_edit)
 
         self.jira_username_edit = QLineEdit()
