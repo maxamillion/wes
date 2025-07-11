@@ -18,7 +18,7 @@ from .config_templates import TemplateManager, SmartDefaults
 class JiraConfig:
     """Jira configuration settings."""
 
-    url: str = ""
+    url: str = "https://issues.redhat.com"
     username: str = ""
     api_token: str = ""
     default_project: str = ""

@@ -242,6 +242,7 @@ class JiraSetupPage(WizardPage):
         url_layout = QFormLayout(url_group)
 
         self.url_edit = QLineEdit()
+        self.url_edit.setText("https://issues.redhat.com")  # Set as default value
         self.url_edit.setPlaceholderText("https://issues.redhat.com")
         self.url_edit.textChanged.connect(self.on_url_changed)
         url_layout.addRow("Jira URL:", self.url_edit)
@@ -285,6 +286,9 @@ class JiraSetupPage(WizardPage):
         test_layout.addWidget(self.test_result, 1)
 
         self.content_layout.addLayout(test_layout)
+
+        # Trigger URL validation for default value
+        self.on_url_changed(self.url_edit.text())
 
     def on_url_changed(self, text: str):
         """Handle URL change to validate format and update username guidance."""
