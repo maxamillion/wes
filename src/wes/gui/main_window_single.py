@@ -128,6 +128,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         # Initialize state
         self.current_view = ViewState.WELCOME
+        self.previous_view = ViewState.WELCOME  # Track previous view for navigation
         self.setup_completed = False
         self.current_activity_data = []
         self.current_summary = None
@@ -1128,6 +1129,10 @@ class SingleWindowMainWindow(QMainWindow):
 
     def switch_view(self, view_state: ViewState):
         """Switch to a different view."""
+        # Don't track progress view as previous view
+        if self.current_view != ViewState.PROGRESS:
+            self.previous_view = self.current_view
+
         self.current_view = view_state
 
         # Update navigation buttons
@@ -1636,7 +1641,8 @@ class SingleWindowMainWindow(QMainWindow):
     def hide_progress_message(self):
         """Hide progress and return to previous view."""
         if self.current_view == ViewState.PROGRESS:
-            self.switch_view(ViewState.MAIN)
+            # Return to the previous view instead of always going to MAIN
+            self.switch_view(self.previous_view)
 
     def update_progress(self, value: int, message: str = ""):
         """Update progress bar and message."""

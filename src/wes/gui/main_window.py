@@ -481,7 +481,12 @@ class MainWindow(QMainWindow):
 
     def show_setup_wizard(self):
         """Show the setup wizard for new users."""
+        # Create and configure the wizard
         wizard = SetupWizard(self.config_manager, self)
+        wizard.setModal(True)  # Ensure it's modal
+        wizard.setAttribute(Qt.WA_DeleteOnClose, False)  # Prevent premature deletion
+
+        # Show the wizard and get result
         result = wizard.exec()
 
         if result == SetupWizard.Accepted:

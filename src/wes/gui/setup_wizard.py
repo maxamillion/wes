@@ -402,10 +402,17 @@ class JiraSetupPage(WizardPage):
         self.thread.started.connect(self.worker.validate)
         self.thread.start()
 
+        # Ensure the dialog stays visible
+        if self.window():
+            self.window().show()
+            self.window().raise_()
+            self.window().activateWindow()
+
     def on_validation_complete(self, service: str, success: bool, message: str):
         """Handle validation completion."""
         self.test_btn.setEnabled(True)
         self.thread.quit()
+        self.thread.wait()  # Wait for thread to finish
 
         if success:
             self.test_result.setText("✅ Connection successful!")
@@ -413,6 +420,13 @@ class JiraSetupPage(WizardPage):
         else:
             self.test_result.setText(f"❌ {message}")
             self.test_result.setStyleSheet("color: red;")
+
+        # Ensure dialog remains visible and focused
+        wizard = self.window()
+        if wizard and isinstance(wizard, SetupWizard):
+            wizard.show()
+            wizard.raise_()
+            wizard.activateWindow()
 
     def validate_page(self) -> tuple[bool, str]:
         """Validate the Jira configuration."""
@@ -560,6 +574,12 @@ class GoogleSetupPage(WizardPage):
 
         self.oauth_handler.start_flow()
 
+        # Ensure the dialog stays visible during OAuth flow
+        if self.window():
+            self.window().show()
+            self.window().raise_()
+            self.window().activateWindow()
+
     def on_oauth_complete(self, credentials: Dict[str, str]):
         """Handle OAuth completion."""
         self.credentials = credentials
@@ -568,11 +588,25 @@ class GoogleSetupPage(WizardPage):
         self.oauth_status.setText("✅ Successfully connected to Google account!")
         self.oauth_status.setStyleSheet("color: green;")
 
+        # Ensure dialog remains visible and focused after OAuth
+        wizard = self.window()
+        if wizard and isinstance(wizard, SetupWizard):
+            wizard.show()
+            wizard.raise_()
+            wizard.activateWindow()
+
     def on_oauth_error(self, error: str):
         """Handle OAuth error."""
         self.oauth_btn.setEnabled(True)
         self.oauth_status.setText(f"❌ Authentication failed: {error}")
         self.oauth_status.setStyleSheet("color: red;")
+
+        # Ensure dialog remains visible and focused after OAuth error
+        wizard = self.window()
+        if wizard and isinstance(wizard, SetupWizard):
+            wizard.show()
+            wizard.raise_()
+            wizard.activateWindow()
 
     def show_oauth_config_dialog(self):
         """Show dialog to configure OAuth client credentials."""
@@ -898,10 +932,17 @@ class GeminiSetupPage(WizardPage):
         self.thread.started.connect(self.worker.validate)
         self.thread.start()
 
+        # Ensure the dialog stays visible
+        if self.window():
+            self.window().show()
+            self.window().raise_()
+            self.window().activateWindow()
+
     def on_validation_complete(self, service: str, success: bool, message: str):
         """Handle validation completion."""
         self.test_btn.setEnabled(True)
         self.thread.quit()
+        self.thread.wait()  # Wait for thread to finish
 
         if success:
             self.test_result.setText("✅ API key is valid!")
@@ -909,6 +950,13 @@ class GeminiSetupPage(WizardPage):
         else:
             self.test_result.setText(f"❌ {message}")
             self.test_result.setStyleSheet("color: red;")
+
+        # Ensure dialog remains visible and focused
+        wizard = self.window()
+        if wizard and isinstance(wizard, SetupWizard):
+            wizard.show()
+            wizard.raise_()
+            wizard.activateWindow()
 
     def validate_page(self) -> tuple[bool, str]:
         """Validate Gemini setup."""
@@ -1022,6 +1070,9 @@ class SetupWizard(QDialog):
         self.setWindowTitle("Executive Summary Tool - Setup Wizard")
         self.setGeometry(200, 200, 800, 600)
         self.setModal(True)
+
+        # Prevent dialog from closing unintentionally
+        self.setAttribute(Qt.WA_DeleteOnClose, False)
 
     def setup_ui(self):
         """Setup the wizard UI."""
@@ -1198,3 +1249,13 @@ class SetupWizard(QDialog):
             self.progress_bar.setVisible(False)
             self.logger.error(f"Setup failed: {e}")
             QMessageBox.critical(self, "Setup Error", f"Failed to complete setup: {e}")
+
+    def closeEvent(self, event):
+        """Handle close event to prevent accidental closing."""
+        # If we're in the middle of validation, don't close
+        if hasattr(self, "thread") and self.thread and self.thread.isRunning():
+            event.ignore()
+            return
+
+        # Otherwise, let the default close behavior happen
+        super().closeEvent(event)
