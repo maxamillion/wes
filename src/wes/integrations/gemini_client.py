@@ -137,10 +137,21 @@ class GeminiClient:
                 "What is 2 + 2? Please respond with just the number."
             )
 
-            # Check if response has text or if it was blocked
-            if hasattr(response, "text") and response.text:
-                self.logger.info("Gemini connection test successful")
-                return
+            # Try to access response.text, but catch the specific error
+            try:
+                if response.text:
+                    self.logger.info("Gemini connection test successful")
+                    return
+            except Exception as text_error:
+                # Check if this is the expected error for filtered content
+                if "finish_reason" in str(text_error):
+                    # This means the API is working but content was filtered
+                    self.logger.info(
+                        "Gemini connection test successful (content filtered)"
+                    )
+                    return
+                # For other exceptions, check response structure
+                pass
 
             # Check if response was blocked by safety filters
             if hasattr(response, "candidates") and response.candidates:
@@ -165,7 +176,14 @@ class GeminiClient:
 
             raise Exception("No response from Gemini API")
 
+        except AuthenticationError:
+            # Re-raise authentication errors
+            raise
         except Exception as e:
+            # Check if this is the specific text accessor error
+            if "response.text" in str(e) and "finish_reason" in str(e):
+                self.logger.info("Gemini connection test successful (content filtered)")
+                return
             raise AuthenticationError(f"Gemini connection test failed: {e}")
 
     async def generate_summary(

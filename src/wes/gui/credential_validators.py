@@ -209,29 +209,41 @@ class CredentialValidator:
                 ),
             )
 
-            # Check various response scenarios
-            if hasattr(response, "text") and response.text:
-                # Normal successful response
-                pass
-            elif hasattr(response, "candidates") and response.candidates:
-                # Check if blocked by safety filters
-                candidate = response.candidates[0]
-                if hasattr(candidate, "finish_reason"):
-                    if candidate.finish_reason in [2, 3]:  # SAFETY or RECITATION
-                        # This is still a valid connection, just filtered content
-                        self.logger.info(
-                            "Gemini API key valid (test response filtered)"
-                        )
+            # Try to access response.text safely
+            try:
+                if response.text:
+                    # Normal successful response
+                    pass
+            except Exception as text_error:
+                # Check if this is the expected error for filtered content
+                if "response.text" in str(text_error) and "finish_reason" in str(
+                    text_error
+                ):
+                    # This means the API is working but content was filtered
+                    self.logger.info("Gemini API key valid (test response filtered)")
+                else:
+                    # Check response structure for more details
+                    if hasattr(response, "candidates") and response.candidates:
+                        candidate = response.candidates[0]
+                        if hasattr(candidate, "finish_reason"):
+                            if candidate.finish_reason in [
+                                2,
+                                3,
+                            ]:  # SAFETY or RECITATION
+                                # This is still a valid connection, just filtered content
+                                self.logger.info(
+                                    "Gemini API key valid (test response filtered)"
+                                )
+                            else:
+                                return (
+                                    False,
+                                    f"API response blocked: finish_reason={candidate.finish_reason}",
+                                )
+                    elif response:
+                        # We got a response object, so connection is valid
+                        self.logger.info("Gemini API key valid (empty test response)")
                     else:
-                        return (
-                            False,
-                            f"API response blocked: finish_reason={candidate.finish_reason}",
-                        )
-            elif response:
-                # We got a response object, so connection is valid
-                self.logger.info("Gemini API key valid (empty test response)")
-            else:
-                return False, "No response from Gemini API"
+                        return False, "No response from Gemini API"
 
             # Get model info for validation
             models = list(genai.list_models())
