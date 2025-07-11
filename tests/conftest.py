@@ -81,7 +81,7 @@ def sample_ai_config():
     """Sample AI configuration data."""
     return {
         "gemini_api_key": "AIza_test_key_12345",
-        "model_name": "gemini-1.5-flash",
+        "model_name": "gemini-2.0-flash-exp",
         "temperature": 0.7,
         "max_tokens": 2048,
         "rate_limit": 60,
@@ -191,7 +191,7 @@ The team has been actively working on critical infrastructure issues and documen
 ## Recommendations
 - Prioritize resolution of authentication bug
 - Continue maintaining up-to-date documentation""",
-        "model": "gemini-1.5-flash",
+        "model": "gemini-2.0-flash-exp",
         "usage": {
             "prompt_token_count": 150,
             "candidates_token_count": 200,
@@ -241,7 +241,7 @@ def mock_gemini_client():
     mock_client = Mock()
     mock_client.generate_summary.return_value = {
         "content": "Test executive summary",
-        "model": "gemini-1.5-flash",
+        "model": "gemini-2.0-flash-exp",
     }
     mock_client.validate_api_key.return_value = True
     mock_client.close.return_value = None

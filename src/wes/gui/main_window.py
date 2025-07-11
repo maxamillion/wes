@@ -259,9 +259,7 @@ class MainWindow(QMainWindow):
         ai_layout = QFormLayout(ai_group)
 
         self.ai_model_combo = QComboBox()
-        self.ai_model_combo.addItems(
-            ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
-        )
+        self.ai_model_combo.addItems(["gemini-2.0-flash-exp"])
         ai_layout.addRow("Model:", self.ai_model_combo)
 
         self.temperature_spin = QSpinBox()
@@ -666,7 +664,7 @@ class MainWindow(QMainWindow):
             # For now, show a placeholder
             self.current_summary = {
                 "content": "This is a demo executive summary based on the fetched Jira data.",
-                "model": "gemini-1.5-flash",
+                "model": "gemini-2.0-flash-exp",
                 "generated_at": datetime.now().isoformat(),
             }
 
