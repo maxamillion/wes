@@ -992,7 +992,7 @@ class SummaryPage(WizardPage):
             elif service_id == "google_drive":
                 detail_label = QLabel("OAuth authentication configured")
             elif service_id == "gemini" and service_id in service_data:
-                model = service_data[service_id].get("model_name", "gemini-pro")
+                model = service_data[service_id].get("model_name", "gemini-2.5-pro")
                 detail_label = QLabel(f"Using model: {model}")
             else:
                 detail_label = QLabel("Configured successfully")

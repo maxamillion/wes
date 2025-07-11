@@ -475,7 +475,7 @@ class ConfigManager:
             if services.get("gemini", {}).get("enabled", False):
                 gemini_data = services["gemini"]
                 self.update_ai_config(
-                    model_name=gemini_data.get("model_name", "gemini-pro"),
+                    model_name=gemini_data.get("model_name", "gemini-2.5-pro"),
                     temperature=gemini_data.get("temperature", 0.7),
                     max_tokens=gemini_data.get("max_tokens", 2048),
                     rate_limit=gemini_data.get("rate_limit", 60),

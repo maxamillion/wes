@@ -132,11 +132,38 @@ class GeminiClient:
     def _test_connection(self) -> None:
         """Test Gemini connection with a simple request."""
         try:
-            response = self.model.generate_content("Hello, this is a test.")
-            if not response.text:
-                raise Exception("No response from Gemini API")
+            # Use a simple math question to avoid content filters
+            response = self.model.generate_content(
+                "What is 2 + 2? Please respond with just the number."
+            )
 
-            self.logger.info("Gemini connection test successful")
+            # Check if response has text or if it was blocked
+            if hasattr(response, "text") and response.text:
+                self.logger.info("Gemini connection test successful")
+                return
+
+            # Check if response was blocked by safety filters
+            if hasattr(response, "candidates") and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, "finish_reason"):
+                    # Finish reason 2 = SAFETY, 3 = RECITATION, etc.
+                    if candidate.finish_reason in [2, 3]:
+                        # This is actually a successful connection, just blocked content
+                        self.logger.info(
+                            "Gemini connection test successful (content filtered)"
+                        )
+                        return
+                    else:
+                        raise Exception(
+                            f"Response blocked with finish_reason: {candidate.finish_reason}"
+                        )
+
+            # If we have a response object but no text, connection is still valid
+            if response:
+                self.logger.info("Gemini connection test successful (empty response)")
+                return
+
+            raise Exception("No response from Gemini API")
 
         except Exception as e:
             raise AuthenticationError(f"Gemini connection test failed: {e}")

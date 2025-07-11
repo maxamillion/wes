@@ -201,15 +201,36 @@ class CredentialValidator:
             genai.configure(api_key=api_key)
 
             # Test with a simple request
-            model = genai.GenerativeModel("gemini-pro")
+            model = genai.GenerativeModel("gemini-2.5-flash")
             response = model.generate_content(
-                "Hello, this is a test.",
+                "What is 2 + 2? Please respond with just the number.",
                 generation_config=genai.types.GenerationConfig(
                     max_output_tokens=10, temperature=0.1
                 ),
             )
 
-            if not response.text:
+            # Check various response scenarios
+            if hasattr(response, "text") and response.text:
+                # Normal successful response
+                pass
+            elif hasattr(response, "candidates") and response.candidates:
+                # Check if blocked by safety filters
+                candidate = response.candidates[0]
+                if hasattr(candidate, "finish_reason"):
+                    if candidate.finish_reason in [2, 3]:  # SAFETY or RECITATION
+                        # This is still a valid connection, just filtered content
+                        self.logger.info(
+                            "Gemini API key valid (test response filtered)"
+                        )
+                    else:
+                        return (
+                            False,
+                            f"API response blocked: finish_reason={candidate.finish_reason}",
+                        )
+            elif response:
+                # We got a response object, so connection is valid
+                self.logger.info("Gemini API key valid (empty test response)")
+            else:
                 return False, "No response from Gemini API"
 
             # Get model info for validation
