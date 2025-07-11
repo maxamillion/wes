@@ -197,9 +197,9 @@ class AIConfigTemplate(ConfigTemplate):
 
         # Model selection based on requirements
         models = {
-            "basic": "gemini-pro",
-            "advanced": "gemini-pro",  # Could be gemini-ultra when available
-            "vision": "gemini-pro-vision",
+            "basic": "gemini-1.5-flash",
+            "advanced": "gemini-1.5-pro",
+            "vision": "gemini-1.5-pro",  # 1.5 models support vision natively
         }
 
         # Temperature settings for different styles
@@ -227,7 +227,7 @@ class AIConfigTemplate(ConfigTemplate):
         }
 
         config = {
-            "model_name": models.get("basic", "gemini-pro"),
+            "model_name": models.get("basic", "gemini-1.5-flash"),
             "temperature": temperatures.get(summary_style, 0.3),
             "max_tokens": token_limits.get(detail_level, 2048),
             "rate_limit": 60,  # Standard rate limit
