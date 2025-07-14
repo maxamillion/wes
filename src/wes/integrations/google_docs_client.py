@@ -134,19 +134,59 @@ class GoogleDocsClient:
     def _get_oauth_credentials(self) -> Credentials:
         """Get OAuth 2.0 credentials."""
         try:
-            # Create credentials from stored token
-            credentials = Credentials(
-                token=self.oauth_credentials.get("access_token"),
-                refresh_token=self.oauth_credentials.get("refresh_token"),
-                token_uri=self.oauth_credentials.get("token_uri"),
-                client_id=self.oauth_credentials.get("client_id"),
-                client_secret=self.oauth_credentials.get("client_secret"),
-                scopes=self.SCOPES,
-            )
+            # Handle simplified OAuth (proxy-managed credentials)
+            client_id = self.oauth_credentials.get("client_id", "")
+            client_secret = self.oauth_credentials.get("client_secret", "")
 
-            # Refresh if needed
-            if credentials.expired and credentials.refresh_token:
-                credentials.refresh(Request())
+            # If using proxy-managed auth, we don't need client credentials for refresh
+            if client_id == "proxy-managed":
+                # Use simplified credentials object
+                credentials = Credentials(
+                    token=self.oauth_credentials.get("access_token"),
+                    refresh_token=self.oauth_credentials.get("refresh_token"),
+                    token_uri=self.oauth_credentials.get(
+                        "token_uri", "https://oauth2.googleapis.com/token"
+                    ),
+                    scopes=self.SCOPES,
+                )
+
+                # For proxy-managed auth, we need to refresh through the proxy
+                if credentials.expired and credentials.refresh_token:
+                    # Try to refresh using the simplified handler
+                    try:
+                        from ..gui.simplified_oauth_handler import (
+                            SimplifiedGoogleOAuthHandler,
+                        )
+
+                        handler = SimplifiedGoogleOAuthHandler()
+                        refreshed = handler.refresh_credentials(self.oauth_credentials)
+                        if refreshed:
+                            self.oauth_credentials.update(refreshed)
+                            credentials = Credentials(
+                                token=refreshed.get("access_token"),
+                                refresh_token=refreshed.get("refresh_token"),
+                                token_uri=refreshed.get(
+                                    "token_uri", "https://oauth2.googleapis.com/token"
+                                ),
+                                scopes=self.SCOPES,
+                            )
+                    except:
+                        # If proxy refresh fails, try standard refresh
+                        pass
+            else:
+                # Standard OAuth flow with client credentials
+                credentials = Credentials(
+                    token=self.oauth_credentials.get("access_token"),
+                    refresh_token=self.oauth_credentials.get("refresh_token"),
+                    token_uri=self.oauth_credentials.get("token_uri"),
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    scopes=self.SCOPES,
+                )
+
+                # Refresh if needed
+                if credentials.expired and credentials.refresh_token:
+                    credentials.refresh(Request())
 
             return credentials
 

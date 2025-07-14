@@ -203,46 +203,102 @@ class GoogleConfigPage(ConfigPageBase):
         """Handle OAuth authentication button click."""
         # Check if we have the OAuth handler available
         try:
-            from wes.gui.oauth_handler import GoogleOAuthHandler
+            # Try simplified OAuth first
+            from wes.gui.simplified_oauth_handler import SimplifiedGoogleOAuthHandler
 
-            # Create OAuth handler
-            oauth_handler = GoogleOAuthHandler(self.config_manager)
+            # Create simplified OAuth handler
+            oauth_handler = SimplifiedGoogleOAuthHandler(self.config_manager)
             oauth_handler.auth_complete.connect(self._on_oauth_complete)
             oauth_handler.auth_error.connect(self._on_oauth_failed)
+
+            # Update button to show loading state
+            self.oauth_button.setText("Connecting...")
+            self.oauth_button.setEnabled(False)
+            self.oauth_status.setText("Opening browser...")
+            self.oauth_status.setStyleSheet("color: #666;")
 
             # Start OAuth flow
             oauth_handler.start_flow()
 
         except ImportError:
-            QMessageBox.warning(
-                self,
-                "OAuth Not Available",
-                "OAuth authentication requires additional setup. "
-                "Please use Service Account authentication instead.",
+            # Fallback to manual OAuth if simplified not available
+            try:
+                from wes.gui.oauth_handler import GoogleOAuthHandler
+
+                # Create OAuth handler
+                oauth_handler = GoogleOAuthHandler(self.config_manager)
+                oauth_handler.auth_complete.connect(self._on_oauth_complete)
+                oauth_handler.auth_error.connect(self._on_oauth_failed)
+
+                # Start OAuth flow
+                oauth_handler.start_flow()
+
+            except ImportError:
+                QMessageBox.warning(
+                    self,
+                    "OAuth Not Available",
+                    "OAuth authentication requires additional setup. "
+                    "Please use Service Account authentication instead.",
+                )
+
+    def _on_oauth_complete(self, cred_data: dict):
+        """Handle successful OAuth authentication."""
+        # Store the credentials in config manager
+        if self.config_manager:
+            # Store tokens securely
+            self.config_manager.store_credential(
+                "google", "oauth_access_token", cred_data.get("access_token", "")
+            )
+            self.config_manager.store_credential(
+                "google", "oauth_refresh_token", cred_data.get("refresh_token", "")
             )
 
-    def _on_oauth_complete(self, credentials_path: str, user_email: str):
-        """Handle successful OAuth authentication."""
-        # Store the credentials path in config
-        self.oauth_credentials_path = credentials_path
+            # Store non-sensitive OAuth info
+            google_config = self.config_manager.get_google_config()
+            self.config_manager.update_google_config(
+                oauth_client_id=cred_data.get("client_id", "proxy-managed"),
+                oauth_token_uri=cred_data.get(
+                    "token_uri", "https://oauth2.googleapis.com/token"
+                ),
+            )
+
+        # Test credentials to get user email
+        user_email = "Google Account"
+        try:
+            from wes.gui.simplified_oauth_handler import SimplifiedGoogleOAuthHandler
+
+            handler = SimplifiedGoogleOAuthHandler()
+            success, message = handler.test_credentials(cred_data)
+            if success and "connected as" in message:
+                user_email = message.split("connected as ")[-1]
+        except:
+            pass
 
         # Update UI
         self.oauth_status.setText("✓ Authenticated")
         self.oauth_status.setStyleSheet("color: green;")
-        self.oauth_indicator.set_valid(f"Authenticated as {user_email}")
+        self.oauth_indicator.set_valid(f"Connected successfully")
 
         self.oauth_email_label.setText(f"Logged in as: {user_email}")
         self.oauth_email_label.show()
 
         self.oauth_button.setText("Re-authenticate")
+        self.oauth_button.setEnabled(True)
+
+        # Mark that we have OAuth configured
+        self.oauth_configured = True
 
         self.mark_dirty()
 
     def _on_oauth_failed(self, error: str):
         """Handle failed OAuth authentication."""
-        self.oauth_status.setText("✗ Authentication failed")
-        self.oauth_status.setStyleSheet("color: red;")
+        self.oauth_status.setText("Not authenticated")
+        self.oauth_status.setStyleSheet("color: #666;")
         self.oauth_indicator.set_invalid(error)
+
+        # Re-enable button
+        self.oauth_button.setText("Authenticate with Google")
+        self.oauth_button.setEnabled(True)
 
         QMessageBox.warning(
             self,
@@ -313,10 +369,17 @@ class GoogleConfigPage(ConfigPageBase):
             self.service_account_group.hide()
 
         # Load OAuth config
-        if "credentials_path" in google_config and google_config["credentials_path"]:
-            self.oauth_credentials_path = google_config["credentials_path"]
-            # Check if credentials exist
-            if os.path.exists(self.oauth_credentials_path):
+        # Check if we have OAuth tokens stored
+        if self.config_manager:
+            access_token = self.config_manager.retrieve_credential(
+                "google", "oauth_access_token"
+            )
+            refresh_token = self.config_manager.retrieve_credential(
+                "google", "oauth_refresh_token"
+            )
+
+            if access_token and refresh_token:
+                self.oauth_configured = True
                 self.oauth_status.setText("✓ Authenticated")
                 self.oauth_status.setStyleSheet("color: green;")
                 self.oauth_indicator.set_valid("Previously authenticated")
@@ -356,8 +419,8 @@ class GoogleConfigPage(ConfigPageBase):
 
         # Add auth-specific config
         if self.oauth_radio.isChecked():
-            if hasattr(self, "oauth_credentials_path"):
-                config["google"]["credentials_path"] = self.oauth_credentials_path
+            if hasattr(self, "oauth_configured") and self.oauth_configured:
+                config["google"]["oauth_configured"] = True
 
             # Extract email from label if available
             email_text = self.oauth_email_label.text()
@@ -381,7 +444,9 @@ class GoogleConfigPage(ConfigPageBase):
 
         if config["auth_method"] == "oauth":
             # Check if authenticated
-            if not config.get("credentials_path"):
+            if not config.get("oauth_configured") and not (
+                hasattr(self, "oauth_configured") and self.oauth_configured
+            ):
                 return ValidationResult(
                     is_valid=False,
                     message="Google OAuth authentication required",

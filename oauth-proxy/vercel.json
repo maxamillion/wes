@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
+  ],
+  "env": {
+    "GOOGLE_OAUTH_CLIENT_ID": "@google-oauth-client-id",
+    "GOOGLE_OAUTH_CLIENT_SECRET": "@google-oauth-client-secret",
+    "REDIS_URL": "@redis-url"
+  },
+  "functions": {
+    "main.py": {
+      "maxDuration": 30
+    }
+  }
+}

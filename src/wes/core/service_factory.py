@@ -163,11 +163,28 @@ class ServiceFactory:
         """Get OAuth credentials for Google services."""
         google_config = self.config_manager.get_google_config()
 
-        client_secret = self.config_manager.retrieve_credential(
-            "google", "oauth_client_secret"
+        # Check for simplified OAuth tokens first
+        access_token = self.config_manager.retrieve_credential(
+            "google", "oauth_access_token"
         )
         refresh_token = self.config_manager.retrieve_credential(
             "google", "oauth_refresh_token"
+        )
+
+        if access_token and refresh_token:
+            # Using simplified OAuth (proxy-managed)
+            return {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "client_id": google_config.oauth_client_id or "proxy-managed",
+                "client_secret": "proxy-managed",
+                "token_uri": google_config.oauth_token_uri
+                or "https://oauth2.googleapis.com/token",
+            }
+
+        # Fallback to manual OAuth configuration
+        client_secret = self.config_manager.retrieve_credential(
+            "google", "oauth_client_secret"
         )
 
         if not client_secret or not refresh_token:
