@@ -379,7 +379,16 @@ class UnifiedConfigDialog(QDialog):
     def _on_config_updated(self, service: str, config: Dict[str, Any]):
         """Handle configuration update from guided view."""
         self.dirty = True
-        self.config_manager.update_service_config(service, config)
+        
+        # Call the appropriate service-specific update method
+        if service == "jira":
+            self.config_manager.update_jira_config(**config)
+        elif service == "google":
+            self.config_manager.update_google_config(**config)
+        elif service == "gemini" or service == "ai":
+            self.config_manager.update_ai_config(**config)
+        else:
+            raise ValueError(f"Unknown service type: {service}")
 
     def _on_config_changed(self):
         """Handle configuration change in direct mode."""

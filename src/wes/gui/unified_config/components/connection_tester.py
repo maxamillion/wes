@@ -103,9 +103,26 @@ class ConnectionTestWorker(QThread):
 
     def _validate_credentials(self) -> tuple[bool, str]:
         """Validate service credentials."""
-        # Call the actual validator
-        result = self.validator.validate_credentials(self.service_type, self.config)
-        return result[0], result[1]
+        # Call the appropriate service-specific validator
+        try:
+            if self.service_type == "jira":
+                result = self.validator.validate_jira_credentials(
+                    self.config.get("url", ""),
+                    self.config.get("username", ""),
+                    self.config.get("api_token", ""),
+                )
+            elif self.service_type == "google":
+                result = self.validator.validate_google_credentials(self.config)
+            elif self.service_type == "gemini":
+                result = self.validator.validate_gemini_credentials(
+                    self.config.get("api_key", "")
+                )
+            else:
+                return False, f"Unknown service type: {self.service_type}"
+
+            return result[0], result[1]
+        except Exception as e:
+            return False, f"Credential validation failed: {str(e)}"
 
     def _check_permissions(self) -> tuple[bool, str]:
         """Check user permissions."""

@@ -223,7 +223,22 @@ class ConfigManager:
         """Get current configuration as dictionary for compatibility."""
         from dataclasses import asdict
 
-        config_dict = asdict(self._config)
+        # Get configurations with loaded credentials
+        jira_config = self.get_jira_config()
+        google_config = self.get_google_config()
+        ai_config = self.get_ai_config()
+
+        # Create config dict with loaded credentials
+        config_dict = {
+            "jira": asdict(jira_config),
+            "google": asdict(google_config),
+            "ai": asdict(ai_config),
+            "app": asdict(self._config.app),
+            "security": asdict(self._config.security),
+            "version": self._config.version,
+            "created_at": self._config.created_at,
+            "updated_at": self._config.updated_at,
+        }
 
         # Map 'ai' section to 'gemini' for unified config compatibility
         if "ai" in config_dict:
@@ -236,16 +251,82 @@ class ConfigManager:
         return config_dict
 
     def get_jira_config(self) -> JiraConfig:
-        """Get Jira configuration."""
-        return self._config.jira
+        """Get Jira configuration with sensitive data loaded."""
+        config = self._config.jira
+
+        # Load API token from secure storage if not already loaded
+        if not config.api_token:
+            stored_token = self.retrieve_credential("jira", "api_token")
+            if stored_token:
+                # Create a copy with the loaded token
+                config = JiraConfig(
+                    url=config.url,
+                    username=config.username,
+                    api_token=stored_token,
+                    default_project=config.default_project,
+                    default_users=config.default_users,
+                    default_query=config.default_query,
+                    rate_limit=config.rate_limit,
+                    timeout=config.timeout,
+                )
+
+        return config
 
     def get_google_config(self) -> GoogleConfig:
-        """Get Google configuration."""
-        return self._config.google
+        """Get Google configuration with sensitive data loaded."""
+        config = self._config.google
+
+        # Load sensitive data from secure storage if not already loaded
+        if not config.oauth_client_secret:
+            stored_secret = self.retrieve_credential("google", "oauth_client_secret")
+            if stored_secret:
+                config = GoogleConfig(
+                    service_account_path=config.service_account_path,
+                    oauth_client_id=config.oauth_client_id,
+                    oauth_client_secret=stored_secret,
+                    oauth_refresh_token=config.oauth_refresh_token
+                    or self.retrieve_credential("google", "oauth_refresh_token")
+                    or "",
+                    docs_folder_id=config.docs_folder_id,
+                    rate_limit=config.rate_limit,
+                    timeout=config.timeout,
+                )
+        elif not config.oauth_refresh_token:
+            stored_refresh_token = self.retrieve_credential(
+                "google", "oauth_refresh_token"
+            )
+            if stored_refresh_token:
+                config = GoogleConfig(
+                    service_account_path=config.service_account_path,
+                    oauth_client_id=config.oauth_client_id,
+                    oauth_client_secret=config.oauth_client_secret,
+                    oauth_refresh_token=stored_refresh_token,
+                    docs_folder_id=config.docs_folder_id,
+                    rate_limit=config.rate_limit,
+                    timeout=config.timeout,
+                )
+
+        return config
 
     def get_ai_config(self) -> AIConfig:
-        """Get AI configuration."""
-        return self._config.ai
+        """Get AI configuration with sensitive data loaded."""
+        config = self._config.ai
+
+        # Load API key from secure storage if not already loaded
+        if not config.gemini_api_key:
+            stored_key = self.retrieve_credential("ai", "gemini_api_key")
+            if stored_key:
+                config = AIConfig(
+                    gemini_api_key=stored_key,
+                    model_name=config.model_name,
+                    temperature=config.temperature,
+                    max_tokens=config.max_tokens,
+                    rate_limit=config.rate_limit,
+                    timeout=config.timeout,
+                    custom_prompt=config.custom_prompt,
+                )
+
+        return config
 
     def update_jira_config(self, **kwargs) -> None:
         """Update Jira configuration."""

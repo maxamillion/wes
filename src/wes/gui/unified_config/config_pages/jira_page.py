@@ -63,12 +63,12 @@ class JiraConfigPage(ConfigPageBase):
         # Help link for API token
         help_layout = QHBoxLayout()
         help_layout.addStretch()
-        help_link = QLabel(
+        self.help_link = QLabel(
             '<a href="https://id.atlassian.com/manage-profile/security/api-tokens">How to get an API token?</a>'
         )
-        help_link.setOpenExternalLinks(True)
-        help_link.setStyleSheet("color: #0084ff;")
-        help_layout.addWidget(help_link)
+        self.help_link.setOpenExternalLinks(True)
+        self.help_link.setStyleSheet("color: #0084ff;")
+        help_layout.addWidget(self.help_link)
         basic_layout.addRow("", help_layout)
 
         # Connection test area
@@ -126,15 +126,23 @@ class JiraConfigPage(ConfigPageBase):
         """Handle Jira type change."""
         # Update UI based on type
         if jira_type == JiraType.REDHAT:
-            self.api_token_input.setEnabled(False)
+            self.api_token_input.setEnabled(True)
             self.api_token_input.line_edit.setPlaceholderText(
-                "Not required for Red Hat Jira"
+                "Your Red Hat Personal Access Token"
             )
             self.username_input.line_edit.setPlaceholderText("Your Red Hat username")
+            # Update help link for Red Hat Jira
+            self.help_link.setText(
+                '<a href="https://issues.redhat.com">Log in to Red Hat Jira → Profile → Personal Access Tokens</a>'
+            )
         else:
             self.api_token_input.setEnabled(True)
             self.api_token_input.line_edit.setPlaceholderText("Your API token")
             self.username_input.line_edit.setPlaceholderText("user@company.com")
+            # Update help link for standard Jira
+            self.help_link.setText(
+                '<a href="https://id.atlassian.com/manage-profile/security/api-tokens">How to get an API token?</a>'
+            )
 
         # Clear connection status
         self.connection_status_label.clear()
@@ -200,11 +208,14 @@ class JiraConfigPage(ConfigPageBase):
                 details={"field": "username"},
             )
 
-        # API token required for non-Red Hat instances
-        if jira_type != JiraType.REDHAT and not config["api_token"]:
+        # API token required for all Jira instances
+        if not config["api_token"]:
+            token_name = (
+                "Personal Access Token" if jira_type == JiraType.REDHAT else "API Token"
+            )
             return ValidationResult(
                 is_valid=False,
-                message="API Token is required",
+                message=f"{token_name} is required",
                 service=self.service_type,
                 details={"field": "api_token"},
             )
@@ -287,14 +298,21 @@ class JiraConfigPage(ConfigPageBase):
 
     def _validate_api_token(self, token: str) -> tuple[bool, str]:
         """Validate API token."""
-        # Skip validation for Red Hat Jira
-        if self.service_selector.get_service_type() == JiraType.REDHAT:
-            return True, "Not required for Red Hat Jira"
+        jira_type = self.service_selector.get_service_type()
 
         if not token:
-            return False, "API token is required"
+            if jira_type == JiraType.REDHAT:
+                return False, "Personal Access Token is required"
+            else:
+                return False, "API token is required"
 
         if len(token) < 20:
-            return False, "Token appears too short"
+            token_name = (
+                "Personal Access Token" if jira_type == JiraType.REDHAT else "API token"
+            )
+            return False, f"{token_name} appears too short"
 
-        return True, "Token format valid"
+        if jira_type == JiraType.REDHAT:
+            return True, "Personal Access Token format valid"
+        else:
+            return True, "API token format valid"

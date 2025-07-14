@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDateEdit,
+    QDialog,
     QFormLayout,
     QFrame,
     QGroupBox,
@@ -1162,8 +1163,6 @@ class SingleWindowMainWindow(QMainWindow):
 
     def show_unified_settings(self):
         """Show the unified settings dialog."""
-        from PySide6.QtWidgets import QDialog
-
         dialog = UnifiedConfigDialog(self.config_manager, self)
 
         # Connect to handle configuration updates

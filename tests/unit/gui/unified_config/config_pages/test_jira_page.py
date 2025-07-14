@@ -143,15 +143,21 @@ class TestJiraConfigPage:
         assert result["is_valid"] is False
         assert "email" in result["message"].lower()
 
-    def test_validate_redhat_no_token_required(self, page):
-        """Test that Red Hat Jira doesn't require API token."""
+    def test_validate_redhat_token_required(self, page):
+        """Test that Red Hat Jira requires Personal Access Token."""
         page.service_selector.set_service_type(JiraType.REDHAT)
         page.url_input.setText("https://issues.redhat.com")
         page.username_input.setText("redhatuser")
-        # No API token
+        # No API token should fail validation
 
         result = page.validate()
 
+        assert result["is_valid"] is False
+        assert "Personal Access Token" in result["message"]
+
+        # Now add the token and it should pass
+        page.api_token_input.setText("test-personal-access-token-123456789")
+        result = page.validate()
         assert result["is_valid"] is True
 
     def test_service_type_change_updates_ui(self, page):
@@ -160,8 +166,10 @@ class TestJiraConfigPage:
         page.service_selector.set_service_type(JiraType.REDHAT)
         page._on_service_type_changed(JiraType.REDHAT)
 
-        assert not page.api_token_input.isEnabled()
-        assert "Not required" in page.api_token_input.line_edit.placeholderText()
+        assert page.api_token_input.isEnabled()
+        assert (
+            "Personal Access Token" in page.api_token_input.line_edit.placeholderText()
+        )
 
         # Select Cloud
         page.service_selector.set_service_type(JiraType.CLOUD)

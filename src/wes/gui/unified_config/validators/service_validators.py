@@ -19,11 +19,8 @@ class JiraValidator(BaseValidator):
         # Get Jira type
         jira_type = JiraType(config.get("type", "cloud"))
 
-        # Define required fields based on type
-        if jira_type == JiraType.REDHAT:
-            required_fields = ["url", "username"]
-        else:
-            required_fields = ["url", "username", "api_token"]
+        # Define required fields (all Jira types require API tokens)
+        required_fields = ["url", "username", "api_token"]
 
         # Check required fields
         result = self.check_required_fields(config, required_fields)
@@ -74,7 +71,9 @@ class JiraValidator(BaseValidator):
                     from wes.integrations.redhat_jira_client import RedHatJiraClient
 
                     client = RedHatJiraClient(
-                        server_url=config["url"], username=config["username"]
+                        url=config["url"],
+                        username=config["username"],
+                        api_token=config["api_token"],
                     )
                 except ImportError:
                     return False, "Red Hat Jira support not installed"
