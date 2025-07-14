@@ -3,13 +3,13 @@
 import base64
 import os
 import secrets
-from typing import Dict, Optional, Any
 from pathlib import Path
+from typing import Any, Dict, Optional
 
+import keyring
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import keyring
 
 from ..utils.exceptions import SecurityError
 from ..utils.logging_config import get_security_logger

@@ -1,18 +1,19 @@
 """Integration tests for Red Hat Jira functionality."""
 
-import pytest
 import os
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
 
-from src.wes.integrations.redhat_jira_client import (
-    RedHatJiraClient,
-    is_redhat_jira,
-    get_redhat_jira_client,
-    RHJIRA_AVAILABLE,
-)
+import pytest
+
 from src.wes.gui.credential_validators import CredentialValidator
 from src.wes.gui.setup_wizard import JiraSetupPage
+from src.wes.integrations.redhat_jira_client import (
+    RHJIRA_AVAILABLE,
+    RedHatJiraClient,
+    get_redhat_jira_client,
+    is_redhat_jira,
+)
 from src.wes.utils.exceptions import JiraIntegrationError
 
 

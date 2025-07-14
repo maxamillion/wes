@@ -4,14 +4,14 @@ import json
 import secrets
 import threading
 import time
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, Optional
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
-from PySide6.QtCore import QObject, Signal, QTimer
-from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from PySide6.QtCore import QObject, QTimer, Signal
 
 from ..utils.logging_config import get_logger, get_security_logger
 

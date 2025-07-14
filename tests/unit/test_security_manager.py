@@ -1,8 +1,9 @@
 """Unit tests for SecurityManager."""
 
-import pytest
-from unittest.mock import Mock, patch, mock_open
 from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
+
+import pytest
 
 from src.wes.core.security_manager import SecurityManager
 from src.wes.utils.exceptions import SecurityError

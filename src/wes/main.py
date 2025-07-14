@@ -1,26 +1,26 @@
 """Main application entry point for Wes."""
 
-import sys
-import os
 import argparse
 import asyncio
+import os
+import sys
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QDir, qInstallMessageHandler, QtMsgType
+from PySide6.QtCore import QDir, QtMsgType, qInstallMessageHandler
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 try:
-    from .gui.main_window_single import SingleWindowMainWindow as MainWindow
     from .core.config_manager import ConfigManager
-    from .utils.logging_config import setup_logging, get_logger
+    from .gui.main_window_single import SingleWindowMainWindow as MainWindow
     from .utils.exceptions import WesError
+    from .utils.logging_config import get_logger, setup_logging
 except ImportError:
-    from wes.gui.main_window_single import SingleWindowMainWindow as MainWindow
     from wes.core.config_manager import ConfigManager
-    from wes.utils.logging_config import setup_logging, get_logger
+    from wes.gui.main_window_single import SingleWindowMainWindow as MainWindow
     from wes.utils.exceptions import WesError
+    from wes.utils.logging_config import get_logger, setup_logging
 
 
 def qt_message_handler(mode: QtMsgType, context, message: str):

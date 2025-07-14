@@ -1,15 +1,15 @@
 """Factory for creating integration service clients."""
 
-from typing import Dict, Any, Optional, Protocol, Type
-from abc import ABC, abstractmethod
 import asyncio
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, Protocol, Type
 
-from ..integrations.jira_client import JiraClient
-from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
+from ..core.config_manager import ConfigManager
+from ..integrations.base_client import BaseIntegrationClient
 from ..integrations.gemini_client import GeminiClient
 from ..integrations.google_docs_client import GoogleDocsClient
-from ..integrations.base_client import BaseIntegrationClient
-from ..core.config_manager import ConfigManager
+from ..integrations.jira_client import JiraClient
+from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
 from ..utils.exceptions import ConfigurationError
 from ..utils.logging_config import get_logger
 

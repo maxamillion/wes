@@ -1,14 +1,15 @@
 """Performance monitoring and optimization for the application."""
 
-import time
 import asyncio
-import psutil
 import functools
-from typing import Dict, Any, Optional, Callable, List
+import threading
+import time
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from collections import deque, defaultdict
-import threading
+from typing import Any, Callable, Dict, List, Optional
+
+import psutil
 
 from ..utils.logging_config import get_logger
 

@@ -3,39 +3,39 @@
 import asyncio
 import json
 import threading
-from typing import Dict, List, Optional, Any, Callable
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
+from PySide6.QtGui import QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QStackedWidget,
-    QWidget,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QTextEdit,
-    QProgressBar,
-    QFrame,
-    QGroupBox,
-    QFormLayout,
     QCheckBox,
     QComboBox,
+    QDialog,
     QFileDialog,
+    QFormLayout,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
     QMessageBox,
+    QProgressBar,
+    QPushButton,
     QScrollArea,
+    QStackedWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QThread, QTimer, Signal, QObject
-from PySide6.QtGui import QFont, QPixmap, QIcon
 
 from ..core.config_manager import ConfigManager
-from ..utils.logging_config import get_logger
+from ..integrations.redhat_jira_client import is_redhat_jira
 from ..utils.exceptions import ConfigurationError
+from ..utils.logging_config import get_logger
 from .credential_validators import CredentialValidator
 from .oauth_handler import GoogleOAuthHandler
-from ..integrations.redhat_jira_client import is_redhat_jira
 
 
 class ValidationWorker(QObject):

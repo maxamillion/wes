@@ -1,17 +1,18 @@
 """Progress dialog for long-running operations."""
 
-from typing import Optional, Callable
+from typing import Callable, Optional
+
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
     QHBoxLayout,
     QLabel,
     QProgressBar,
     QPushButton,
     QTextEdit,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QFont
 
 
 class ProgressDialog(QDialog):

@@ -1,24 +1,24 @@
 """Google Docs integration client for creating and managing executive summary documents."""
 
 import asyncio
-import time
-from typing import Dict, List, Optional, Any
-from pathlib import Path
 import json
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from google.oauth2 import service_account
 from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from ..utils.exceptions import (
-    GoogleDocsIntegrationError,
     AuthenticationError,
+    GoogleDocsIntegrationError,
     RateLimitError,
 )
-from ..utils.validators import InputValidator
 from ..utils.logging_config import get_logger, get_security_logger
+from ..utils.validators import InputValidator
 
 
 class GoogleDocsClient:

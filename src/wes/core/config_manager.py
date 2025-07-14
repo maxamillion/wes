@@ -1,14 +1,14 @@
 """Configuration management with secure storage and validation."""
 
 import json
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
-from dataclasses import dataclass, asdict, field
-from datetime import datetime
 
 from ..utils.exceptions import ConfigurationError
-from ..utils.validators import InputValidator
 from ..utils.logging_config import get_logger
+from ..utils.validators import InputValidator
 from .security_manager import SecurityManager
 
 
@@ -217,6 +217,23 @@ class ConfigManager:
     def get_config(self) -> Configuration:
         """Get current configuration."""
         return self._config
+
+    @property
+    def config(self) -> Dict[str, Any]:
+        """Get current configuration as dictionary for compatibility."""
+        from dataclasses import asdict
+
+        config_dict = asdict(self._config)
+
+        # Map 'ai' section to 'gemini' for unified config compatibility
+        if "ai" in config_dict:
+            gemini_config = config_dict["ai"].copy()
+            # Map field names for compatibility
+            if "gemini_api_key" in gemini_config:
+                gemini_config["api_key"] = gemini_config["gemini_api_key"]
+            config_dict["gemini"] = gemini_config
+
+        return config_dict
 
     def get_jira_config(self) -> JiraConfig:
         """Get Jira configuration."""

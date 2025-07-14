@@ -1,16 +1,15 @@
 """Credential health monitoring and automatic maintenance."""
 
-import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, asdict
 import json
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
+from ..gui.credential_validators import CredentialHealthMonitor, CredentialValidator
 from ..utils.logging_config import get_logger, get_security_logger
 from .config_manager import ConfigManager
-from ..gui.credential_validators import CredentialValidator, CredentialHealthMonitor
 
 
 @dataclass
@@ -72,7 +71,7 @@ class CredentialMonitor(QObject):
 
         # Setup monitoring timer
         self.monitor_timer = QTimer()
-        self.monitor_timer.timeout.connect(self.check_all_credentials)
+        self.monitor_timer.timeout.connect(self._on_timer_check)
 
         # Load existing status
         self._load_status_from_disk()
@@ -96,7 +95,7 @@ class CredentialMonitor(QObject):
         self.monitor_timer.start(interval_ms)
 
         # Perform initial check
-        asyncio.create_task(self.check_all_credentials())
+        self.check_all_credentials()
 
         self.logger.info(
             f"Credential monitoring started (interval: {self.monitoring_config.check_interval_minutes}m)"
@@ -121,11 +120,18 @@ class CredentialMonitor(QObject):
 
         self.logger.info("Credential monitoring stopped")
 
+    def _on_timer_check(self):
+        """Handle QTimer timeout for credential checks."""
+        try:
+            self.check_all_credentials()
+        except Exception as e:
+            self.logger.error(f"Error during scheduled credential check: {e}")
+
         self.security_logger.log_security_event(
             "credential_monitoring_stopped", severity="INFO"
         )
 
-    async def check_all_credentials(self):
+    def check_all_credentials(self):
         """Check all configured credentials."""
         if not self.monitoring_active:
             return
@@ -134,14 +140,14 @@ class CredentialMonitor(QObject):
 
         for service, cred_type in credentials_to_check:
             try:
-                await self._check_credential(service, cred_type)
+                self._check_credential(service, cred_type)
             except Exception as e:
                 self.logger.error(f"Error checking {service}:{cred_type}: {e}")
 
         # Save status after checks
         self._save_status_to_disk()
 
-    async def _check_credential(self, service: str, credential_type: str):
+    def _check_credential(self, service: str, credential_type: str):
         """Check a specific credential."""
         status_key = f"{service}:{credential_type}"
 
@@ -172,7 +178,7 @@ class CredentialMonitor(QObject):
                 raise Exception("No credentials found")
 
             # Perform health check
-            health_result = await self._perform_health_check(service, credentials)
+            health_result = self._perform_health_check(service, credentials)
 
             # Update status
             status.last_checked = datetime.now()
@@ -199,7 +205,7 @@ class CredentialMonitor(QObject):
 
                     # Attempt auto-refresh if enabled
                     if status.auto_refresh_enabled and days_until_expiry <= 1:
-                        await self._attempt_auto_refresh(service, credential_type)
+                        self._attempt_auto_refresh(service, credential_type)
 
             # Emit status change signal if health changed
             if previous_health != status.healthy:
@@ -235,7 +241,7 @@ class CredentialMonitor(QObject):
                     service, credential_type, status.healthy
                 )
 
-    async def _perform_health_check(
+    def _perform_health_check(
         self, service: str, credentials: Dict[str, str]
     ) -> Dict[str, Any]:
         """Perform health check for specific service."""
@@ -279,11 +285,11 @@ class CredentialMonitor(QObject):
         except Exception as e:
             return {"healthy": False, "error": f"Health check failed: {e}"}
 
-    async def _attempt_auto_refresh(self, service: str, credential_type: str):
+    def _attempt_auto_refresh(self, service: str, credential_type: str):
         """Attempt to automatically refresh credentials."""
         if service in self.refresh_handlers:
             try:
-                success = await self.refresh_handlers[service](credential_type)
+                success = self.refresh_handlers[service](credential_type)
                 if success:
                     self.credentials_refreshed.emit(service, credential_type)
 
@@ -295,14 +301,14 @@ class CredentialMonitor(QObject):
                     )
 
                     # Re-check after refresh
-                    await self._check_credential(service, credential_type)
+                    self._check_credential(service, credential_type)
 
             except Exception as e:
                 self.logger.error(
                     f"Auto-refresh failed for {service}:{credential_type}: {e}"
                 )
 
-    async def _refresh_google_credentials(self, credential_type: str) -> bool:
+    def _refresh_google_credentials(self, credential_type: str) -> bool:
         """Refresh Google OAuth credentials."""
         try:
             from ..gui.oauth_handler import GoogleOAuthHandler
@@ -330,13 +336,13 @@ class CredentialMonitor(QObject):
             self.logger.error(f"Failed to refresh Google credentials: {e}")
             return False
 
-    async def _refresh_jira_credentials(self, credential_type: str) -> bool:
+    def _refresh_jira_credentials(self, credential_type: str) -> bool:
         """Refresh Jira credentials (typically not auto-refreshable)."""
         # Jira API tokens don't auto-refresh, but we can validate and suggest renewal
         self.logger.info("Jira API tokens require manual renewal")
         return False
 
-    async def _refresh_gemini_credentials(self, credential_type: str) -> bool:
+    def _refresh_gemini_credentials(self, credential_type: str) -> bool:
         """Refresh Gemini credentials (typically not auto-refreshable)."""
         # Gemini API keys don't auto-refresh
         self.logger.info("Gemini API keys require manual renewal")

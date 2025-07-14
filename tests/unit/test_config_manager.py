@@ -1,18 +1,19 @@
 """Unit tests for the configuration manager."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
 import json
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from src.wes.core.config_manager import (
-    ConfigManager,
-    JiraConfig,
-    GoogleConfig,
     AIConfig,
     AppConfig,
+    ConfigManager,
+    GoogleConfig,
+    JiraConfig,
 )
 from src.wes.utils.exceptions import ConfigurationError
 

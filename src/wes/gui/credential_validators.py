@@ -4,25 +4,24 @@ import asyncio
 import re
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
-import requests
 
 import google.generativeai as genai
-from google.oauth2.credentials import Credentials
+import requests
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
 from jira import JIRA, JIRAError
 
-from ..utils.logging_config import get_logger, get_security_logger
 from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
 from ..utils.exceptions import (
-    ValidationError,
-    JiraIntegrationError,
-    GoogleDocsIntegrationError,
-    GeminiIntegrationError,
     AuthenticationError,
+    GeminiIntegrationError,
+    GoogleDocsIntegrationError,
+    JiraIntegrationError,
+    ValidationError,
 )
+from ..utils.logging_config import get_logger, get_security_logger
 
 
 class CredentialValidator:

@@ -1,11 +1,11 @@
 """Red Hat Jira integration client with enhanced authentication and Red Hat-specific features."""
 
 import asyncio
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
 import json
+import time
 import warnings
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -24,9 +24,9 @@ except ImportError:
     from jira import JIRA, JIRAError
     import jira as rhjira
 
-from ..utils.exceptions import JiraIntegrationError, RateLimitError, AuthenticationError
-from ..utils.validators import InputValidator
+from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
+from ..utils.validators import InputValidator
 
 
 class RedHatJiraClient:

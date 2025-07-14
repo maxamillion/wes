@@ -1,34 +1,34 @@
 """Configuration dialog for the Executive Summary Tool."""
 
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
-from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QTabWidget,
-    QWidget,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QTextEdit,
-    QSpinBox,
-    QCheckBox,
-    QComboBox,
-    QFormLayout,
-    QGroupBox,
-    QFileDialog,
-    QMessageBox,
-    QDialogButtonBox,
-)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..core.config_manager import ConfigManager
-from ..utils.logging_config import get_logger
-from ..utils.exceptions import ConfigurationError
 from ..integrations.redhat_jira_client import is_redhat_jira
+from ..utils.exceptions import ConfigurationError
+from ..utils.logging_config import get_logger
 
 
 class ConfigDialog(QDialog):
@@ -639,8 +639,8 @@ class ConfigDialog(QDialog):
 
             if jira_url and jira_username:
                 try:
-                    from urllib.parse import urlparse
                     import re
+                    from urllib.parse import urlparse
 
                     parsed = urlparse(jira_url.lower())
                     if "atlassian.net" in parsed.netloc:

@@ -1,19 +1,20 @@
 """Unit tests for Red Hat Jira client integration."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
 import asyncio
+from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from src.wes.integrations.redhat_jira_client import (
-    RedHatJiraClient,
-    is_redhat_jira,
-    get_redhat_jira_client,
     RHJIRA_AVAILABLE,
+    RedHatJiraClient,
+    get_redhat_jira_client,
+    is_redhat_jira,
 )
 from src.wes.utils.exceptions import (
-    JiraIntegrationError,
     AuthenticationError,
+    JiraIntegrationError,
     RateLimitError,
 )
 

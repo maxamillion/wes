@@ -3,16 +3,17 @@
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List, Callable
-from datetime import datetime
-import aiohttp
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
+import aiohttp
 
 from ..utils.exceptions import (
-    IntegrationError,
-    RateLimitError,
     AuthenticationError,
     ConnectionError,
+    IntegrationError,
+    RateLimitError,
 )
 from ..utils.logging_config import get_logger, get_security_logger
 

@@ -1,54 +1,57 @@
 """Single-window main application for the Executive Summary Tool."""
 
-import sys
 import asyncio
 import json
-from typing import Optional, Dict, Any, List
+import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QStackedWidget,
-    QLabel,
-    QPushButton,
-    QTextEdit,
-    QLineEdit,
-    QComboBox,
-    QSpinBox,
-    QDateEdit,
-    QCheckBox,
-    QProgressBar,
-    QStatusBar,
-    QMessageBox,
-    QGroupBox,
-    QListWidget,
-    QFrame,
-    QApplication,
-    QFormLayout,
-    QScrollArea,
-    QTabWidget,
-)
 from PySide6.QtCore import (
+    QDate,
     Qt,
     QThread,
-    Signal,
-    QDate,
     QTimer,
+    Signal,
 )
-from PySide6.QtGui import QIcon, QFont, QPixmap, QAction
+from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDateEdit,
+    QFormLayout,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QStackedWidget,
+    QStatusBar,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..core.config_manager import ConfigManager
 from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
-from ..utils.logging_config import get_logger
+from ..integrations.redhat_jira_client import is_redhat_jira
 from ..utils.exceptions import WesError
+from ..utils.logging_config import get_logger
 from .credential_validators import CredentialValidator
 from .oauth_handler import GoogleOAuthHandler
-from ..integrations.redhat_jira_client import is_redhat_jira
+from .unified_config import UnifiedConfigDialog
+from .unified_config.types import ConfigState as UnifiedConfigState
+from .unified_config.utils.config_detector import ConfigDetector
 
 
 class ValidationWorker(QThread):
@@ -92,9 +95,7 @@ class ViewState(Enum):
     """Enumeration of possible view states."""
 
     WELCOME = "welcome"
-    SETUP = "setup"
     MAIN = "main"
-    CONFIG = "config"
     PROGRESS = "progress"
 
 
@@ -106,6 +107,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.logger = get_logger(__name__)
         self.config_manager = ConfigManager()
+        self.config_detector = ConfigDetector()
         self.credential_validator = CredentialValidator()
         self.oauth_handler = GoogleOAuthHandler()
 
@@ -163,9 +165,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         # Create views
         self.create_welcome_view()
-        self.create_setup_view()
         self.create_main_view()
-        self.create_config_view()
         self.create_progress_view()
 
         # Create status bar
@@ -198,20 +198,20 @@ class SingleWindowMainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
+        # Edit menu
+        edit_menu = menubar.addMenu("Edit")
+
+        settings_action = QAction("Settings...", self)
+        settings_action.setShortcut("Ctrl+,")
+        settings_action.triggered.connect(self.show_unified_settings)
+        edit_menu.addAction(settings_action)
+
         # View menu
         view_menu = menubar.addMenu("View")
 
         home_action = QAction("Home", self)
         home_action.triggered.connect(lambda: self.switch_view(ViewState.MAIN))
         view_menu.addAction(home_action)
-
-        setup_action = QAction("Setup", self)
-        setup_action.triggered.connect(lambda: self.switch_view(ViewState.SETUP))
-        view_menu.addAction(setup_action)
-
-        config_action = QAction("Configuration", self)
-        config_action.triggered.connect(lambda: self.switch_view(ViewState.CONFIG))
-        view_menu.addAction(config_action)
 
         # Help menu
         help_menu = menubar.addMenu("Help")
@@ -235,20 +235,16 @@ class SingleWindowMainWindow(QMainWindow):
             lambda: self.switch_view(ViewState.MAIN)
         )
 
-        self.nav_buttons[ViewState.SETUP] = QPushButton("Setup")
-        self.nav_buttons[ViewState.SETUP].clicked.connect(
-            lambda: self.switch_view(ViewState.SETUP)
-        )
-
-        self.nav_buttons[ViewState.CONFIG] = QPushButton("Configuration")
-        self.nav_buttons[ViewState.CONFIG].clicked.connect(
-            lambda: self.switch_view(ViewState.CONFIG)
-        )
+        # Settings button (opens unified config)
+        settings_button = QPushButton("Settings")
+        settings_button.clicked.connect(self.show_unified_settings)
 
         # Add buttons to layout
         for button in self.nav_buttons.values():
             button.setCheckable(True)
             nav_layout.addWidget(button)
+
+        nav_layout.addWidget(settings_button)
 
         nav_layout.addStretch()
 
@@ -1112,13 +1108,24 @@ class SingleWindowMainWindow(QMainWindow):
 
     def check_initial_setup(self):
         """Check if initial setup is required."""
-        if not self.config_manager.is_configured():
+        # Use the new config detector to check state
+        config_state = self.config_detector.detect_state(self.config_manager.config)
+
+        if config_state == UnifiedConfigState.EMPTY:
+            # No configuration at all, show welcome
             self.switch_view(ViewState.WELCOME)
         else:
+            # Has some configuration, go to main view
             self.switch_view(ViewState.MAIN)
             self.nav_bar.setVisible(True)
             self.credential_monitor.start_monitoring()
             self.load_configuration()
+
+            # If configuration is incomplete, show a message
+            if config_state == UnifiedConfigState.INCOMPLETE:
+                self.statusBar().showMessage(
+                    "Configuration incomplete. Click Settings to complete setup.", 5000
+                )
 
     def switch_view(self, view_state: ViewState):
         """Switch to a different view."""
@@ -1135,197 +1142,233 @@ class SingleWindowMainWindow(QMainWindow):
         # Switch stacked widget
         if view_state == ViewState.WELCOME:
             self.stacked_widget.setCurrentIndex(0)
-        elif view_state == ViewState.SETUP:
-            self.stacked_widget.setCurrentIndex(1)
-            self.update_setup_navigation()
         elif view_state == ViewState.MAIN:
-            self.stacked_widget.setCurrentIndex(2)
-        elif view_state == ViewState.CONFIG:
-            self.stacked_widget.setCurrentIndex(3)
-            self.load_config_view()
+            self.stacked_widget.setCurrentIndex(1)
         elif view_state == ViewState.PROGRESS:
-            self.stacked_widget.setCurrentIndex(4)
+            self.stacked_widget.setCurrentIndex(2)
 
     def start_setup(self):
         """Start the setup process."""
-        self.switch_view(ViewState.SETUP)
-        self.nav_bar.setVisible(True)
-        self.setup_stack.setCurrentIndex(0)
-        self.update_setup_navigation()
+        # Open unified settings dialog
+        self.show_unified_settings()
 
     def skip_setup(self):
         """Skip setup and go to main view."""
         self.switch_view(ViewState.MAIN)
         self.nav_bar.setVisible(True)
+        self.statusBar().showMessage(
+            "Setup skipped. You can configure services later in Settings.", 5000
+        )
 
-    def previous_setup_page(self):
-        """Go to previous setup page."""
-        current = self.setup_stack.currentIndex()
-        if current > 0:
-            self.setup_stack.setCurrentIndex(current - 1)
-            self.update_setup_navigation()
+    def show_unified_settings(self):
+        """Show the unified settings dialog."""
+        from PySide6.QtWidgets import QDialog
 
-    def next_setup_page(self):
-        """Go to next setup page."""
-        current = self.setup_stack.currentIndex()
-        if current < self.setup_stack.count() - 1:
-            # Validate current page before proceeding
-            if self.validate_setup_page(current):
-                self.setup_stack.setCurrentIndex(current + 1)
-                self.update_setup_navigation()
+        dialog = UnifiedConfigDialog(self.config_manager, self)
 
-    def validate_setup_page(self, page_index: int) -> bool:
-        """Validate setup page before proceeding."""
-        if page_index == 0:
-            # Service selection - always valid
-            return True
-        elif page_index == 1:
-            # Jira setup
-            if not self.service_checkboxes["jira"].isChecked():
-                return True
-            if not self.jira_url_input.text() or not self.jira_username_input.text():
-                self.show_error("Validation Error", "Please fill in all Jira fields")
-                return False
-            return True
-        elif page_index == 2:
-            # Google setup
-            if not self.service_checkboxes["google"].isChecked():
-                return True
-            return True
-        elif page_index == 3:
-            # Gemini setup
-            if not self.service_checkboxes["gemini"].isChecked():
-                return True
-            if not self.gemini_key_input.text():
-                self.show_error("Validation Error", "Please enter Gemini API key")
-                return False
-            return True
-        return True
+        # Connect to handle configuration updates
+        dialog.configuration_complete.connect(self.on_configuration_updated)
 
-    def update_setup_navigation(self):
-        """Update setup navigation buttons and indicators."""
-        current = self.setup_stack.currentIndex()
-        total = self.setup_stack.count()
+        # Show dialog
+        result = dialog.exec()
 
-        # Update buttons
-        self.prev_btn.setEnabled(current > 0)
-        self.next_btn.setVisible(current < total - 1)
-        self.finish_btn.setVisible(current == total - 1)
+        if result == QDialog.Accepted:
+            # Configuration was saved
+            self.update_config_status()
+            self.statusBar().showMessage("Configuration updated", 3000)
 
-        # Update step indicators
-        for i, (circle, name) in enumerate(self.step_labels):
-            if i < current:
-                circle.setStyleSheet("background-color: #4CAF50; color: white;")
-            elif i == current:
-                circle.setStyleSheet("background-color: #2196F3; color: white;")
-            else:
-                circle.setStyleSheet("background-color: #e0e0e0; color: #666666;")
-
-        # Update summary if on last page
-        if current == total - 1:
-            self.update_setup_summary()
-
-    def update_setup_summary(self):
-        """Update setup summary page."""
-        summary_lines = ["Setup Summary\n" + "=" * 40 + "\n"]
-
-        if self.service_checkboxes["jira"].isChecked():
-            summary_lines.append("Jira Configuration:")
-            summary_lines.append(f"  URL: {self.jira_url_input.text()}")
-            summary_lines.append(f"  Username: {self.jira_username_input.text()}")
-            summary_lines.append("")
-
-        if self.service_checkboxes["google"].isChecked():
-            summary_lines.append("Google Drive Configuration:")
-            summary_lines.append(
-                "  OAuth: Configured"
-                if hasattr(self, "oauth_configured") and self.oauth_configured
-                else "  OAuth: Not configured"
-            )
-            summary_lines.append("")
-
-        if self.service_checkboxes["gemini"].isChecked():
-            summary_lines.append("Google Gemini Configuration:")
-            summary_lines.append(
-                "  API Key: Configured"
-                if self.gemini_key_input.text()
-                else "  API Key: Not configured"
-            )
-            summary_lines.append("")
-
-        self.setup_summary_text.setPlainText("\n".join(summary_lines))
-
-    def finish_setup(self):
-        """Finish setup and save configuration."""
-        try:
-            # Save Jira config
-            if self.service_checkboxes["jira"].isChecked():
-                self.config_manager.update_jira_config(
-                    url=self.jira_url_input.text(),
-                    username=self.jira_username_input.text(),
+            # If we're on welcome screen and config is now complete,
+            # switch to main view
+            if self.current_view == ViewState.WELCOME:
+                config_state = self.config_detector.detect_state(
+                    self.config_manager.config
                 )
-                if self.jira_token_input.text():
-                    self.config_manager.store_credential(
-                        "jira", "api_token", self.jira_token_input.text()
-                    )
+                if config_state == UnifiedConfigState.COMPLETE:
+                    self.switch_view(ViewState.MAIN)
+                    self.nav_bar.setVisible(True)
 
-            # Save Gemini config
-            if self.service_checkboxes["gemini"].isChecked():
-                if self.gemini_key_input.text():
-                    self.config_manager.store_credential(
-                        "gemini", "api_key", self.gemini_key_input.text()
-                    )
+    def on_configuration_updated(self, config: Dict[str, Any]):
+        """Handle configuration updates from the unified dialog."""
+        # Update any UI elements that depend on configuration
+        self.update_config_status()
 
-            self.setup_completed = True
-            self.switch_view(ViewState.MAIN)
-            self.credential_monitor.start_monitoring()
-            self.load_configuration()
-            self.show_info(
-                "Setup Complete", "Your configuration has been saved successfully!"
-            )
+    def update_config_status(self):
+        """Update configuration status display."""
+        # This updates any status indicators in the UI
+        pass
 
-        except Exception as e:
-            self.logger.error(f"Failed to finish setup: {e}")
-            self.show_error("Setup Error", str(e))
+    # OLD SETUP METHODS - Replaced by UnifiedConfigDialog
+    # These methods are kept commented for reference but are no longer used
 
-    def test_credentials(self, service: str):
-        """Test credentials for a service."""
-        self.show_progress_message(f"Testing {service} connection...", "Please wait...")
+    # def previous_setup_page(self):
+    #     """Go to previous setup page."""
+    #     current = self.setup_stack.currentIndex()
+    #     if current > 0:
+    #         self.setup_stack.setCurrentIndex(current - 1)
+    #         self.update_setup_navigation()
+    #
+    # def next_setup_page(self):
+    #     """Go to next setup page."""
+    #     current = self.setup_stack.currentIndex()
+    #     if current < self.setup_stack.count() - 1:
+    #         # Validate current page before proceeding
+    #         if self.validate_setup_page(current):
+    #             self.setup_stack.setCurrentIndex(current + 1)
+    #             self.update_setup_navigation()
+    #
+    # def validate_setup_page(self, page_index: int) -> bool:
+    #     """Validate setup page before proceeding."""
+    #     if page_index == 0:
+    #         # Service selection - always valid
+    #         return True
+    #     elif page_index == 1:
+    #         # Jira setup
+    #         if not self.service_checkboxes["jira"].isChecked():
+    #             return True
+    #         if not self.jira_url_input.text() or not self.jira_username_input.text():
+    #             self.show_error("Validation Error", "Please fill in all Jira fields")
+    #             return False
+    #         return True
+    #     elif page_index == 2:
+    #         # Google setup
+    #         if not self.service_checkboxes["google"].isChecked():
+    #             return True
+    #         return True
+    #     elif page_index == 3:
+    #         # Gemini setup
+    #         if not self.service_checkboxes["gemini"].isChecked():
+    #             return True
+    #         if not self.gemini_key_input.text():
+    #             self.show_error("Validation Error", "Please enter Gemini API key")
+    #             return False
+    #         return True
+    #     return True
+    #
+    # def update_setup_navigation(self):
+    #     """Update setup navigation buttons and indicators."""
+    #     current = self.setup_stack.currentIndex()
+    #     total = self.setup_stack.count()
+    #
+    #     # Update buttons
+    #     self.prev_btn.setEnabled(current > 0)
+    #     self.next_btn.setVisible(current < total - 1)
+    #     self.finish_btn.setVisible(current == total - 1)
+    #
+    #     # Update step indicators
+    #     for i, (circle, name) in enumerate(self.step_labels):
+    #         if i < current:
+    #             circle.setStyleSheet("background-color: #4CAF50; color: white;")
+    #         elif i == current:
+    #             circle.setStyleSheet("background-color: #2196F3; color: white;")
+    #         else:
+    #             circle.setStyleSheet("background-color: #e0e0e0; color: #666666;")
+    #
+    #     # Update summary if on last page
+    #     if current == total - 1:
+    #         self.update_setup_summary()
+    #
+    # def update_setup_summary(self):
+    #     """Update setup summary page."""
+    #     summary_lines = ["Setup Summary\n" + "=" * 40 + "\n"]
+    #
+    #     if self.service_checkboxes["jira"].isChecked():
+    #         summary_lines.append("Jira Configuration:")
+    #         summary_lines.append(f"  URL: {self.jira_url_input.text()}")
+    #         summary_lines.append(f"  Username: {self.jira_username_input.text()}")
+    #         summary_lines.append("")
+    #
+    #     if self.service_checkboxes["google"].isChecked():
+    #         summary_lines.append("Google Drive Configuration:")
+    #         summary_lines.append(
+    #             "  OAuth: Configured"
+    #             if hasattr(self, "oauth_configured") and self.oauth_configured
+    #             else "  OAuth: Not configured"
+    #         )
+    #         summary_lines.append("")
+    #
+    #     if self.service_checkboxes["gemini"].isChecked():
+    #         summary_lines.append("Google Gemini Configuration:")
+    #         summary_lines.append(
+    #             "  API Key: Configured"
+    #             if self.gemini_key_input.text()
+    #             else "  API Key: Not configured"
+    #         )
+    #         summary_lines.append("")
+    #
+    #     self.setup_summary_text.setPlainText("\n".join(summary_lines))
+    #
+    # def finish_setup(self):
+    #     """Finish setup and save configuration."""
+    #     try:
+    #         # Save Jira config
+    #         if self.service_checkboxes["jira"].isChecked():
+    #             self.config_manager.update_jira_config(
+    #                 url=self.jira_url_input.text(),
+    #                 username=self.jira_username_input.text(),
+    #             )
+    #             if self.jira_token_input.text():
+    #                 self.config_manager.store_credential(
+    #                     "jira", "api_token", self.jira_token_input.text()
+    #                 )
+    #
+    #         # Save Gemini config
+    #         if self.service_checkboxes["gemini"].isChecked():
+    #             if self.gemini_key_input.text():
+    #                 self.config_manager.store_credential(
+    #                     "gemini", "api_key", self.gemini_key_input.text()
+    #                 )
+    #
+    #         self.setup_completed = True
+    #         self.switch_view(ViewState.MAIN)
+    #         self.credential_monitor.start_monitoring()
+    #         self.load_configuration()
+    #         self.show_info(
+    #             "Setup Complete", "Your configuration has been saved successfully!"
+    #         )
+    #
+    #     except Exception as e:
+    #         self.logger.error(f"Failed to finish setup: {e}")
+    #         self.show_error("Setup Error", str(e))
 
-        if service == "jira":
-            credentials = {
-                "url": self.jira_url_input.text(),
-                "username": self.jira_username_input.text(),
-                "api_token": self.jira_token_input.text(),
-            }
-            status_label = self.jira_status_label
-        elif service == "google":
-            credentials = {}  # OAuth flow handles this
-            status_label = self.google_status_label
-        elif service == "gemini":
-            credentials = {
-                "api_key": self.gemini_key_input.text(),
-            }
-            status_label = self.gemini_status_label
-        else:
-            return
-
-        # Run validation in background
-        def on_validation_complete(_svc: str, success: bool, message: str):
-            self.hide_progress_message()
-            if success:
-                status_label.setText(f"✓ {message}")
-                status_label.setStyleSheet("color: green;")
-            else:
-                status_label.setText(f"✗ {message}")
-                status_label.setStyleSheet("color: red;")
-
-        # Create and run validation worker
-        worker = ValidationWorker(service, credentials)
-        worker.validation_complete.connect(on_validation_complete)
-        worker.finished.connect(worker.deleteLater)
-        worker.start()
-        self.validation_threads.append(worker)
+    # OLD TEST CREDENTIALS METHOD - Replaced by UnifiedConfigDialog's connection testing
+    # def test_credentials(self, service: str):
+    #     """Test credentials for a service."""
+    #     self.show_progress_message(f"Testing {service} connection...", "Please wait...")
+    #
+    #     if service == "jira":
+    #         credentials = {
+    #             "url": self.jira_url_input.text(),
+    #             "username": self.jira_username_input.text(),
+    #             "api_token": self.jira_token_input.text(),
+    #         }
+    #         status_label = self.jira_status_label
+    #     elif service == "google":
+    #         credentials = {}  # OAuth flow handles this
+    #         status_label = self.google_status_label
+    #     elif service == "gemini":
+    #         credentials = {
+    #             "api_key": self.gemini_key_input.text(),
+    #         }
+    #         status_label = self.gemini_status_label
+    #     else:
+    #         return
+    #
+    #     # Run validation in background
+    #     def on_validation_complete(_svc: str, success: bool, message: str):
+    #         self.hide_progress_message()
+    #         if success:
+    #             status_label.setText(f"✓ {message}")
+    #             status_label.setStyleSheet("color: green;")
+    #         else:
+    #             status_label.setText(f"✗ {message}")
+    #             status_label.setStyleSheet("color: red;")
+    #
+    #     # Create and run validation worker
+    #     worker = ValidationWorker(service, credentials)
+    #     worker.validation_complete.connect(on_validation_complete)
+    #     worker.finished.connect(worker.deleteLater)
+    #     worker.start()
+    #     self.validation_threads.append(worker)
 
     def configure_oauth(self):
         """Configure OAuth credentials."""
@@ -1342,8 +1385,8 @@ class SingleWindowMainWindow(QMainWindow):
             QDialog,
             QDialogButtonBox,
             QScrollArea,
-            QSpacerItem,
             QSizePolicy,
+            QSpacerItem,
         )
 
         dialog = QDialog(self)
@@ -1569,59 +1612,60 @@ class SingleWindowMainWindow(QMainWindow):
         except Exception as e:
             self.logger.error(f"Failed to load configuration: {e}")
 
-    def load_config_view(self):
-        """Load configuration into config view."""
-        try:
-            # Load Jira config
-            jira_config = self.config_manager.get_jira_config()
-            # Only set URL if it's not empty (preserve default otherwise)
-            if jira_config.url:
-                self.config_jira_url.setText(jira_config.url)
-            self.config_jira_username.setText(jira_config.username)
-
-            # Load AI config
-            ai_config = self.config_manager.get_ai_config()
-            model_index = self.config_ai_model.findText(ai_config.model_name)
-            if model_index >= 0:
-                self.config_ai_model.setCurrentIndex(model_index)
-            self.config_temperature.setValue(int(ai_config.temperature * 100))
-            self.config_max_tokens.setValue(ai_config.max_tokens)
-
-        except Exception as e:
-            self.logger.error(f"Failed to load config view: {e}")
-
-    def save_all_configuration(self):
-        """Save all configuration from config view."""
-        try:
-            # Save Jira config
-            self.config_manager.update_jira_config(
-                url=self.config_jira_url.text(),
-                username=self.config_jira_username.text(),
-            )
-            if self.config_jira_token.text():
-                self.config_manager.store_credential(
-                    "jira", "api_token", self.config_jira_token.text()
-                )
-
-            # Save AI config
-            self.config_manager.update_ai_config(
-                model_name=self.config_ai_model.currentText(),
-                temperature=self.config_temperature.value() / 100.0,
-                max_tokens=self.config_max_tokens.value(),
-            )
-            if self.config_gemini_key.text():
-                self.config_manager.store_credential(
-                    "gemini", "api_key", self.config_gemini_key.text()
-                )
-
-            self.load_configuration()
-            self.show_info(
-                "Configuration Saved", "All settings have been saved successfully!"
-            )
-
-        except Exception as e:
-            self.logger.error(f"Failed to save configuration: {e}")
-            self.show_error("Save Error", str(e))
+    # OLD CONFIG VIEW METHODS - Replaced by UnifiedConfigDialog
+    # def load_config_view(self):
+    #     """Load configuration into config view."""
+    #     try:
+    #         # Load Jira config
+    #         jira_config = self.config_manager.get_jira_config()
+    #         # Only set URL if it's not empty (preserve default otherwise)
+    #         if jira_config.url:
+    #             self.config_jira_url.setText(jira_config.url)
+    #         self.config_jira_username.setText(jira_config.username)
+    #
+    #         # Load AI config
+    #         ai_config = self.config_manager.get_ai_config()
+    #         model_index = self.config_ai_model.findText(ai_config.model_name)
+    #         if model_index >= 0:
+    #             self.config_ai_model.setCurrentIndex(model_index)
+    #         self.config_temperature.setValue(int(ai_config.temperature * 100))
+    #         self.config_max_tokens.setValue(ai_config.max_tokens)
+    #
+    #     except Exception as e:
+    #         self.logger.error(f"Failed to load config view: {e}")
+    #
+    # def save_all_configuration(self):
+    #     """Save all configuration from config view."""
+    #     try:
+    #         # Save Jira config
+    #         self.config_manager.update_jira_config(
+    #             url=self.config_jira_url.text(),
+    #             username=self.config_jira_username.text(),
+    #         )
+    #         if self.config_jira_token.text():
+    #             self.config_manager.store_credential(
+    #                 "jira", "api_token", self.config_jira_token.text()
+    #             )
+    #
+    #         # Save AI config
+    #         self.config_manager.update_ai_config(
+    #             model_name=self.config_ai_model.currentText(),
+    #             temperature=self.config_temperature.value() / 100.0,
+    #             max_tokens=self.config_max_tokens.value(),
+    #         )
+    #         if self.config_gemini_key.text():
+    #             self.config_manager.store_credential(
+    #                 "gemini", "api_key", self.config_gemini_key.text()
+    #             )
+    #
+    #         self.load_configuration()
+    #         self.show_info(
+    #             "Configuration Saved", "All settings have been saved successfully!"
+    #         )
+    #
+    #     except Exception as e:
+    #         self.logger.error(f"Failed to save configuration: {e}")
+    #         self.show_error("Save Error", str(e))
 
     def show_progress_message(self, message: str, detail: str = ""):
         """Show progress view with message."""
@@ -1805,11 +1849,8 @@ class SingleWindowMainWindow(QMainWindow):
 
     def save_configuration(self):
         """Save current configuration."""
-        try:
-            # TODO: Implement configuration saving
-            self.show_info("Configuration Saved", "Configuration saved successfully")
-        except Exception as e:
-            self.show_error("Save Error", str(e))
+        # Open the unified settings dialog - it handles saving internally
+        self.show_unified_settings()
 
     def show_about(self):
         """Show about dialog."""

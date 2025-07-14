@@ -1,20 +1,20 @@
 """Google Gemini AI client for generating executive summaries."""
 
 import asyncio
-import time
-from typing import Dict, List, Optional, Any
 import json
+import time
+from typing import Any, Dict, List, Optional
 
 import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
 from ..utils.exceptions import (
+    AuthenticationError,
     GeminiIntegrationError,
     RateLimitError,
-    AuthenticationError,
 )
-from ..utils.validators import InputValidator
 from ..utils.logging_config import get_logger, get_security_logger
+from ..utils.validators import InputValidator
 
 
 class GeminiClient:

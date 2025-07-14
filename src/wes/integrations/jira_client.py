@@ -1,17 +1,17 @@
 """Jira integration client for fetching work item data."""
 
 import asyncio
+import json
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
-import json
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 from jira import JIRA, JIRAError
 
-from ..utils.exceptions import JiraIntegrationError, RateLimitError, AuthenticationError
-from ..utils.validators import InputValidator
+from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
+from ..utils.validators import InputValidator
 from .redhat_jira_client import RedHatJiraClient, is_redhat_jira
 
 

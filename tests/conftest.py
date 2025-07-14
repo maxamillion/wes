@@ -1,10 +1,10 @@
 """Pytest configuration and fixtures for the Executive Summary Tool tests."""
 
+import asyncio
 import os
 import tempfile
-import asyncio
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 from unittest.mock import Mock
 
 import pytest
