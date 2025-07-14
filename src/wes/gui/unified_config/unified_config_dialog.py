@@ -379,7 +379,7 @@ class UnifiedConfigDialog(QDialog):
     def _on_config_updated(self, service: str, config: Dict[str, Any]):
         """Handle configuration update from guided view."""
         self.dirty = True
-        
+
         # Call the appropriate service-specific update method
         if service == "jira":
             self.config_manager.update_jira_config(**config)

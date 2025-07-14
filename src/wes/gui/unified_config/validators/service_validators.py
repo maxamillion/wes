@@ -131,9 +131,16 @@ class JiraValidator(BaseValidator):
         if not username:
             return False, "Username is required"
 
-        # Basic validation
+        # Basic length validation
         if len(username) < 3:
             return False, "Username too short"
+
+        # Allow alphanumeric, hyphens, underscores, dots, and @ symbols
+        # This supports various formats including Red Hat usernames like rhn-support-admiller
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9._@-]+$", username):
+            return False, "Username contains invalid characters"
 
         return True, "Username is valid"
 

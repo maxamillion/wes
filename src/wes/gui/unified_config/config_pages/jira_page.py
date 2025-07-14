@@ -287,12 +287,29 @@ class JiraConfigPage(ConfigPageBase):
         if not username:
             return False, "Username is required"
 
-        # Basic email validation for cloud instances
-        if self.service_selector.get_service_type() == JiraType.CLOUD:
-            if "@" in username:
+        # Get current Jira type
+        jira_type = self.service_selector.get_service_type()
+
+        # Cloud Jira requires email address format
+        if jira_type == JiraType.CLOUD:
+            if "@" in username and "." in username:
                 return True, "Valid email address"
             else:
                 return False, "Cloud Jira requires email address"
+
+        # Red Hat Jira and Server allow various username formats
+        elif jira_type in [JiraType.REDHAT, JiraType.SERVER]:
+            # Allow alphanumeric, hyphens, underscores, dots, and @ symbols
+            # This supports formats like: rhn-support-admiller, john.doe, user@domain
+            import re
+
+            if re.match(r"^[a-zA-Z0-9._@-]+$", username):
+                if len(username) >= 3:
+                    return True, "Valid username"
+                else:
+                    return False, "Username too short (minimum 3 characters)"
+            else:
+                return False, "Username contains invalid characters"
 
         return True, "Username valid"
 

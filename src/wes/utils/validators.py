@@ -122,13 +122,21 @@ class InputValidator:
         if not user:
             return False
 
+        # Minimum length check (except for UUIDs which have specific format)
+        if len(user) < 3 and not re.match(
+            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            user,
+        ):
+            raise ValidationError("User identifier too short (minimum 3 characters)")
+
         # Allow common user identifier formats
         # - Email addresses
-        # - Usernames (alphanumeric, hyphens, underscores)
+        # - Usernames (alphanumeric, hyphens, underscores, dots)
         # - UUIDs
+        # - Red Hat style usernames (e.g., rhn-support-admiller)
         patterns = [
             r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",  # Email
-            r"^[a-zA-Z0-9_-]+$",  # Username
+            r"^[a-zA-Z0-9._@-]+$",  # Username (includes Red Hat format with hyphens)
             r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",  # UUID
         ]
 

@@ -76,3 +76,9 @@ class NetworkError(WesError):
     """Network connectivity errors."""
 
     pass
+
+
+class ConnectionError(WesError):
+    """Connection-related errors."""
+
+    pass
