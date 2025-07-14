@@ -6,10 +6,10 @@ from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
 from enum import Enum
 
-from ..integrations.jira_client import JiraClient, JiraActivitySummary
-from ..integrations.gemini_client import GeminiClient, SummaryFormatter
-from ..integrations.google_docs_client import GoogleDocsClient
+from ..integrations.jira_client import JiraActivitySummary
+from ..integrations.gemini_client import SummaryFormatter
 from ..core.config_manager import ConfigManager
+from ..core.service_factory import ServiceFactory
 from ..utils.exceptions import (
     WesError,
     JiraIntegrationError,
@@ -48,17 +48,46 @@ class WorkflowResult:
 
 
 class WorkflowOrchestrator:
-    """Orchestrates the complete executive summary generation workflow."""
+    """Orchestrates the complete executive summary generation workflow.
+
+    This class manages the entire workflow from fetching Jira data to creating
+    Google Docs. It coordinates between different service clients and handles
+    the workflow stages, error recovery, and progress tracking.
+
+    Attributes:
+        config_manager: Configuration manager instance
+        service_factory: Factory for creating service clients
+        is_cancelled: Flag to track workflow cancellation
+        progress_callback: Optional callback for progress updates
+        stages: List of workflow stage names
+        current_stage: Index of current stage being executed
+
+    Example:
+        ```python
+        orchestrator = WorkflowOrchestrator(config_manager)
+        orchestrator.set_progress_callback(update_ui)
+
+        result = await orchestrator.execute_workflow(
+            users=["user1", "user2"],
+            start_date=start,
+            end_date=end,
+            document_title="Weekly Summary"
+        )
+        ```
+    """
 
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
 
-        # Clients
-        self.jira_client: Optional[JiraClient] = None
-        self.gemini_client: Optional[GeminiClient] = None
-        self.google_docs_client: Optional[GoogleDocsClient] = None
+        # Service factory for client management
+        self.service_factory = ServiceFactory(config_manager)
+
+        # Clients (will be created by factory)
+        self.jira_client = None
+        self.gemini_client = None
+        self.google_docs_client = None
 
         # Workflow state
         self.is_cancelled = False
@@ -76,11 +105,22 @@ class WorkflowOrchestrator:
         self.current_stage = 0
 
     def set_progress_callback(self, callback: Callable[[str, int], None]):
-        """Set callback for progress updates."""
+        """Set callback for progress updates.
+
+        The callback will be called with progress messages and percentage.
+
+        Args:
+            callback: Function that accepts message (str) and percentage (int)
+        """
         self.progress_callback = callback
 
     def _update_progress(self, message: str, percentage: int = None):
-        """Update progress if callback is set."""
+        """Update progress if callback is set.
+
+        Args:
+            message: Progress message to display
+            percentage: Optional progress percentage (0-100)
+        """
         if self.progress_callback:
             if percentage is None:
                 percentage = int((self.current_stage / len(self.stages)) * 100)
@@ -101,7 +141,26 @@ class WorkflowOrchestrator:
         share_email: Optional[str] = None,
         custom_prompt: Optional[str] = None,
     ) -> WorkflowResult:
-        """Execute the complete workflow."""
+        """Execute the complete workflow.
+
+        Runs through all workflow stages: validation, client initialization,
+        data fetching, summary generation, and document creation.
+
+        Args:
+            users: List of usernames to fetch activities for
+            start_date: Start date for activity range
+            end_date: End date for activity range
+            document_title: Optional custom document title
+            folder_id: Optional Google Drive folder ID
+            share_email: Optional email to share document with
+            custom_prompt: Optional custom prompt for AI generation
+
+        Returns:
+            WorkflowResult containing status, document info, and execution details
+
+        Raises:
+            WesError: If any stage fails during execution
+        """
         start_time = datetime.now()
         result = WorkflowResult(status=WorkflowStatus.RUNNING)
 
@@ -196,7 +255,23 @@ class WorkflowOrchestrator:
     async def _execute_stage(
         self, stage_name: str, result: WorkflowResult, *args, **kwargs
     ):
-        """Execute a specific workflow stage."""
+        """Execute a specific workflow stage.
+
+        Manages individual stage execution with progress tracking and error handling.
+        Updates the result object with completed stages.
+
+        Args:
+            stage_name: Name of the stage to execute
+            result: WorkflowResult object to update
+            *args: Positional arguments for the stage method
+            **kwargs: Keyword arguments for the stage method
+
+        Returns:
+            Result from the stage execution
+
+        Raises:
+            WesError: If the stage fails
+        """
         self.current_stage = self.stages.index(stage_name)
         stage_number = self.current_stage + 1
 
@@ -238,59 +313,16 @@ class WorkflowOrchestrator:
         self.logger.info("Configuration validation passed")
 
     async def _stage_initialize_clients(self) -> None:
-        """Stage 2: Initialize API clients."""
+        """Stage 2: Initialize API clients using factory."""
         self._update_progress("Initializing API clients...")
 
         try:
-            # Initialize Jira client
-            jira_config = self.config_manager.get_jira_config()
-            jira_token = self.config_manager.retrieve_credential("jira", "api_token")
-
-            self.jira_client = JiraClient(
-                url=jira_config.url,
-                username=jira_config.username,
-                api_token=jira_token,
-                rate_limit=jira_config.rate_limit,
-                timeout=jira_config.timeout,
+            # Create clients using factory
+            self.jira_client = await self.service_factory.create_jira_client()
+            self.gemini_client = await self.service_factory.create_gemini_client()
+            self.google_docs_client = (
+                await self.service_factory.create_google_docs_client()
             )
-
-            # Initialize Gemini client
-            ai_config = self.config_manager.get_ai_config()
-            gemini_key = self.config_manager.retrieve_credential("ai", "gemini_api_key")
-
-            self.gemini_client = GeminiClient(
-                api_key=gemini_key,
-                model_name=ai_config.model_name,
-                rate_limit=ai_config.rate_limit,
-                timeout=ai_config.timeout,
-            )
-
-            # Initialize Google Docs client
-            google_config = self.config_manager.get_google_config()
-
-            if google_config.service_account_path:
-                self.google_docs_client = GoogleDocsClient(
-                    service_account_path=google_config.service_account_path,
-                    rate_limit=google_config.rate_limit,
-                    timeout=google_config.timeout,
-                )
-            else:
-                # Use OAuth credentials
-                oauth_credentials = {
-                    "client_id": google_config.oauth_client_id,
-                    "client_secret": self.config_manager.retrieve_credential(
-                        "google", "oauth_client_secret"
-                    ),
-                    "refresh_token": self.config_manager.retrieve_credential(
-                        "google", "oauth_refresh_token"
-                    ),
-                }
-
-                self.google_docs_client = GoogleDocsClient(
-                    oauth_credentials=oauth_credentials,
-                    rate_limit=google_config.rate_limit,
-                    timeout=google_config.timeout,
-                )
 
             self.logger.info("API clients initialized successfully")
 
@@ -410,63 +442,29 @@ class WorkflowOrchestrator:
         return result
 
     async def _cleanup_clients(self):
-        """Clean up API clients."""
+        """Clean up API clients using factory."""
         try:
-            if self.jira_client:
-                await self.jira_client.close()
-
-            if self.gemini_client:
-                await self.gemini_client.close()
-
-            if self.google_docs_client:
-                await self.google_docs_client.close()
-
+            await self.service_factory.close_all()
             self.logger.info("API clients cleaned up")
 
         except Exception as e:
             self.logger.error(f"Error during client cleanup: {e}")
 
     async def test_connections(self) -> Dict[str, bool]:
-        """Test all API connections."""
+        """Test all API connections using service factory."""
         self.logger.info("Testing API connections")
-        results = {}
 
         try:
-            # Test Jira connection
-            try:
-                await self._stage_validate_configuration()
-                await self._stage_initialize_clients()
+            # Validate configuration first
+            await self._stage_validate_configuration()
 
-                # Test Jira
-                if self.jira_client:
-                    connection_info = self.jira_client.get_connection_info()
-                    results["jira"] = connection_info.get("connected", False)
-                else:
-                    results["jira"] = False
+            # Use factory's health check functionality
+            health_results = await self.service_factory.health_check_all()
 
-                # Test Gemini
-                if self.gemini_client:
-                    results["gemini"] = await self.gemini_client.validate_api_key()
-                else:
-                    results["gemini"] = False
-
-                # Test Google Docs (basic connection test)
-                if self.google_docs_client:
-                    # Simple test - try to list documents
-                    try:
-                        await self.google_docs_client.list_documents()
-                        results["google_docs"] = True
-                    except Exception:
-                        results["google_docs"] = False
-                else:
-                    results["google_docs"] = False
-
-            except Exception as e:
-                self.logger.error(f"Connection test failed: {e}")
-                results = {"jira": False, "gemini": False, "google_docs": False}
-
-            finally:
-                await self._cleanup_clients()
+            # Convert health check results to simple boolean
+            results = {
+                service: health["healthy"] for service, health in health_results.items()
+            }
 
             self.logger.info(f"Connection test results: {results}")
             return results
@@ -474,6 +472,9 @@ class WorkflowOrchestrator:
         except Exception as e:
             self.logger.error(f"Connection test error: {e}")
             return {"jira": False, "gemini": False, "google_docs": False}
+
+        finally:
+            await self._cleanup_clients()
 
     def get_activity_summary(
         self, activity_data: List[Dict[str, Any]]
