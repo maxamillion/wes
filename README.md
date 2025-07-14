@@ -1,4 +1,4 @@
-# Executive Summary Tool
+# Wes - Weekly Executive Summary
 [![Quick Checks](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml/badge.svg)](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml)
 
 A cross-platform desktop application that automates the creation of executive summaries by integrating Jira activity data with Google's Gemini AI and outputting formatted Google Docs.
@@ -42,7 +42,7 @@ A cross-platform desktop application that automates the creation of executive su
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd executive-summary-tool
+   cd wes
    ```
 
 2. **Set up development environment**:
@@ -104,16 +104,16 @@ Choose one authentication method:
 
 ```bash
 # Run the application
-executive-summary-tool
+wes
 
 # Test API connections
-executive-summary-tool --test-connections
+wes --test-connections
 
 # Enable debug logging
-executive-summary-tool --debug
+wes --debug
 
 # Show version
-executive-summary-tool --version
+wes --version
 ```
 
 ## Development
@@ -238,7 +238,7 @@ The application is designed to meet enterprise security requirements:
 1. **Prepare Configuration**:
    ```bash
    # Create configuration template
-   executive-summary-tool --export-config template.json
+   wes --export-config template.json
    ```
 
 2. **Mass Deployment**:
@@ -275,13 +275,13 @@ The application is designed to meet enterprise security requirements:
 Enable debug logging for troubleshooting:
 
 ```bash
-executive-summary-tool --debug --log-file debug.log
+wes --debug --log-file debug.log
 ```
 
 Log files are stored in:
-- **Windows**: `%USERPROFILE%\.executive-summary-tool\logs\`
-- **macOS**: `~/.executive-summary-tool/logs/`
-- **Linux**: `~/.executive-summary-tool/logs/`
+- **Windows**: `%USERPROFILE%\.wes\logs\`
+- **macOS**: `~/.wes/logs/`
+- **Linux**: `~/.wes/logs/`
 
 ### Getting Help
 
@@ -337,7 +337,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 For support, documentation, and updates:
 
 - **Documentation**: [Project Wiki](docs/)
-- **Issues**: [GitHub Issues](https://github.com/company/executive-summary-tool/issues)
+- **Issues**: [GitHub Issues](https://github.com/company/wes/issues)
 - **Security**: Report security issues to security@company.com
 
 ---

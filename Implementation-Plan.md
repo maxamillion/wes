@@ -20,7 +20,7 @@ This implementation plan follows Test-Driven Development (TDD) principles using 
 ## Project Structure
 
 ```
-executive-summary-tool/
+wes/
 ├── src/
 │   ├── executive_summary_tool/
 │   │   ├── __init__.py
@@ -297,11 +297,11 @@ def test_complete_workflow():
 def test_executable_creation():
     result = subprocess.run(['make', 'build'], capture_output=True)
     assert result.returncode == 0
-    assert os.path.exists('dist/executive-summary-tool')
+    assert os.path.exists('dist/wes')
 
 def test_executable_functionality():
     # Test basic functionality of built executable
-    result = subprocess.run(['./dist/executive-summary-tool', '--version'])
+    result = subprocess.run(['./dist/wes', '--version'])
     assert result.returncode == 0
 ```
 

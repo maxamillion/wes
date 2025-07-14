@@ -32,7 +32,7 @@ class TestSecurityManager:
         """Test SecurityManager initialization."""
         manager = SecurityManager()
 
-        assert manager._keyring_service == "executive-summary-tool"
+        assert manager._keyring_service == "wes"
         assert manager._cipher_suite is not None
 
     def test_encrypt_decrypt_credential(self, mock_keyring, mock_home_path):
@@ -125,7 +125,7 @@ class TestSecurityManager:
         mock_token_bytes.return_value = b"test_salt_32_bytes_long_exactly"
 
         manager = SecurityManager()
-        salt_path = mock_home_path / ".executive-summary-tool" / "salt"
+        salt_path = mock_home_path / ".wes" / "salt"
 
         # Verify salt file was created
         assert salt_path.exists()
@@ -134,7 +134,7 @@ class TestSecurityManager:
     def test_salt_reuse(self, mock_keyring, mock_home_path):
         """Test that existing salt is reused."""
         # Create salt file first
-        salt_dir = mock_home_path / ".executive-summary-tool"
+        salt_dir = mock_home_path / ".wes"
         salt_dir.mkdir(parents=True)
         salt_path = salt_dir / "salt"
         original_salt = b"existing_salt_32_bytes_long_test"
@@ -157,7 +157,7 @@ class TestSecurityManager:
 
         # Verify the call was for master_key
         args, kwargs = mock_keyring.set_password.call_args
-        assert args[0] == "executive-summary-tool"
+        assert args[0] == "wes"
         assert args[1] == "master_key"
         assert isinstance(args[2], str)  # Base64 encoded key
 
@@ -172,9 +172,7 @@ class TestSecurityManager:
         manager = SecurityManager()
 
         # Verify existing key was retrieved, not created
-        mock_keyring.get_password.assert_called_with(
-            "executive-summary-tool", "master_key"
-        )
+        mock_keyring.get_password.assert_called_with("wes", "master_key")
 
     def test_secure_delete(self, mock_keyring, mock_home_path):
         """Test secure deletion of sensitive data."""

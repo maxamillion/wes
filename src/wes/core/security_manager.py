@@ -22,7 +22,7 @@ class SecurityManager:
         self.security_logger = get_security_logger()
         self._master_password = master_password
         self._cipher_suite: Optional[Fernet] = None
-        self._keyring_service = "executive-summary-tool"
+        self._keyring_service = "wes"
         self._initialize_encryption()
 
     def _initialize_encryption(self) -> None:
@@ -80,7 +80,7 @@ class SecurityManager:
 
     def _get_salt(self) -> bytes:
         """Get or create salt for key derivation."""
-        salt_path = Path.home() / ".executive-summary-tool" / "salt"
+        salt_path = Path.home() / ".wes" / "salt"
 
         if salt_path.exists():
             return salt_path.read_bytes()

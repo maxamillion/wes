@@ -100,7 +100,7 @@ class ConfigManager:
         if config_dir:
             self.config_dir = config_dir
         else:
-            self.config_dir = Path.home() / ".executive-summary-tool"
+            self.config_dir = Path.home() / ".wes"
 
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.config_file = self.config_dir / "config.json"
