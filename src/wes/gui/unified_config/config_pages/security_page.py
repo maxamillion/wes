@@ -201,7 +201,7 @@ class SecurityPage(ConfigPageBase):
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
 
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             # Validate passwords
             if new_password.text() != confirm_password.text():
                 QMessageBox.warning(

@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
         # Show dialog
         result = dialog.exec()
 
-        if result == QDialog.Accepted:
+        if result == QDialog.DialogCode.Accepted:
             # Configuration was saved
             self.update_config_status()
             self.status_bar.showMessage("Configuration updated", 3000)

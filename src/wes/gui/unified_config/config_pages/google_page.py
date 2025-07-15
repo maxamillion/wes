@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
+    QDialog,
     QFileDialog,
     QFormLayout,
     QGroupBox,
@@ -248,7 +249,7 @@ class GoogleConfigPage(ConfigPageBase):
         dialog = OAuthSetupDialog(self)
         dialog.credentials_saved.connect(self._on_credentials_saved)
 
-        if dialog.exec() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             # After successful setup, try to authenticate
             self._handle_oauth_click()
 
