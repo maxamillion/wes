@@ -45,15 +45,13 @@ class DefaultConfigPageFactory:
         from wes.gui.unified_config.config_pages.google_page import GoogleConfigPage
         from wes.gui.unified_config.config_pages.jira_page import JiraConfigPage
         from wes.gui.unified_config.config_pages.security_page import (
-            SecuritySettingsPage,
+            SecurityPage,
         )
 
         self._page_registry = {
             ServiceType.GOOGLE: GoogleConfigPage,
             ServiceType.JIRA: JiraConfigPage,
             ServiceType.GEMINI: GeminiConfigPage,
-            ServiceType.APP_SETTINGS: AppSettingsPage,
-            ServiceType.SECURITY: SecuritySettingsPage,
         }
 
     def register_page(

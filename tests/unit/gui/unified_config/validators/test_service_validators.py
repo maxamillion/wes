@@ -242,7 +242,7 @@ class TestGeminiValidator:
         """Test validation of valid Gemini configuration."""
         config = {
             "api_key": "AIzaSyTest1234567890123456789012345",
-            "model": "gemini-1.5-pro",
+            "model": "gemini-2.5-pro",
             "temperature": 0.7,
         }
 
@@ -252,7 +252,7 @@ class TestGeminiValidator:
 
     def test_validate_config_missing_api_key(self, validator):
         """Test validation with missing API key."""
-        config = {"model": "gemini-1.5-pro", "temperature": 0.7}
+        config = {"model": "gemini-2.5-pro", "temperature": 0.7}
 
         result = validator.validate_config(config)
         assert result["is_valid"] is False
@@ -261,14 +261,14 @@ class TestGeminiValidator:
     def test_validate_config_invalid_api_key_format(self, validator):
         """Test validation with invalid API key format."""
         # Wrong prefix
-        config = {"api_key": "SKtest1234567890", "model": "gemini-1.5-pro"}
+        config = {"api_key": "SKtest1234567890", "model": "gemini-2.5-pro"}
 
         result = validator.validate_config(config)
         assert result["is_valid"] is False
         assert "format" in result["message"].lower()
 
         # Too short
-        config = {"api_key": "AIzaShort", "model": "gemini-1.5-pro"}
+        config = {"api_key": "AIzaShort", "model": "gemini-2.5-pro"}
 
         result = validator.validate_config(config)
         assert result["is_valid"] is False
@@ -289,7 +289,7 @@ class TestGeminiValidator:
         """Test validation with invalid temperature."""
         config = {
             "api_key": "AIzaSyTest1234567890123456789012345",
-            "model": "gemini-1.5-pro",
+            "model": "gemini-2.5-pro",
             "temperature": 1.5,  # Out of range
         }
 

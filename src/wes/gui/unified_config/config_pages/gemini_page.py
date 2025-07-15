@@ -62,9 +62,7 @@ class GeminiConfigPage(ConfigPageBase):
 
         # Model selection
         self.model_combo = QComboBox()
-        self.model_combo.addItems(
-            ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
-        )
+        self.model_combo.addItems(["gemini-2.5-pro", "gemini-2.5-flash"])
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
         model_layout.addRow("Model:", self.model_combo)
 
@@ -171,11 +169,10 @@ class GeminiConfigPage(ConfigPageBase):
     def _on_model_changed(self, model: str):
         """Update model description when selection changes."""
         descriptions = {
-            "gemini-1.5-pro": "Most capable model with 2M token context window. "
+            "gemini-2.5-pro": "Most capable model with 2M token context window. "
             "Best for complex summarization tasks.",
-            "gemini-1.5-flash": "Faster, lightweight model with 1M token context. "
+            "gemini-2.5-flash": "Faster, lightweight model with 1M token context. "
             "Good balance of speed and quality.",
-            "gemini-1.0-pro": "Previous generation model. Reliable and well-tested.",
         }
 
         self.model_desc.setText(descriptions.get(model, ""))
@@ -225,7 +222,7 @@ class GeminiConfigPage(ConfigPageBase):
         self.api_key_input.setText(gemini_config.get("api_key", ""))
 
         # Set model
-        model = gemini_config.get("model", "gemini-1.5-pro")
+        model = gemini_config.get("model", "gemini-2.5-pro")
         index = self.model_combo.findText(model)
         if index >= 0:
             self.model_combo.setCurrentIndex(index)

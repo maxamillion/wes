@@ -284,7 +284,7 @@ class GeminiValidator(BaseValidator):
             )
 
         # Validate model name
-        valid_models = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
+        valid_models = ["gemini-2.5-pro", "gemini-2.5-flash"]
         if model not in valid_models:
             return ValidationResult(
                 is_valid=False,
@@ -318,7 +318,7 @@ class GeminiValidator(BaseValidator):
 
             # Create client
             client = GeminiClient(
-                api_key=config["api_key"], model=config.get("model", "gemini-1.5-pro")
+                api_key=config["api_key"], model=config.get("model", "gemini-2.5-pro")
             )
 
             # Test connection with a simple prompt
