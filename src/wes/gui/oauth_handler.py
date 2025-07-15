@@ -21,6 +21,10 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Handle GET request for OAuth callback."""
+        # Log the incoming request
+        logger = get_logger(__name__)
+        logger.info(f"OAuth callback received: {self.path}")
+
         self.server.callback_received = True
 
         # Parse query parameters
@@ -251,6 +255,7 @@ class GoogleOAuthHandler(QObject):
     def _setup_callback_server(self, port: int):
         """Setup HTTP server for OAuth callback."""
         try:
+            self.logger.info(f"Setting up OAuth callback server on port {port}")
             self.callback_server = HTTPServer(("localhost", port), OAuthCallbackHandler)
             self.callback_server.callback_received = False
             self.callback_server.auth_code = None
@@ -262,8 +267,10 @@ class GoogleOAuthHandler(QObject):
                 target=self.callback_server.serve_forever, daemon=True
             )
             server_thread.start()
+            self.logger.info(f"OAuth callback server started on port {port}")
 
         except Exception as e:
+            self.logger.error(f"Failed to setup callback server on port {port}: {e}")
             raise Exception(f"Failed to setup callback server: {e}")
 
     def _monitor_callback(self):
@@ -285,14 +292,17 @@ class GoogleOAuthHandler(QObject):
             return
 
         if self.callback_server.callback_received:
+            self.logger.info("OAuth callback received")
             self.callback_timer.stop()
             self.timeout_timer.stop()
 
             if self.callback_server.auth_code:
+                self.logger.info("Auth code received, exchanging for tokens")
                 self._handle_auth_code(
                     self.callback_server.auth_code, self.callback_server.auth_state
                 )
             elif self.callback_server.auth_error:
+                self.logger.error(f"OAuth error: {self.callback_server.auth_error}")
                 self.auth_error.emit(self.callback_server.auth_error)
 
             # Cleanup server

@@ -28,6 +28,7 @@ from wes.gui.unified_config.types import ServiceType, ValidationResult
 from wes.gui.unified_config.utils.constants import ConfigConstants
 from wes.gui.unified_config.utils.dialogs import DialogManager, FileDialogManager
 from wes.gui.unified_config.utils.styles import StyleManager
+from wes.utils.logging_config import get_logger
 
 
 class GoogleConfigPage(ConfigPageBase):
@@ -40,6 +41,11 @@ class GoogleConfigPage(ConfigPageBase):
 
     # Custom signal for OAuth flow
     oauth_requested = Signal()
+
+    def __init__(self, config_manager: ConfigManager, parent=None):
+        self.logger = get_logger(__name__)
+        self.oauth_handler = None  # Store reference to OAuth handler
+        super().__init__(config_manager, parent)
 
     def _setup_page_ui(self, parent_layout: QVBoxLayout):
         """Setup Google-specific UI."""
@@ -307,10 +313,11 @@ class GoogleConfigPage(ConfigPageBase):
             # Try simplified OAuth first
             from wes.gui.simplified_oauth_handler import SimplifiedGoogleOAuthHandler
 
-            # Create simplified OAuth handler
-            oauth_handler = SimplifiedGoogleOAuthHandler(self.config_manager)
-            oauth_handler.auth_complete.connect(self._on_oauth_complete)
-            oauth_handler.auth_error.connect(self._on_oauth_failed)
+            # Create simplified OAuth handler and store as instance variable
+            # to prevent it from being garbage collected
+            self.oauth_handler = SimplifiedGoogleOAuthHandler(self.config_manager)
+            self.oauth_handler.auth_complete.connect(self._on_oauth_complete)
+            self.oauth_handler.auth_error.connect(self._on_oauth_failed)
 
             # Update button to show loading state
             self.oauth_button.setText("Connecting...")
@@ -318,21 +325,57 @@ class GoogleConfigPage(ConfigPageBase):
             self.oauth_status.setText("Opening browser...")
             self.oauth_status.setStyleSheet(StyleManager.get_label_style("secondary"))
 
-            # Start OAuth flow
-            oauth_handler.start_flow()
+            # Start OAuth flow - try different ports if 8080 is busy
+            import random
+
+            ports_to_try = [8080, 8081, 8082, 8083, 8084]
+            random.shuffle(ports_to_try[1:])  # Keep 8080 first but randomize others
+
+            for port in ports_to_try:
+                try:
+                    self.logger.info(f"Attempting OAuth flow on port {port}")
+                    self.oauth_handler.start_flow(port)
+                    break
+                except Exception as e:
+                    self.logger.warning(f"Failed to start OAuth on port {port}: {e}")
+                    if port == ports_to_try[-1]:  # Last port
+                        raise
 
         except ImportError:
             # Fallback to manual OAuth if simplified not available
             try:
                 from wes.gui.oauth_handler import GoogleOAuthHandler
 
-                # Create OAuth handler
-                oauth_handler = GoogleOAuthHandler(self.config_manager)
-                oauth_handler.auth_complete.connect(self._on_oauth_complete)
-                oauth_handler.auth_error.connect(self._on_oauth_failed)
+                # Create OAuth handler and store as instance variable
+                self.oauth_handler = GoogleOAuthHandler(self.config_manager)
+                self.oauth_handler.auth_complete.connect(self._on_oauth_complete)
+                self.oauth_handler.auth_error.connect(self._on_oauth_failed)
 
-                # Start OAuth flow
-                oauth_handler.start_flow()
+                # Update button to show loading state
+                self.oauth_button.setText("Connecting...")
+                self.oauth_button.setEnabled(False)
+                self.oauth_status.setText("Opening browser...")
+                self.oauth_status.setStyleSheet(
+                    StyleManager.get_label_style("secondary")
+                )
+
+                # Start OAuth flow - try different ports if 8080 is busy
+                import random
+
+                ports_to_try = [8080, 8081, 8082, 8083, 8084]
+                random.shuffle(ports_to_try[1:])  # Keep 8080 first but randomize others
+
+                for port in ports_to_try:
+                    try:
+                        self.logger.info(f"Attempting OAuth flow on port {port}")
+                        self.oauth_handler.start_flow(port)
+                        break
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to start OAuth on port {port}: {e}"
+                        )
+                        if port == ports_to_try[-1]:  # Last port
+                            raise
 
             except ImportError:
                 DialogManager.show_warning(
@@ -344,6 +387,8 @@ class GoogleConfigPage(ConfigPageBase):
 
     def _on_oauth_complete(self, cred_data: dict):
         """Handle successful OAuth authentication."""
+        self.logger.info("OAuth authentication completed successfully")
+
         # Store the credentials in config manager
         if self.config_manager:
             # Store tokens securely
@@ -393,6 +438,8 @@ class GoogleConfigPage(ConfigPageBase):
 
     def _on_oauth_failed(self, error: str):
         """Handle failed OAuth authentication."""
+        self.logger.error(f"OAuth authentication failed: {error}")
+
         self.oauth_status.setText("Not authenticated")
         self.oauth_status.setStyleSheet(StyleManager.get_label_style("secondary"))
         self.oauth_indicator.set_invalid(error)

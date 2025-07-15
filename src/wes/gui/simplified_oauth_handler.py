@@ -217,9 +217,13 @@ class SimplifiedGoogleOAuthHandler(QObject):
         """Use fallback manual OAuth configuration."""
         self.logger.info("Using manual OAuth configuration fallback")
 
-        # Connect fallback signals
-        self.fallback_handler.auth_complete.connect(self.auth_complete.emit)
-        self.fallback_handler.auth_error.connect(self.auth_error.emit)
+        # Connect fallback signals with lambda to ensure proper signal propagation
+        self.fallback_handler.auth_complete.connect(
+            lambda data: self.auth_complete.emit(data)
+        )
+        self.fallback_handler.auth_error.connect(
+            lambda error: self.auth_error.emit(error)
+        )
 
         # Start fallback flow
         self.fallback_handler.start_flow(self.callback_port)
