@@ -204,36 +204,13 @@ class SimplifiedGoogleOAuthHandler(QObject):
         try:
             self.callback_port = port
 
-            # Check if proxy is available
-            if not self.is_proxy_available():
-                self.logger.warning("OAuth proxy not available, using fallback")
-                self.use_fallback()
-                return
-
-            # Generate state for CSRF protection
-            self.state = secrets.token_urlsafe(32)
-
-            # Setup callback server
-            self._setup_callback_server(port)
-
-            # Build OAuth URL
-            callback_url = f"http://localhost:{port}/callback"
-            params = {"state": self.state, "redirect_uri": callback_url}
-
-            auth_url = f"{self.proxy_url}/auth/google?{urlencode(params)}"
-
-            # Open browser
-            webbrowser.open(auth_url)
-
-            self.security_logger.log_security_event(
-                "simplified_oauth_started", severity="INFO", proxy_url=self.proxy_url
-            )
-
-            # Start monitoring for callback
-            self._monitor_callback()
+            # Always use the fallback (direct OAuth) since proxy doesn't exist
+            self.logger.info("Using direct OAuth authentication")
+            self.use_fallback()
+            return
 
         except Exception as e:
-            self.logger.error(f"Failed to start simplified OAuth flow: {e}")
+            self.logger.error(f"Failed to start OAuth flow: {e}")
             self.auth_error.emit(f"Failed to start authentication: {e}")
 
     def use_fallback(self):

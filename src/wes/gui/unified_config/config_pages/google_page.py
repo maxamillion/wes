@@ -83,6 +83,29 @@ class GoogleConfigPage(ConfigPageBase):
         self.oauth_button.clicked.connect(self._handle_oauth_click)
         oauth_status_layout.addWidget(self.oauth_button)
 
+        # Setup button for configuring OAuth credentials
+        self.setup_button = QPushButton("Setup Credentials")
+        self.setup_button.clicked.connect(self._handle_setup_click)
+        # Make setup button more prominent
+        self.setup_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #4285f4;
+                color: white;
+                font-weight: bold;
+                padding: 5px 15px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #357ae8;
+            }
+            QPushButton:pressed {
+                background-color: #2968c8;
+            }
+        """
+        )
+        oauth_status_layout.addWidget(self.setup_button)
+
         self.oauth_status = QLabel("Not authenticated")
         self.oauth_status.setStyleSheet("color: #666;")
         oauth_status_layout.addWidget(self.oauth_status)
@@ -98,6 +121,14 @@ class GoogleConfigPage(ConfigPageBase):
         self.oauth_email_label.setStyleSheet("color: green; margin-left: 20px;")
         self.oauth_email_label.hide()
         oauth_layout.addWidget(self.oauth_email_label)
+
+        # Help text
+        self.oauth_help_label = QLabel(
+            "<i>First time? Click 'Setup Credentials' to configure Google OAuth.</i>"
+        )
+        self.oauth_help_label.setStyleSheet("color: #666; margin-left: 20px;")
+        self.oauth_help_label.setWordWrap(True)
+        oauth_layout.addWidget(self.oauth_help_label)
 
         parent_layout.addWidget(self.oauth_group)
 
@@ -198,6 +229,70 @@ class GoogleConfigPage(ConfigPageBase):
             self.service_account_group.show()
 
         self.mark_dirty()
+
+    def _handle_setup_click(self):
+        """Handle OAuth setup button click."""
+        from wes.gui.unified_config.components.oauth_setup_dialog import (
+            OAuthSetupDialog,
+        )
+
+        dialog = OAuthSetupDialog(self)
+        dialog.credentials_saved.connect(self._on_credentials_saved)
+
+        if dialog.exec() == QDialog.Accepted:
+            # After successful setup, try to authenticate
+            self._handle_oauth_click()
+
+    def _on_credentials_saved(self, credentials: dict):
+        """Handle when OAuth credentials are saved."""
+        # Update button states
+        self._check_oauth_credentials()
+
+    def _check_oauth_credentials(self):
+        """Check if OAuth credentials are configured."""
+        # Check for credentials in various locations
+        has_credentials = False
+
+        # Check config manager
+        if self.config_manager:
+            google_config = self.config_manager.get_google_config()
+            if (
+                google_config.oauth_client_id
+                and google_config.oauth_client_id
+                != "your-client-id.apps.googleusercontent.com"
+            ):
+                has_credentials = True
+
+        # Check environment variables
+        if not has_credentials:
+            import os
+
+            if os.environ.get("GOOGLE_OAUTH_CLIENT_ID") and os.environ.get(
+                "GOOGLE_OAUTH_CLIENT_SECRET"
+            ):
+                has_credentials = True
+
+        # Check credentials file
+        if not has_credentials:
+            from pathlib import Path
+
+            cred_file = Path.home() / ".wes" / "google_oauth_credentials.json"
+            if cred_file.exists():
+                has_credentials = True
+
+        # Update UI based on credential status
+        if has_credentials:
+            self.setup_button.setText("Update Credentials")
+            self.oauth_button.setEnabled(True)
+            self.oauth_help_label.hide()
+        else:
+            self.setup_button.setText("Setup Credentials")
+            self.oauth_button.setEnabled(False)
+            self.oauth_status.setText("Credentials not configured")
+            self.oauth_indicator.set_invalid(
+                "Click 'Setup Credentials' to configure OAuth"
+            )
+            self.oauth_help_label.show()
 
     def _handle_oauth_click(self):
         """Handle OAuth authentication button click."""
@@ -401,6 +496,10 @@ class GoogleConfigPage(ConfigPageBase):
         self.scope_sheets.setChecked(google_config.get("scope_sheets", False))
         self.retry_attempts.setValue(google_config.get("retry_attempts", 3))
         self.request_timeout.setValue(google_config.get("request_timeout", 30))
+
+        # Check if OAuth credentials are configured (for button states)
+        if auth_method == "oauth":
+            self._check_oauth_credentials()
 
         self.mark_clean()
 

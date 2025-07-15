@@ -192,6 +192,23 @@ class GoogleOAuthHandler(QObject):
     def start_flow(self, port: int = 8080):
         """Start the OAuth flow."""
         try:
+            # Check if we have valid credentials
+            if (
+                self.CLIENT_CONFIG["web"]["client_id"]
+                == "your-client-id.apps.googleusercontent.com"
+                or not self.CLIENT_CONFIG["web"]["client_id"]
+                or not self.CLIENT_CONFIG["web"]["client_secret"]
+            ):
+                error_msg = (
+                    "Google OAuth credentials not configured.\n\n"
+                    "Please either:\n"
+                    "1. Use Service Account authentication instead of OAuth\n"
+                    "2. Configure OAuth credentials (see docs/GOOGLE_OAUTH_FIX.md)\n"
+                    "3. Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables"
+                )
+                self.auth_error.emit(error_msg)
+                return
+
             # Generate state for CSRF protection
             self.state = secrets.token_urlsafe(32)
 

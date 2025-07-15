@@ -50,7 +50,29 @@ class UnifiedConfigDialog(QDialog):
     def _init_ui(self):
         """Initialize the UI components."""
         self.setWindowTitle("WES Configuration")
-        self.setMinimumSize(900, 700)
+
+        # Get available screen geometry for responsive sizing
+        screen = self.screen()
+        if screen:
+            available_rect = screen.availableGeometry()
+
+            # Set responsive size (80% of available space, with min/max constraints)
+            default_width = min(900, int(available_rect.width() * 0.8))
+            default_height = min(700, int(available_rect.height() * 0.8))
+
+            self.resize(default_width, default_height)
+
+            # Center on screen
+            self.move(
+                available_rect.center().x() - default_width // 2,
+                available_rect.center().y() - default_height // 2,
+            )
+        else:
+            # Fallback if screen detection fails
+            self.resize(900, 700)
+
+        # Set more reasonable minimum size for small screens
+        self.setMinimumSize(600, 400)
 
         # Apply dialog styling
         self.setWindowFlags(

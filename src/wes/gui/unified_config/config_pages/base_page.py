@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.types import ServiceType, ValidationResult
+from wes.gui.unified_config.utils.responsive_layout import ResponsiveConfigLayout
 
 
 class ConfigPageBase(QWidget):
@@ -46,6 +47,9 @@ class ConfigPageBase(QWidget):
         self._validation_timer.setSingleShot(True)
         self._validation_timer.timeout.connect(self._perform_validation)
 
+        # Initialize responsive layout manager
+        self.responsive_layout = ResponsiveConfigLayout(self)
+
         # Initialize UI
         self._init_ui()
 
@@ -54,6 +58,9 @@ class ConfigPageBase(QWidget):
 
         # Connect change tracking
         self._connect_change_tracking()
+
+        # Make the page responsive
+        self.responsive_layout.make_responsive()
 
     def _init_ui(self):
         """Initialize the base UI structure."""
@@ -79,6 +86,7 @@ class ConfigPageBase(QWidget):
 
         if self.page_description:
             desc_label = QLabel(self.page_description)
+            desc_label.setObjectName("description_label")  # Mark for responsive hiding
             desc_label.setWordWrap(True)
             desc_label.setStyleSheet("color: gray;")
             text_layout.addWidget(desc_label)
@@ -96,8 +104,8 @@ class ConfigPageBase(QWidget):
         # Page-specific content (implemented by subclasses)
         self._setup_page_ui(layout)
 
-        # Add stretch at the bottom
-        layout.addStretch()
+        # Don't add stretch - let content determine height for better scrolling
+        # layout.addStretch()  # Removed to allow proper scrolling
 
     @abstractmethod
     def _setup_page_ui(self, parent_layout: QVBoxLayout):
@@ -250,21 +258,15 @@ class ConfigPageBase(QWidget):
 
     def _create_group_box(self, title: str, collapsible: bool = False) -> QGroupBox:
         """Create a group box, optionally collapsible."""
-        group = QGroupBox(title)
-
         if collapsible:
-            group.setCheckable(True)
-            group.setChecked(False)  # Start collapsed
-
-            # Update title to show expand/collapse indicator
-            def update_title():
-                prefix = "▼" if group.isChecked() else "▶"
-                group.setTitle(f"{prefix} {title}")
-
-            group.toggled.connect(update_title)
-            update_title()
-
-        return group
+            # Use responsive layout utility for collapsible sections
+            # Note: caller must add content widget separately
+            return self.responsive_layout.create_collapsible_section(
+                title, QWidget(), start_collapsed=True
+            )
+        else:
+            group = QGroupBox(title)
+            return group
 
     def _create_test_button(self) -> QPushButton:
         """Create a test connection button."""

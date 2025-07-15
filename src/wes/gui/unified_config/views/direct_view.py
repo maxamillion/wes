@@ -3,7 +3,14 @@
 from typing import Any, Dict, Optional
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QStyle, QTabBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QScrollArea,
+    QStyle,
+    QTabBar,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.config_pages import (
@@ -55,22 +62,71 @@ class DirectView(QWidget):
         # Update tab icons based on validation
         self._update_tab_icons()
 
+    def _wrap_in_scroll_area(self, widget):
+        """Wrap a widget in a scroll area for better small screen support."""
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        # Style the scroll area
+        scroll_area.setStyleSheet(
+            """
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                width: 12px;
+                background: #f0f0f0;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background: #c0c0c0;
+                border-radius: 6px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #a0a0a0;
+            }
+            QScrollBar:horizontal {
+                height: 12px;
+                background: #f0f0f0;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:horizontal {
+                background: #c0c0c0;
+                border-radius: 6px;
+                min-width: 20px;
+            }
+            QScrollBar::handle:horizontal:hover {
+                background: #a0a0a0;
+            }
+        """
+        )
+
+        return scroll_area
+
     def _create_service_tabs(self):
         """Create tabs for each service configuration."""
         # Jira tab
         self.jira_page = JiraConfigPage(self.config_manager)
         self.pages[ServiceType.JIRA] = self.jira_page
-        jira_index = self.tab_widget.addTab(self.jira_page, "Jira")
+        jira_scroll = self._wrap_in_scroll_area(self.jira_page)
+        jira_index = self.tab_widget.addTab(jira_scroll, "Jira")
 
         # Google tab
         self.google_page = GoogleConfigPage(self.config_manager)
         self.pages[ServiceType.GOOGLE] = self.google_page
-        google_index = self.tab_widget.addTab(self.google_page, "Google")
+        google_scroll = self._wrap_in_scroll_area(self.google_page)
+        google_index = self.tab_widget.addTab(google_scroll, "Google")
 
         # Gemini tab
         self.gemini_page = GeminiConfigPage(self.config_manager)
         self.pages[ServiceType.GEMINI] = self.gemini_page
-        gemini_index = self.tab_widget.addTab(self.gemini_page, "Gemini AI")
+        gemini_scroll = self._wrap_in_scroll_area(self.gemini_page)
+        gemini_index = self.tab_widget.addTab(gemini_scroll, "Gemini AI")
 
     def _create_app_settings_tab(self):
         """Create application settings tab."""
@@ -79,14 +135,16 @@ class DirectView(QWidget):
         )
 
         self.app_page = AppSettingsPage(self.config_manager)
-        app_index = self.tab_widget.addTab(self.app_page, "Application")
+        app_scroll = self._wrap_in_scroll_area(self.app_page)
+        app_index = self.tab_widget.addTab(app_scroll, "Application")
 
     def _create_security_tab(self):
         """Create security settings tab."""
         from wes.gui.unified_config.config_pages.security_page import SecurityPage
 
         self.security_page = SecurityPage(self.config_manager)
-        security_index = self.tab_widget.addTab(self.security_page, "Security")
+        security_scroll = self._wrap_in_scroll_area(self.security_page)
+        security_index = self.tab_widget.addTab(security_scroll, "Security")
 
     def _connect_signals(self):
         """Connect signals from all pages."""
