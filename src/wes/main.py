@@ -13,12 +13,12 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 try:
     from .core.config_manager import ConfigManager
-    from .gui.main_window_single import SingleWindowMainWindow as MainWindow
+    from .gui.main_window import MainWindow
     from .utils.exceptions import WesError
     from .utils.logging_config import get_logger, setup_logging
 except ImportError:
     from wes.core.config_manager import ConfigManager
-    from wes.gui.main_window_single import SingleWindowMainWindow as MainWindow
+    from wes.gui.main_window import MainWindow
     from wes.utils.exceptions import WesError
     from wes.utils.logging_config import get_logger, setup_logging
 

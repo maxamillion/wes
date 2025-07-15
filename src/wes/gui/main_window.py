@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QDialog,
+    QFileDialog,
     QFormLayout,
     QFrame,
     QGroupBox,
@@ -38,8 +39,11 @@ from PySide6.QtWidgets import (
 
 from ..core.config_manager import ConfigManager
 from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
+from ..core.orchestrator import WorkflowOrchestrator, WorkflowResult
 from ..utils.exceptions import WesError
 from ..utils.logging_config import get_logger
+from .export_dialog import ExportDialog
+from .summary_worker import SummaryWorker
 from .unified_config import ConfigState as UnifiedConfigState
 from .unified_config import UnifiedConfigDialog
 from .unified_config.utils.config_detector import ConfigDetector
@@ -51,6 +55,7 @@ class ViewState(Enum):
     WELCOME = "welcome"
     MAIN = "main"
     PROGRESS = "progress"
+    RESULT = "result"
     # Removed SETUP and CONFIG - now handled by unified dialog
 
 
@@ -77,6 +82,8 @@ class MainWindow(QMainWindow):
         # Current state
         self.current_view = ViewState.WELCOME
         self.summary_worker = None
+        self.current_result = None
+        self.orchestrator = WorkflowOrchestrator(self.config_manager)
 
         # Initialize UI
         self.init_ui()
@@ -107,6 +114,7 @@ class MainWindow(QMainWindow):
         self.create_welcome_view()
         self.create_main_view()
         self.create_progress_view()
+        self.create_result_view()
 
         main_layout.addWidget(self.main_stack)
 
@@ -115,8 +123,8 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
 
         # Start credential monitoring
-        self.credential_monitor.start()
-        self.credential_monitor.validation_complete.connect(
+        self.credential_monitor.start_monitoring()
+        self.credential_monitor.credential_status_changed.connect(
             self.on_credential_validation_complete
         )
 
@@ -358,6 +366,74 @@ class MainWindow(QMainWindow):
 
         self.main_stack.addWidget(self.progress_widget)
 
+    def create_result_view(self):
+        """Create the result view for displaying generated summary."""
+        self.result_widget = QWidget()
+        layout = QVBoxLayout(self.result_widget)
+
+        # Header
+        header_layout = QHBoxLayout()
+
+        title = QLabel("Executive Summary")
+        title_font = QFont()
+        title_font.setPointSize(18)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        header_layout.addWidget(title)
+
+        header_layout.addStretch()
+
+        # Action buttons
+        new_button = QPushButton("New Summary")
+        new_button.clicked.connect(self.new_summary)
+        header_layout.addWidget(new_button)
+
+        export_button = QPushButton("Export...")
+        export_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                font-weight: bold;
+                padding: 6px 15px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """
+        )
+        export_button.clicked.connect(self.show_export_dialog)
+        header_layout.addWidget(export_button)
+
+        layout.addLayout(header_layout)
+
+        # Summary content
+        self.result_text = QTextEdit()
+        self.result_text.setReadOnly(True)
+        layout.addWidget(self.result_text)
+
+        # Quick actions bar
+        actions_layout = QHBoxLayout()
+
+        copy_button = QPushButton("Copy to Clipboard")
+        copy_button.clicked.connect(self.copy_summary_to_clipboard)
+        actions_layout.addWidget(copy_button)
+
+        save_markdown_button = QPushButton("Save as Markdown")
+        save_markdown_button.clicked.connect(lambda: self.quick_export("markdown"))
+        actions_layout.addWidget(save_markdown_button)
+
+        save_pdf_button = QPushButton("Save as PDF")
+        save_pdf_button.clicked.connect(lambda: self.quick_export("pdf"))
+        actions_layout.addWidget(save_pdf_button)
+
+        actions_layout.addStretch()
+
+        layout.addLayout(actions_layout)
+
+        self.main_stack.addWidget(self.result_widget)
+
     def check_initial_setup(self):
         """Check if initial setup is needed."""
         config_state = self.config_detector.detect_state(self.config_manager.config)
@@ -451,7 +527,8 @@ class MainWindow(QMainWindow):
         if all_configured:
             self.config_status_label.setText("✓ All services configured")
             self.config_status_label.setStyleSheet("color: green;")
-            self.generate_button.setEnabled(True)
+            if hasattr(self, "generate_button"):
+                self.generate_button.setEnabled(True)
         else:
             # List what's missing
             missing = [
@@ -463,7 +540,8 @@ class MainWindow(QMainWindow):
                 f"⚠️ Configuration incomplete: {', '.join(missing)}"
             )
             self.config_status_label.setStyleSheet("color: orange;")
-            self.generate_button.setEnabled(False)
+            if hasattr(self, "generate_button"):
+                self.generate_button.setEnabled(False)
 
     def switch_view(self, view_state: ViewState):
         """Switch between different views."""
@@ -476,6 +554,8 @@ class MainWindow(QMainWindow):
             self.update_config_status()
         elif view_state == ViewState.PROGRESS:
             self.main_stack.setCurrentWidget(self.progress_widget)
+        elif view_state == ViewState.RESULT:
+            self.main_stack.setCurrentWidget(self.result_widget)
 
     def new_summary(self):
         """Start a new summary."""
@@ -493,19 +573,95 @@ class MainWindow(QMainWindow):
             )
             return
 
+        # Get parameters
+        start_date = self.start_date.date().toPython()
+        end_date = self.end_date.date().toPython()
+
+        # Convert to datetime
+        from datetime import datetime
+
+        start_datetime = datetime.combine(start_date, datetime.min.time())
+        end_datetime = datetime.combine(end_date, datetime.max.time())
+
+        # Get users (for now, use the configured username)
+        jira_config = self.config_manager.get_jira_config()
+        users = [jira_config.username] if jira_config.username else []
+
+        if not users:
+            QMessageBox.warning(
+                self,
+                "No User Specified",
+                "Please configure a Jira username in settings.",
+            )
+            return
+
         # Switch to progress view
         self.switch_view(ViewState.PROGRESS)
+        self.progress_bar.setValue(0)
+        self.progress_status.setText("Initializing...")
 
-        # Start summary generation
-        # ... (implementation of summary generation)
+        # Create and start worker
+        self.summary_worker = SummaryWorker(
+            orchestrator=self.orchestrator,
+            users=users,
+            start_date=start_datetime,
+            end_date=end_datetime,
+            custom_prompt=None,
+        )
+
+        # Connect signals
+        self.summary_worker.progress_update.connect(self.on_progress_update)
+        self.summary_worker.generation_complete.connect(self.on_generation_complete)
+        self.summary_worker.generation_failed.connect(self.on_generation_failed)
+
+        # Start generation
+        self.summary_worker.start()
 
     def cancel_summary(self):
         """Cancel summary generation."""
         if self.summary_worker and self.summary_worker.isRunning():
+            self.summary_worker.cancel()
             self.summary_worker.quit()
             self.summary_worker.wait()
 
         self.switch_view(ViewState.MAIN)
+
+    def on_progress_update(self, message: str, percentage: int):
+        """Handle progress updates from worker.
+
+        Args:
+            message: Progress message
+            percentage: Progress percentage (0-100)
+        """
+        self.progress_status.setText(message)
+        self.progress_bar.setValue(percentage)
+
+    def on_generation_complete(self, result: WorkflowResult):
+        """Handle successful summary generation.
+
+        Args:
+            result: Workflow result containing summary data
+        """
+        self.current_result = result
+        self.switch_view(ViewState.RESULT)
+
+        # Update result view with summary
+        if result.summary_content:
+            self.result_text.setPlainText(result.summary_content)
+            self.status_bar.showMessage("Summary generated successfully", 3000)
+        else:
+            self.result_text.setPlainText("No summary content generated.")
+
+    def on_generation_failed(self, error_message: str):
+        """Handle failed summary generation.
+
+        Args:
+            error_message: Error message
+        """
+        self.switch_view(ViewState.MAIN)
+        QMessageBox.critical(
+            self, "Generation Failed", f"Failed to generate summary:\n\n{error_message}"
+        )
 
     def show_about(self):
         """Show about dialog."""
@@ -517,16 +673,116 @@ class MainWindow(QMainWindow):
             "Automated executive summary generation from Jira data.",
         )
 
-    def on_credential_validation_complete(self, results: Dict[str, Any]):
-        """Handle credential validation results."""
+    def on_credential_validation_complete(
+        self, service: str, credential_type: str, healthy: bool
+    ):
+        """Handle credential validation results.
+
+        Args:
+            service: Service name
+            credential_type: Type of credential
+            healthy: Whether the credential is healthy
+        """
         # Update UI based on validation results
         if hasattr(self, "config_status_label"):
             self.update_config_status()
 
+    def show_export_dialog(self):
+        """Show the export dialog for the current summary."""
+        if not self.current_result or not self.current_result.summary_data:
+            QMessageBox.warning(self, "No Summary", "No summary available to export.")
+            return
+
+        dialog = ExportDialog(self.current_result.summary_data, self)
+        dialog.export_complete.connect(self.on_export_complete)
+        dialog.exec()
+
+    def copy_summary_to_clipboard(self):
+        """Copy the current summary to clipboard."""
+        if not self.current_result or not self.current_result.summary_data:
+            return
+
+        from ..core.export_manager import ExportManager
+
+        export_manager = ExportManager()
+
+        try:
+            success = export_manager.copy_to_clipboard(self.current_result.summary_data)
+            if success:
+                self.status_bar.showMessage("Summary copied to clipboard", 3000)
+        except Exception as e:
+            QMessageBox.warning(
+                self, "Copy Failed", f"Failed to copy to clipboard: {str(e)}"
+            )
+
+    def quick_export(self, format: str):
+        """Quick export to a specific format."""
+        if not self.current_result or not self.current_result.summary_data:
+            return
+
+        from pathlib import Path
+
+        from ..core.export_manager import ExportManager
+
+        export_manager = ExportManager()
+
+        # Get file path
+        file_extensions = {
+            "markdown": ("Markdown Files (*.md)", ".md"),
+            "pdf": ("PDF Files (*.pdf)", ".pdf"),
+        }
+
+        filter_text, extension = file_extensions.get(format, ("All Files (*)", ""))
+
+        # Suggest filename
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        suggested_name = f"executive_summary_{date_str}{extension}"
+
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            f"Save Executive Summary as {format.upper()}",
+            suggested_name,
+            filter_text,
+        )
+
+        if filepath:
+            try:
+                filepath = Path(filepath)
+                if not filepath.suffix:
+                    filepath = filepath.with_suffix(extension)
+
+                success = export_manager.export_summary(
+                    self.current_result.summary_data, format, filepath
+                )
+
+                if success:
+                    self.status_bar.showMessage(
+                        f"Summary exported to {filepath.name}", 3000
+                    )
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Export Failed", f"Failed to export summary:\n{str(e)}"
+                )
+
+    def on_export_complete(self, format: str, filepath: str):
+        """Handle export completion.
+
+        Args:
+            format: Export format
+            filepath: Path where file was saved (empty for clipboard)
+        """
+        if format == "clipboard":
+            self.status_bar.showMessage("Summary copied to clipboard", 3000)
+        else:
+            from pathlib import Path
+
+            filename = Path(filepath).name
+            self.status_bar.showMessage(f"Summary exported to {filename}", 3000)
+
     def closeEvent(self, event):
         """Handle application close."""
         # Stop credential monitor
-        self.credential_monitor.stop()
+        self.credential_monitor.stop_monitoring()
 
         # Cancel any running operations
         if self.summary_worker and self.summary_worker.isRunning():

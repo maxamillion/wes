@@ -248,6 +248,29 @@ class RedHatJiraClient:
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
 
+    async def validate_connection(self) -> bool:
+        """Validate the connection to Red Hat Jira.
+
+        Returns:
+            True if connection is valid
+
+        Raises:
+            AuthenticationError: If authentication fails
+        """
+        # The connection is already validated during initialization
+        # Just do a simple test to ensure it's still valid
+        try:
+            # Try to get current user info as a validation test
+            if hasattr(self, "_client") and self._client:
+                myself = self._client.myself()
+                self.logger.debug(f"Connection validated for user: {myself['name']}")
+                return True
+            else:
+                raise AuthenticationError("Jira client not initialized")
+        except Exception as e:
+            self.logger.error(f"Connection validation failed: {e}")
+            raise AuthenticationError(f"Failed to validate connection: {e}")
+
     async def get_user_activities(
         self,
         users: List[str],

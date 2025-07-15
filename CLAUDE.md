@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WES (Wes) is a cross-platform desktop application that automates executive summary creation by integrating Jira activity data with Google's Gemini AI and outputting formatted Google Docs. The application uses PySide6 (Qt6) for the GUI and is built with Python 3.11+.
+WES (Wes) is a cross-platform desktop application that automates executive summary creation by integrating Jira activity data with Google's Gemini AI and exporting summaries in multiple formats (Markdown, HTML, PDF, Text). The application uses PySide6 (Qt6) for the GUI and is built with Python 3.11+.
 
 ## Essential Commands
 
@@ -49,11 +49,12 @@ make build-all  # Build for all platforms (Linux, Windows, macOS)
 1. **src/wes/core/orchestrator.py** - Central workflow coordinator that manages the entire summary generation process
 2. **src/wes/core/config_manager.py** - Configuration management with encryption for sensitive data
 3. **src/wes/gui/main_window.py** - Main application window using PySide6
+4. **src/wes/core/export_manager.py** - Export functionality for multiple output formats
 
 ### Integration Flow
 
 ```
-User Input → Orchestrator → Jira Client → Gemini AI → Google Docs → User Output
+User Input → Orchestrator → Jira Client → Gemini AI → Export Manager → File/Clipboard
                     ↓
              Security Manager (encryption/decryption of credentials)
 ```
@@ -63,10 +64,14 @@ User Input → Orchestrator → Jira Client → Gemini AI → Google Docs → Us
 - **Jira**: Two implementations:
   - `integrations/jira_client.py` - Standard Jira (uses API token)
   - `integrations/redhat_jira_client.py` - Red Hat Jira (uses rhjira library with Kerberos)
-- **Google Services**: 
-  - `integrations/gemini_client.py` - AI summarization
-  - `integrations/google_docs_client.py` - Document creation
-  - OAuth 2.0 and Service Account authentication supported
+- **AI Service**: 
+  - `integrations/gemini_client.py` - Google Gemini AI for summary generation
+- **Export Formats**:
+  - Markdown (.md)
+  - HTML (.html)
+  - PDF (.pdf)
+  - Plain Text (.txt)
+  - Clipboard copy
 
 ### Security Architecture
 
@@ -106,5 +111,5 @@ uv add --dev package-name # Add dev dependency
 1. **Pre-commit hooks are mandatory** - installed automatically with `make dev`
 2. **Red Hat Jira integration** is optional - requires `make install-dev` or installation with `[redhat]` extra
 3. **Cross-platform building** requires platform-specific environments (use GitHub Actions for full builds)
-4. **Google API credentials** must be configured before first run - see `docs/GOOGLE_OAUTH_SETUP.md`
+4. **Only 2 services to configure** - Jira credentials and Gemini AI API key
 5. **Security scans** run automatically in CI but can be run locally with `make security-scan`

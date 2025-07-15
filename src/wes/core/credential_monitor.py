@@ -78,7 +78,6 @@ class CredentialMonitor(QObject):
 
         # Setup auto-refresh handlers
         self.refresh_handlers = {
-            "google": self._refresh_google_credentials,
             "jira": self._refresh_jira_credentials,
             "gemini": self._refresh_gemini_credentials,
         }
@@ -254,25 +253,6 @@ class CredentialMonitor(QObject):
                 )
                 return {"healthy": success, "error": message if not success else None}
 
-            elif service == "google":
-                success, message = self.validator.validate_google_credentials(
-                    credentials
-                )
-
-                # Check token expiration for Google OAuth
-                expires_at = None
-                if "expires_at" in credentials:
-                    try:
-                        expires_at = datetime.fromisoformat(credentials["expires_at"])
-                    except Exception:
-                        pass
-
-                return {
-                    "healthy": success,
-                    "error": message if not success else None,
-                    "expires_at": expires_at,
-                }
-
             elif service == "gemini":
                 success, message = self.validator.validate_gemini_credentials(
                     credentials.get("api_key", "")
@@ -308,34 +288,6 @@ class CredentialMonitor(QObject):
                     f"Auto-refresh failed for {service}:{credential_type}: {e}"
                 )
 
-    def _refresh_google_credentials(self, credential_type: str) -> bool:
-        """Refresh Google OAuth credentials."""
-        try:
-            from ..gui.oauth_handler import GoogleOAuthHandler
-
-            # Get current credentials
-            current_creds = self._get_credentials_for_service("google")
-            if not current_creds:
-                return False
-
-            # Attempt refresh
-            oauth_handler = GoogleOAuthHandler()
-            refreshed_creds = oauth_handler.refresh_credentials(current_creds)
-
-            if refreshed_creds:
-                # Store refreshed credentials
-                for key, value in refreshed_creds.items():
-                    if key in ["client_secret", "refresh_token", "access_token"]:
-                        self.config_manager.store_credential("google", key, value)
-
-                return True
-
-            return False
-
-        except Exception as e:
-            self.logger.error(f"Failed to refresh Google credentials: {e}")
-            return False
-
     def _refresh_jira_credentials(self, credential_type: str) -> bool:
         """Refresh Jira credentials (typically not auto-refreshable)."""
         # Jira API tokens don't auto-refresh, but we can validate and suggest renewal
@@ -358,12 +310,6 @@ class CredentialMonitor(QObject):
             if self.config_manager.retrieve_credential("jira", "api_token"):
                 credentials.append(("jira", "api_token"))
 
-        # Check Google
-        google_config = self.config_manager.get_google_config()
-        if google_config.oauth_client_id:
-            if self.config_manager.retrieve_credential("google", "oauth_refresh_token"):
-                credentials.append(("google", "oauth"))
-
         # Check Gemini
         if self.config_manager.retrieve_credential("ai", "gemini_api_key"):
             credentials.append(("gemini", "api_key"))
@@ -382,27 +328,6 @@ class CredentialMonitor(QObject):
                         "url": config.url,
                         "username": config.username,
                         "api_token": api_token,
-                    }
-
-            elif service == "google":
-                config = self.config_manager.get_google_config()
-                client_secret = self.config_manager.retrieve_credential(
-                    "google", "oauth_client_secret"
-                )
-                refresh_token = self.config_manager.retrieve_credential(
-                    "google", "oauth_refresh_token"
-                )
-                access_token = self.config_manager.retrieve_credential(
-                    "google", "oauth_access_token"
-                )
-
-                if client_secret and refresh_token:
-                    return {
-                        "client_id": config.oauth_client_id,
-                        "client_secret": client_secret,
-                        "refresh_token": refresh_token,
-                        "access_token": access_token,
-                        "token_uri": "https://oauth2.googleapis.com/token",
                     }
 
             elif service == "gemini":

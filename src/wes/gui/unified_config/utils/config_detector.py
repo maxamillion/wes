@@ -11,7 +11,6 @@ class ConfigDetector:
     def __init__(self):
         self.required_fields = {
             ServiceType.JIRA: ["url", "username", "api_token"],
-            ServiceType.GOOGLE: [],  # Google uses OAuth or service account, checked separately
             ServiceType.GEMINI: ["api_key"],
         }
 
@@ -32,9 +31,6 @@ class ConfigDetector:
         service_states = {
             ServiceType.JIRA: self._check_service_config(
                 config.get("jira", {}), ServiceType.JIRA
-            ),
-            ServiceType.GOOGLE: self._check_service_config(
-                config.get("google", {}), ServiceType.GOOGLE
             ),
             ServiceType.GEMINI: self._check_service_config(
                 config.get("gemini", {}), ServiceType.GEMINI
@@ -66,13 +62,6 @@ class ConfigDetector:
         """
         if not service_config:
             return False
-
-        # Special handling for Google service which can use OAuth or service account
-        if service_type == ServiceType.GOOGLE:
-            # Check if OAuth credentials exist (client ID and either refresh token or service account)
-            has_oauth = bool(service_config.get("oauth_client_id"))
-            has_service_account = bool(service_config.get("service_account_path"))
-            return has_oauth or has_service_account
 
         # Special handling for Gemini service
         if service_type == ServiceType.GEMINI:

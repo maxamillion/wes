@@ -34,10 +34,6 @@ dependencies = [
     "pydantic>=2.5.0",
     "toml>=0.10.2",
     "python-dotenv>=1.0.0",
-    # Google API clients
-    "google-api-python-client>=2.110.0",
-    "google-auth>=2.25.0",
-    "google-auth-oauthlib>=1.1.0",
     # Jira API
     "jira>=3.5.0",
     "atlassian-python-api>=3.41.0",
@@ -52,6 +48,8 @@ dependencies = [
     # Async support
     "asyncio>=3.4.3",
     "aiohttp>=3.9.0",
+    # PDF generation
+    "reportlab>=4.0.0",
     "pyinstaller>=6.14.2",
     "pytest>=8.4.1",
 ]

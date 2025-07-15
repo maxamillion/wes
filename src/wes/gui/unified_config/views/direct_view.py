@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.config_pages import (
     GeminiConfigPage,
-    GoogleConfigPage,
     JiraConfigPage,
 )
 from wes.gui.unified_config.types import ServiceType
@@ -115,12 +114,6 @@ class DirectView(QWidget):
         jira_scroll = self._wrap_in_scroll_area(self.jira_page)
         jira_index = self.tab_widget.addTab(jira_scroll, "Jira")
 
-        # Google tab
-        self.google_page = GoogleConfigPage(self.config_manager)
-        self.pages[ServiceType.GOOGLE] = self.google_page
-        google_scroll = self._wrap_in_scroll_area(self.google_page)
-        google_index = self.tab_widget.addTab(google_scroll, "Google")
-
         # Gemini tab
         self.gemini_page = GeminiConfigPage(self.config_manager)
         self.pages[ServiceType.GEMINI] = self.gemini_page
@@ -180,7 +173,7 @@ class DirectView(QWidget):
         # Check if all required services are valid
         all_valid = all(
             self.validation_states.get(service, False)
-            for service in [ServiceType.JIRA, ServiceType.GOOGLE, ServiceType.GEMINI]
+            for service in [ServiceType.JIRA, ServiceType.GEMINI]
         )
         self.validation_state_changed.emit(all_valid)
 

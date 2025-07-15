@@ -25,7 +25,6 @@ class ServiceType(Enum):
     """Supported service types."""
 
     JIRA = "jira"
-    GOOGLE = "google"
     GEMINI = "gemini"
 
 

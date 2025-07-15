@@ -42,14 +42,12 @@ class DefaultConfigPageFactory:
             AppSettingsPage,
         )
         from wes.gui.unified_config.config_pages.gemini_page import GeminiConfigPage
-        from wes.gui.unified_config.config_pages.google_page import GoogleConfigPage
         from wes.gui.unified_config.config_pages.jira_page import JiraConfigPage
         from wes.gui.unified_config.config_pages.security_page import (
             SecurityPage,
         )
 
         self._page_registry = {
-            ServiceType.GOOGLE: GoogleConfigPage,
             ServiceType.JIRA: JiraConfigPage,
             ServiceType.GEMINI: GeminiConfigPage,
         }
