@@ -40,9 +40,17 @@ class ConfigDetector:
         # Determine overall state
         complete_count = sum(1 for state in service_states.values() if state)
 
+        # Check if any service has partial configuration
+        has_partial_config = False
+        for service_type in service_states:
+            service_config = config.get(service_type.value, {})
+            if service_config and not service_states[service_type]:
+                has_partial_config = True
+                break
+
         if complete_count == len(service_states):
             return ConfigState.COMPLETE
-        elif complete_count > 0:
+        elif complete_count > 0 or has_partial_config:
             return ConfigState.INCOMPLETE
         else:
             return ConfigState.INVALID
@@ -134,15 +142,7 @@ class ConfigDetector:
         self, service_config: Dict[str, Any], service_type: ServiceType
     ) -> list[str]:
         """Get list of missing required fields for a service."""
-        # Special handling for Google service
-        if service_type == ServiceType.GOOGLE:
-            # Check what's actually missing
-            has_oauth = bool(service_config.get("oauth_client_id"))
-            has_service_account = bool(service_config.get("service_account_path"))
-
-            if not has_oauth and not has_service_account:
-                return ["OAuth or Service Account credentials"]
-            return []
+        # Google service removed
 
         # Special handling for Gemini service
         if service_type == ServiceType.GEMINI:

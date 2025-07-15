@@ -13,7 +13,6 @@ from src.wes.core.orchestrator import (
 )
 from src.wes.utils.exceptions import (
     GeminiIntegrationError,
-    GoogleDocsIntegrationError,
     JiraIntegrationError,
     WesError,
 )
@@ -48,21 +47,16 @@ def mock_config_manager():
     )
     config_manager.get_ai_config.return_value = ai_config
 
-    google_config = Mock(
-        oauth_client_id="test_client_id",
-        service_account_path=None,
-        rate_limit=100,
-        timeout=30,
-    )
-    config_manager.get_google_config.return_value = google_config
-
     return config_manager
 
 
 @pytest.fixture
 def orchestrator(mock_config_manager):
     """Create an orchestrator instance with mocked dependencies."""
-    return WorkflowOrchestrator(mock_config_manager)
+    with patch("src.wes.core.orchestrator.ServiceFactory") as MockServiceFactory:
+        mock_factory = Mock()
+        MockServiceFactory.return_value = mock_factory
+        return WorkflowOrchestrator(mock_config_manager)
 
 
 class TestWorkflowOrchestrator:
@@ -73,10 +67,9 @@ class TestWorkflowOrchestrator:
         assert orchestrator.config_manager == mock_config_manager
         assert orchestrator.is_cancelled is False
         assert orchestrator.current_stage == 0
-        assert len(orchestrator.stages) == 6
+        assert len(orchestrator.stages) == 5
         assert orchestrator.jira_client is None
         assert orchestrator.gemini_client is None
-        assert orchestrator.google_docs_client is None
 
     def test_set_progress_callback(self, orchestrator):
         """Test setting progress callback."""
@@ -110,12 +103,6 @@ class TestWorkflowOrchestrator:
                 "model": "gemini-2.5-flash",
             }
         )
-        orchestrator._stage_create_document = AsyncMock(
-            return_value={
-                "document_id": "test_doc_123",
-                "document_url": "https://docs.google.com/document/d/test_doc_123",
-            }
-        )
         orchestrator._stage_finalize = AsyncMock()
         orchestrator._cleanup_clients = AsyncMock()
 
@@ -128,21 +115,16 @@ class TestWorkflowOrchestrator:
             users=users,
             start_date=start_date,
             end_date=end_date,
-            document_title="Test Summary",
-            folder_id="test_folder",
-            share_email="share@example.com",
             custom_prompt="Custom prompt",
         )
 
         # Verify result
         assert result.status == WorkflowStatus.COMPLETED
-        assert result.document_id == "test_doc_123"
-        assert result.document_url == "https://docs.google.com/document/d/test_doc_123"
         assert result.summary_content == "Test summary content"
         assert result.activity_count == 1
         assert result.execution_time > 0
         assert result.error_message is None
-        assert len(result.stages_completed) == 6
+        assert len(result.stages_completed) == 5
 
         # Verify all stages were called
         orchestrator._stage_validate_configuration.assert_called_once()
@@ -151,7 +133,6 @@ class TestWorkflowOrchestrator:
             users, start_date, end_date
         )
         orchestrator._stage_generate_summary.assert_called_once()
-        orchestrator._stage_create_document.assert_called_once()
         orchestrator._stage_finalize.assert_called_once()
         orchestrator._cleanup_clients.assert_called_once()
 
@@ -226,6 +207,8 @@ class TestWorkflowOrchestrator:
         self, orchestrator, mock_config_manager
     ):
         """Test configuration validation with missing credentials."""
+        # Override the side_effect to return None
+        mock_config_manager.retrieve_credential.side_effect = None
         mock_config_manager.retrieve_credential.return_value = None
 
         with pytest.raises(WesError, match="Jira API token not configured"):
@@ -234,33 +217,28 @@ class TestWorkflowOrchestrator:
     @pytest.mark.asyncio
     async def test_stage_initialize_clients(self, orchestrator, mock_config_manager):
         """Test client initialization."""
-        with (
-            patch("src.wes.core.orchestrator.JiraClient") as MockJiraClient,
-            patch("src.wes.core.orchestrator.GeminiClient") as MockGeminiClient,
-            patch("src.wes.core.orchestrator.GoogleDocsClient") as MockGoogleDocsClient,
-        ):
+        # Configure mocks
+        mock_jira = Mock()
+        mock_gemini = Mock()
 
-            # Configure mocks
-            mock_jira = Mock()
-            mock_gemini = Mock()
-            mock_google = Mock()
+        # Mock service factory methods
+        orchestrator.service_factory.create_jira_client = AsyncMock(
+            return_value=mock_jira
+        )
+        orchestrator.service_factory.create_gemini_client = AsyncMock(
+            return_value=mock_gemini
+        )
 
-            MockJiraClient.return_value = mock_jira
-            MockGeminiClient.return_value = mock_gemini
-            MockGoogleDocsClient.return_value = mock_google
+        # Execute initialization
+        await orchestrator._stage_initialize_clients()
 
-            # Execute initialization
-            await orchestrator._stage_initialize_clients()
+        # Verify clients were created
+        assert orchestrator.jira_client == mock_jira
+        assert orchestrator.gemini_client == mock_gemini
 
-            # Verify clients were created
-            assert orchestrator.jira_client == mock_jira
-            assert orchestrator.gemini_client == mock_gemini
-            assert orchestrator.google_docs_client == mock_google
-
-            # Verify constructor calls
-            MockJiraClient.assert_called_once()
-            MockGeminiClient.assert_called_once()
-            MockGoogleDocsClient.assert_called_once()
+        # Verify factory methods were called
+        orchestrator.service_factory.create_jira_client.assert_called_once()
+        orchestrator.service_factory.create_gemini_client.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_stage_fetch_jira_data(self, orchestrator):
@@ -336,25 +314,22 @@ class TestWorkflowOrchestrator:
     @pytest.mark.asyncio
     async def test_cleanup_clients(self, orchestrator):
         """Test client cleanup."""
-        # Mock clients
-        orchestrator.jira_client = AsyncMock()
-        orchestrator.gemini_client = AsyncMock()
-        orchestrator.google_docs_client = AsyncMock()
+        # Mock service factory close_all method
+        orchestrator.service_factory.close_all = AsyncMock()
 
         # Cleanup
         await orchestrator._cleanup_clients()
 
-        # Verify all clients were closed
-        orchestrator.jira_client.close.assert_called_once()
-        orchestrator.gemini_client.close.assert_called_once()
-        orchestrator.google_docs_client.close.assert_called_once()
+        # Verify service factory close_all was called
+        orchestrator.service_factory.close_all.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_cleanup_clients_with_error(self, orchestrator):
         """Test client cleanup with errors."""
-        # Mock client that raises error
-        orchestrator.jira_client = AsyncMock()
-        orchestrator.jira_client.close.side_effect = Exception("Cleanup error")
+        # Mock service factory that raises error
+        orchestrator.service_factory.close_all = AsyncMock(
+            side_effect=Exception("Cleanup error")
+        )
 
         # Should not raise exception
         await orchestrator._cleanup_clients()
@@ -372,19 +347,14 @@ class TestWorkflowOrchestrator:
             patch.object(orchestrator, "_cleanup_clients", new_callable=AsyncMock),
         ):
 
-            # Mock clients
-            mock_jira = Mock()
-            mock_jira.get_connection_info.return_value = {"connected": True}
-
-            mock_gemini = AsyncMock()
-            mock_gemini.validate_api_key.return_value = True
-
-            mock_google = AsyncMock()
-            mock_google.list_documents.return_value = []
-
-            orchestrator.jira_client = mock_jira
-            orchestrator.gemini_client = mock_gemini
-            orchestrator.google_docs_client = mock_google
+            # Mock service factory health check
+            health_results = {
+                "jira": {"healthy": True, "message": "Connected"},
+                "gemini": {"healthy": True, "message": "API key valid"},
+            }
+            orchestrator.service_factory.health_check_all = AsyncMock(
+                return_value=health_results
+            )
 
             # Test connections
             results = await orchestrator.test_connections()
@@ -392,7 +362,6 @@ class TestWorkflowOrchestrator:
             # Verify results
             assert results["jira"] is True
             assert results["gemini"] is True
-            assert results["google_docs"] is True
 
             # Verify cleanup was called
             orchestrator._cleanup_clients.assert_called_once()

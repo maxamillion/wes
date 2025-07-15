@@ -20,8 +20,8 @@ class TestConfigDetector:
         assert detector.detect_state({}) == ConfigState.EMPTY
 
         # Config with empty values
-        config = {"jira": {}, "google": {}, "gemini": {}}
-        assert detector.detect_state(config) == ConfigState.INVALID
+        config = {"jira": {}, "gemini": {}}
+        assert detector.detect_state(config) == ConfigState.EMPTY
 
     def test_detect_complete_state(self, detector):
         """Test detection of complete configuration."""
@@ -31,7 +31,6 @@ class TestConfigDetector:
                 "username": "user@example.com",
                 "api_token": "test-token",
             },
-            "google": {"credentials_path": "/path/to/creds.json"},
             "gemini": {"api_key": "AIzaSyTest123456789"},
         }
         assert detector.detect_state(config) == ConfigState.COMPLETE
@@ -45,7 +44,6 @@ class TestConfigDetector:
                 "username": "user@example.com",
                 "api_token": "test-token",
             },
-            "google": {},
             "gemini": {},
         }
         assert detector.detect_state(config) == ConfigState.INCOMPLETE
@@ -65,9 +63,8 @@ class TestConfigDetector:
         # All missing
         config = {}
         missing = detector.get_missing_services(config)
-        assert len(missing) == 3
+        assert len(missing) == 2
         assert ServiceType.JIRA in missing
-        assert ServiceType.GOOGLE in missing
         assert ServiceType.GEMINI in missing
 
         # Only Jira configured
@@ -79,8 +76,7 @@ class TestConfigDetector:
             }
         }
         missing = detector.get_missing_services(config)
-        assert len(missing) == 2
-        assert ServiceType.GOOGLE in missing
+        assert len(missing) == 1
         assert ServiceType.GEMINI in missing
         assert ServiceType.JIRA not in missing
 
@@ -92,7 +88,6 @@ class TestConfigDetector:
                 "username": "user@example.com",
                 "api_token": "test-token",
             },
-            "google": {"credentials_path": ""},  # Empty path
             "gemini": {},  # Not configured
         }
 
@@ -101,10 +96,6 @@ class TestConfigDetector:
         # Jira should be valid
         assert status[ServiceType.JIRA]["is_valid"] is True
         assert status[ServiceType.JIRA]["message"] == "Configuration complete"
-
-        # Google should be invalid
-        assert status[ServiceType.GOOGLE]["is_valid"] is False
-        assert "Missing: credentials_path" in status[ServiceType.GOOGLE]["message"]
 
         # Gemini should be not configured
         assert status[ServiceType.GEMINI]["is_valid"] is False
@@ -126,8 +117,8 @@ class TestConfigDetector:
             }
         }
         message, service = detector.suggest_next_action(config)
-        assert service == ServiceType.GOOGLE
-        assert "Configure Google" in message
+        assert service == ServiceType.GEMINI
+        assert "Configure Gemini" in message
 
         # All configured
         config = {
@@ -136,7 +127,6 @@ class TestConfigDetector:
                 "username": "user@example.com",
                 "api_token": "test-token",
             },
-            "google": {"credentials_path": "/path/to/creds.json"},
             "gemini": {"api_key": "AIzaSyTest123456789"},
         }
         message, service = detector.suggest_next_action(config)
@@ -157,12 +147,11 @@ class TestConfigDetector:
         status = detector.get_service_status(config)
         # This would need custom logic in detector for Red Hat Jira
 
-        # Test service account for Google
+        # Test minimal Gemini config
         config = {
-            "google": {
-                "auth_method": "service_account",
-                "service_account_key_path": "/path/to/key.json",
+            "gemini": {
+                "api_key": "AIzaSyTest123456789",
             }
         }
-        # Service account should also be valid
+        # Gemini should be valid with just API key
         # This would need custom logic in detector
