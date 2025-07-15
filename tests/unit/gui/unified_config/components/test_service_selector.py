@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 
 from wes.gui.unified_config.components.service_selector import ServiceSelector
 from wes.gui.unified_config.types import JiraType
