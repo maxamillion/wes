@@ -4,7 +4,8 @@ This module provides factory patterns to create instances with dependencies
 injected, making the code more testable and maintainable.
 """
 
-from typing import Dict, Type, Optional, Protocol, runtime_checkable
+from typing import Dict, Optional, Protocol, Type, runtime_checkable
+
 from PySide6.QtWidgets import QWidget
 
 from wes.core.config_manager import ConfigManager
@@ -37,12 +38,12 @@ class DefaultConfigPageFactory:
     def _initialize_defaults(self) -> None:
         """Initialize default page mappings."""
         # Import here to avoid circular imports
-        from wes.gui.unified_config.config_pages.google_page import GoogleConfigPage
-        from wes.gui.unified_config.config_pages.jira_page import JiraConfigPage
-        from wes.gui.unified_config.config_pages.gemini_page import GeminiConfigPage
         from wes.gui.unified_config.config_pages.app_settings_page import (
             AppSettingsPage,
         )
+        from wes.gui.unified_config.config_pages.gemini_page import GeminiConfigPage
+        from wes.gui.unified_config.config_pages.google_page import GoogleConfigPage
+        from wes.gui.unified_config.config_pages.jira_page import JiraConfigPage
         from wes.gui.unified_config.config_pages.security_page import (
             SecuritySettingsPage,
         )

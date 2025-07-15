@@ -22,10 +22,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from wes.utils.logging_config import get_logger
+from wes.gui.unified_config.utils.constants import ConfigConstants
 from wes.gui.unified_config.utils.dialogs import DialogManager
 from wes.gui.unified_config.utils.styles import StyleManager
-from wes.gui.unified_config.utils.constants import ConfigConstants
+from wes.utils.logging_config import get_logger
 
 
 class OAuthSetupDialog(QDialog):

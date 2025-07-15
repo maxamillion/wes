@@ -160,7 +160,14 @@ class JiraConfigPage(ConfigPageBase):
         # Set basic fields
         self.url_input.setText(jira_config.get("url", ""))
         self.username_input.setText(jira_config.get("username", ""))
-        self.api_token_input.setText(jira_config.get("api_token", ""))
+
+        # Try to load API token from config manager (might be stored securely)
+        if self.config_manager:
+            api_token = self.config_manager.retrieve_credential("jira", "api_token")
+            if api_token:
+                self.api_token_input.setText(api_token)
+            else:
+                self.api_token_input.setText(jira_config.get("api_token", ""))
 
         # Set advanced fields
         self.verify_ssl.setChecked(jira_config.get("verify_ssl", True))

@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QVBoxLayout, QWidget
+
 from wes.gui.unified_config.utils.styles import StyleManager
 
 

@@ -4,12 +4,11 @@ This module provides a simple service locator pattern to manage dependencies
 across the application, making it easier to test and maintain.
 """
 
-from typing import Any, Dict, Type, TypeVar, Optional, Callable
 from functools import wraps
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 from wes.core.config_manager import ConfigManager
 from wes.utils.logging_config import get_logger
-
 
 T = TypeVar("T")
 

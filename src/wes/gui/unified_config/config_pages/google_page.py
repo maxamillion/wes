@@ -25,9 +25,9 @@ from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.components.validation_indicator import ValidationIndicator
 from wes.gui.unified_config.config_pages.base_page import ConfigPageBase
 from wes.gui.unified_config.types import ServiceType, ValidationResult
+from wes.gui.unified_config.utils.constants import ConfigConstants
 from wes.gui.unified_config.utils.dialogs import DialogManager, FileDialogManager
 from wes.gui.unified_config.utils.styles import StyleManager
-from wes.gui.unified_config.utils.constants import ConfigConstants
 
 
 class GoogleConfigPage(ConfigPageBase):
@@ -456,7 +456,16 @@ class GoogleConfigPage(ConfigPageBase):
         google_config = config.get("google", {})
 
         # Set authentication method
-        auth_method = google_config.get("auth_method", "oauth")
+        # Check if we have a service account path configured
+        service_account_path = google_config.get("service_account_path", "")
+        auth_method = google_config.get("auth_method", "")
+
+        # If no auth_method is specified but we have a service account path, use service account
+        if not auth_method and service_account_path:
+            auth_method = "service_account"
+        elif not auth_method:
+            auth_method = "oauth"
+
         if auth_method == "service_account":
             self.service_account_radio.setChecked(True)
             self.oauth_group.hide()
@@ -491,8 +500,12 @@ class GoogleConfigPage(ConfigPageBase):
                     self.oauth_email_label.show()
 
         # Load service account config
-        if "service_account_key_path" in google_config:
-            self.key_file_input.setText(google_config["service_account_key_path"])
+        # Try both the new field name and the old one for backwards compatibility
+        service_account_key_path = google_config.get(
+            "service_account_key_path", ""
+        ) or google_config.get("service_account_path", "")
+        if service_account_key_path:
+            self.key_file_input.setText(service_account_key_path)
             self._validate_key_file()
 
         # Load advanced settings

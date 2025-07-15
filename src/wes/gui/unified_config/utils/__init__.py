@@ -6,16 +6,12 @@ reduce duplication, and enhance testability.
 
 # Existing utilities
 from .config_detector import ConfigDetector
-from .responsive_layout import ResponsiveConfigLayout
-
-# Dialog utilities
-from .dialogs import DialogManager, ValidationDialog, FileDialogManager, MessageType
-
-# Style management
-from .styles import StyleManager, StyleConstants
 
 # Configuration constants
-from .constants import ConfigConstants, URLConstants, ServiceScopes, ValidationPatterns
+from .constants import ConfigConstants, ServiceScopes, URLConstants, ValidationPatterns
+
+# Dialog utilities
+from .dialogs import DialogManager, FileDialogManager, MessageType, ValidationDialog
 
 # Dependency injection
 from .factory import (
@@ -25,15 +21,19 @@ from .factory import (
     get_config_page_factory,
     set_config_page_factory,
 )
+from .responsive_layout import ResponsiveConfigLayout
 from .service_locator import (
     ServiceLocator,
     ServiceNotFoundError,
+    ServiceScope,
     get_service,
+    inject,
     register_service,
     register_service_factory,
-    inject,
-    ServiceScope,
 )
+
+# Style management
+from .styles import StyleConstants, StyleManager
 
 __all__ = [
     # Existing
