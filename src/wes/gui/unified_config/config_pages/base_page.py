@@ -22,6 +22,9 @@ from PySide6.QtWidgets import (
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.types import ServiceType, ValidationResult
 from wes.gui.unified_config.utils.responsive_layout import ResponsiveConfigLayout
+from wes.gui.unified_config.utils.dialogs import DialogManager
+from wes.gui.unified_config.utils.styles import StyleManager
+from wes.gui.unified_config.utils.constants import ConfigConstants
 
 
 class ConfigPageBase(QWidget):
@@ -88,7 +91,7 @@ class ConfigPageBase(QWidget):
             desc_label = QLabel(self.page_description)
             desc_label.setObjectName("description_label")  # Mark for responsive hiding
             desc_label.setWordWrap(True)
-            desc_label.setStyleSheet("color: gray;")
+            desc_label.setStyleSheet(StyleManager.get_label_style("secondary"))
             text_layout.addWidget(desc_label)
 
         header_layout.addLayout(text_layout)
@@ -137,7 +140,7 @@ class ConfigPageBase(QWidget):
         # First validate
         validation_result = self.validate()
         if not validation_result["is_valid"]:
-            QMessageBox.warning(
+            DialogManager.show_warning(
                 self, "Invalid Configuration", validation_result["message"]
             )
             return
@@ -176,10 +179,14 @@ class ConfigPageBase(QWidget):
         """Update connection status display."""
         if success:
             self.connection_status_label.setText("✓ Connected")
-            self.connection_status_label.setStyleSheet("color: green;")
+            self.connection_status_label.setStyleSheet(
+                StyleManager.get_label_style("success")
+            )
         else:
             self.connection_status_label.setText("✗ Not Connected")
-            self.connection_status_label.setStyleSheet("color: red;")
+            self.connection_status_label.setStyleSheet(
+                StyleManager.get_label_style("danger")
+            )
             self.connection_status_label.setToolTip(message)
 
     @abstractmethod
@@ -205,7 +212,9 @@ class ConfigPageBase(QWidget):
 
             # Schedule validation
             self._validation_timer.stop()
-            self._validation_timer.start(500)  # Validate after 500ms of no changes
+            self._validation_timer.start(
+                ConfigConstants.VALIDATION_DELAY_MS
+            )  # Validate after delay
 
     def mark_clean(self):
         """Mark configuration as saved."""

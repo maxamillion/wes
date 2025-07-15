@@ -25,6 +25,9 @@ from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.components.validation_indicator import ValidationIndicator
 from wes.gui.unified_config.config_pages.base_page import ConfigPageBase
 from wes.gui.unified_config.types import ServiceType, ValidationResult
+from wes.gui.unified_config.utils.dialogs import DialogManager, FileDialogManager
+from wes.gui.unified_config.utils.styles import StyleManager
+from wes.gui.unified_config.utils.constants import ConfigConstants
 
 
 class GoogleConfigPage(ConfigPageBase):
@@ -55,7 +58,9 @@ class GoogleConfigPage(ConfigPageBase):
         oauth_desc = QLabel(
             "Authenticate with your Google account. Best for personal use."
         )
-        oauth_desc.setStyleSheet("color: #666; margin-left: 20px; margin-bottom: 10px;")
+        oauth_desc.setStyleSheet(
+            f"{StyleManager.get_label_style('secondary')} margin-left: 20px; margin-bottom: 10px;"
+        )
         oauth_desc.setWordWrap(True)
         auth_layout.addWidget(oauth_desc)
 
@@ -66,7 +71,9 @@ class GoogleConfigPage(ConfigPageBase):
         sa_desc = QLabel(
             "Use a service account key file. Best for automation and shared use."
         )
-        sa_desc.setStyleSheet("color: #666; margin-left: 20px;")
+        sa_desc.setStyleSheet(
+            f"{StyleManager.get_label_style('secondary')} margin-left: 20px;"
+        )
         sa_desc.setWordWrap(True)
         auth_layout.addWidget(sa_desc)
 
@@ -86,28 +93,12 @@ class GoogleConfigPage(ConfigPageBase):
         # Setup button for configuring OAuth credentials
         self.setup_button = QPushButton("Setup Credentials")
         self.setup_button.clicked.connect(self._handle_setup_click)
-        # Make setup button more prominent
-        self.setup_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4285f4;
-                color: white;
-                font-weight: bold;
-                padding: 5px 15px;
-                border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #357ae8;
-            }
-            QPushButton:pressed {
-                background-color: #2968c8;
-            }
-        """
-        )
+        # Make setup button more prominent with primary style
+        self.setup_button.setStyleSheet(StyleManager.get_button_style("primary"))
         oauth_status_layout.addWidget(self.setup_button)
 
         self.oauth_status = QLabel("Not authenticated")
-        self.oauth_status.setStyleSheet("color: #666;")
+        self.oauth_status.setStyleSheet(StyleManager.get_label_style("secondary"))
         oauth_status_layout.addWidget(self.oauth_status)
 
         self.oauth_indicator = ValidationIndicator()
@@ -118,7 +109,9 @@ class GoogleConfigPage(ConfigPageBase):
 
         # OAuth email display
         self.oauth_email_label = QLabel("")
-        self.oauth_email_label.setStyleSheet("color: green; margin-left: 20px;")
+        self.oauth_email_label.setStyleSheet(
+            f"{StyleManager.get_label_style('success')} margin-left: 20px;"
+        )
         self.oauth_email_label.hide()
         oauth_layout.addWidget(self.oauth_email_label)
 
@@ -126,7 +119,9 @@ class GoogleConfigPage(ConfigPageBase):
         self.oauth_help_label = QLabel(
             "<i>First time? Click 'Setup Credentials' to configure Google OAuth.</i>"
         )
-        self.oauth_help_label.setStyleSheet("color: #666; margin-left: 20px;")
+        self.oauth_help_label.setStyleSheet(
+            f"{StyleManager.get_label_style('secondary')} margin-left: 20px;"
+        )
         self.oauth_help_label.setWordWrap(True)
         oauth_layout.addWidget(self.oauth_help_label)
 
@@ -155,7 +150,9 @@ class GoogleConfigPage(ConfigPageBase):
         # Service account email (read-only, populated from key file)
         self.sa_email_input = QLineEdit()
         self.sa_email_input.setReadOnly(True)
-        self.sa_email_input.setStyleSheet("background-color: #f0f0f0;")
+        self.sa_email_input.setStyleSheet(
+            f"background-color: {StyleManager.COLORS['background_secondary']};"
+        )
         sa_layout.addRow("Service Account:", self.sa_email_input)
 
         parent_layout.addWidget(self.service_account_group)
@@ -208,12 +205,18 @@ class GoogleConfigPage(ConfigPageBase):
 
         # Retry settings
         retry_label, self.retry_attempts = self._create_spinbox(
-            "Retry Attempts:", 3, 0, 10
+            "Retry Attempts:",
+            ConfigConstants.RETRY_ATTEMPTS_DEFAULT,
+            ConfigConstants.RETRY_ATTEMPTS_MIN,
+            ConfigConstants.RETRY_ATTEMPTS_MAX,
         )
         layout.addRow(retry_label, self.retry_attempts)
 
         timeout_label, self.request_timeout = self._create_spinbox(
-            "Request Timeout (seconds):", 30, 10, 300
+            "Request Timeout (seconds):",
+            ConfigConstants.REQUEST_TIMEOUT_DEFAULT,
+            ConfigConstants.REQUEST_TIMEOUT_MIN,
+            ConfigConstants.REQUEST_TIMEOUT_MAX,
         )
         layout.addRow(timeout_label, self.request_timeout)
 
@@ -258,8 +261,7 @@ class GoogleConfigPage(ConfigPageBase):
             google_config = self.config_manager.get_google_config()
             if (
                 google_config.oauth_client_id
-                and google_config.oauth_client_id
-                != "your-client-id.apps.googleusercontent.com"
+                and not google_config.oauth_client_id.startswith("your-client-id")
             ):
                 has_credentials = True
 
@@ -276,7 +278,11 @@ class GoogleConfigPage(ConfigPageBase):
         if not has_credentials:
             from pathlib import Path
 
-            cred_file = Path.home() / ".wes" / "google_oauth_credentials.json"
+            cred_file = (
+                Path.home()
+                / ConfigConstants.WES_CONFIG_DIR
+                / ConfigConstants.OAUTH_CREDENTIALS_FILE
+            )
             if cred_file.exists():
                 has_credentials = True
 
@@ -310,7 +316,7 @@ class GoogleConfigPage(ConfigPageBase):
             self.oauth_button.setText("Connecting...")
             self.oauth_button.setEnabled(False)
             self.oauth_status.setText("Opening browser...")
-            self.oauth_status.setStyleSheet("color: #666;")
+            self.oauth_status.setStyleSheet(StyleManager.get_label_style("secondary"))
 
             # Start OAuth flow
             oauth_handler.start_flow()
@@ -329,7 +335,7 @@ class GoogleConfigPage(ConfigPageBase):
                 oauth_handler.start_flow()
 
             except ImportError:
-                QMessageBox.warning(
+                DialogManager.show_warning(
                     self,
                     "OAuth Not Available",
                     "OAuth authentication requires additional setup. "
@@ -371,7 +377,7 @@ class GoogleConfigPage(ConfigPageBase):
 
         # Update UI
         self.oauth_status.setText("✓ Authenticated")
-        self.oauth_status.setStyleSheet("color: green;")
+        self.oauth_status.setStyleSheet(StyleManager.get_label_style("success"))
         self.oauth_indicator.set_valid(f"Connected successfully")
 
         self.oauth_email_label.setText(f"Logged in as: {user_email}")
@@ -388,14 +394,14 @@ class GoogleConfigPage(ConfigPageBase):
     def _on_oauth_failed(self, error: str):
         """Handle failed OAuth authentication."""
         self.oauth_status.setText("Not authenticated")
-        self.oauth_status.setStyleSheet("color: #666;")
+        self.oauth_status.setStyleSheet(StyleManager.get_label_style("secondary"))
         self.oauth_indicator.set_invalid(error)
 
         # Re-enable button
         self.oauth_button.setText("Authenticate with Google")
         self.oauth_button.setEnabled(True)
 
-        QMessageBox.warning(
+        DialogManager.show_warning(
             self,
             "Authentication Failed",
             f"Failed to authenticate with Google:\n{error}",
@@ -403,11 +409,8 @@ class GoogleConfigPage(ConfigPageBase):
 
     def _browse_key_file(self):
         """Browse for service account key file."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Service Account Key File",
-            "",
-            "JSON Files (*.json);;All Files (*)",
+        file_path = FileDialogManager.get_json_file_path(
+            self, "Select Service Account Key File"
         )
 
         if file_path:
@@ -476,7 +479,7 @@ class GoogleConfigPage(ConfigPageBase):
             if access_token and refresh_token:
                 self.oauth_configured = True
                 self.oauth_status.setText("✓ Authenticated")
-                self.oauth_status.setStyleSheet("color: green;")
+                self.oauth_status.setStyleSheet(StyleManager.get_label_style("success"))
                 self.oauth_indicator.set_valid("Previously authenticated")
                 self.oauth_button.setText("Re-authenticate")
 
@@ -494,8 +497,14 @@ class GoogleConfigPage(ConfigPageBase):
 
         # Load advanced settings
         self.scope_sheets.setChecked(google_config.get("scope_sheets", False))
-        self.retry_attempts.setValue(google_config.get("retry_attempts", 3))
-        self.request_timeout.setValue(google_config.get("request_timeout", 30))
+        self.retry_attempts.setValue(
+            google_config.get("retry_attempts", ConfigConstants.RETRY_ATTEMPTS_DEFAULT)
+        )
+        self.request_timeout.setValue(
+            google_config.get(
+                "request_timeout", ConfigConstants.REQUEST_TIMEOUT_DEFAULT
+            )
+        )
 
         # Check if OAuth credentials are configured (for button states)
         if auth_method == "oauth":

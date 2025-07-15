@@ -1,13 +1,28 @@
 """Responsive layout manager for configuration pages."""
 
-from typing import Optional
+from typing import Dict, List, Optional
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QVBoxLayout, QWidget
+from wes.gui.unified_config.utils.styles import StyleManager
 
 
 class ResponsiveConfigLayout(QObject):
-    """Manages responsive layout adjustments for config pages."""
+    """Manages responsive layout adjustments for config pages.
+
+    This class provides responsive layout capabilities for configuration pages,
+    automatically adjusting spacing, visibility, and styling based on available
+    screen space. It supports compact mode for small screens and provides
+    utilities for creating collapsible sections and multi-column layouts.
+
+    Attributes:
+        COMPACT_HEIGHT_THRESHOLD (int): Height below which compact mode activates (600px).
+        COMPACT_WIDTH_THRESHOLD (int): Width below which compact mode activates (800px).
+
+    Signals:
+        layout_mode_changed (bool): Emitted when switching between normal and compact modes.
+                                   True indicates compact mode is active.
+    """
 
     # Signals
     layout_mode_changed = Signal(bool)  # is_compact
@@ -16,14 +31,14 @@ class ResponsiveConfigLayout(QObject):
     COMPACT_HEIGHT_THRESHOLD = 600  # Height threshold for compact mode
     COMPACT_WIDTH_THRESHOLD = 800  # Width threshold for compact mode
 
-    def __init__(self, config_page: QWidget, parent=None):
+    def __init__(self, config_page: QWidget, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
-        self.config_page = config_page
-        self.is_compact = False
-        self.original_spacing = {}
-        self.hidden_widgets = []
+        self.config_page: QWidget = config_page
+        self.is_compact: bool = False
+        self.original_spacing: Dict[QWidget, int] = {}
+        self.hidden_widgets: List[QWidget] = []
 
-    def adjust_for_size(self, width: int, height: int):
+    def adjust_for_size(self, width: int, height: int) -> None:
         """Adjust layout based on available size."""
         should_be_compact = (
             height < self.COMPACT_HEIGHT_THRESHOLD
@@ -32,14 +47,13 @@ class ResponsiveConfigLayout(QObject):
 
         if should_be_compact != self.is_compact:
             self.is_compact = should_be_compact
-            (
+            if should_be_compact:
                 self._apply_compact_mode()
-                if should_be_compact
-                else self._apply_normal_mode()
-            )
+            else:
+                self._apply_normal_mode()
             self.layout_mode_changed.emit(should_be_compact)
 
-    def _apply_compact_mode(self):
+    def _apply_compact_mode(self) -> None:
         """Apply compact layout for small screens."""
         # Reduce spacing in all layouts
         self._adjust_spacing(5)
@@ -47,40 +61,10 @@ class ResponsiveConfigLayout(QObject):
         # Hide less important elements
         self._hide_descriptions()
 
-        # Apply compact stylesheet
-        self.config_page.setStyleSheet(
-            """
-            QLabel { 
-                font-size: 11px; 
-                padding: 1px;
-            }
-            QLineEdit { 
-                padding: 2px;
-                font-size: 11px;
-            }
-            QPushButton { 
-                padding: 4px 8px;
-                font-size: 11px;
-            }
-            QGroupBox {
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                font-size: 12px;
-            }
-            QCheckBox, QRadioButton {
-                font-size: 11px;
-                spacing: 3px;
-            }
-            QSpinBox, QComboBox {
-                padding: 2px;
-                font-size: 11px;
-            }
-        """
-        )
+        # Apply compact stylesheet using StyleManager
+        self.config_page.setStyleSheet(StyleManager.get_compact_mode_style())
 
-    def _apply_normal_mode(self):
+    def _apply_normal_mode(self) -> None:
         """Apply normal layout for larger screens."""
         # Restore normal spacing
         self._adjust_spacing(10)
@@ -91,58 +75,66 @@ class ResponsiveConfigLayout(QObject):
         # Remove compact stylesheet
         self.config_page.setStyleSheet("")
 
-    def _adjust_spacing(self, spacing: int):
+    def _adjust_spacing(self, spacing: int) -> None:
         """Recursively adjust spacing in all layouts."""
         self._adjust_widget_spacing(self.config_page, spacing)
 
-    def _adjust_widget_spacing(self, widget: QWidget, spacing: int):
+    def _adjust_widget_spacing(self, widget: QWidget, spacing: int) -> None:
         """Adjust spacing for a widget and its children."""
-        # Store original spacing if not already stored
-        if widget not in self.original_spacing and widget.layout():
-            self.original_spacing[widget] = widget.layout().spacing()
+        try:
+            # Store original spacing if not already stored
+            if widget not in self.original_spacing and widget.layout():
+                self.original_spacing[widget] = widget.layout().spacing()
 
-        # Adjust layout spacing
-        if widget.layout():
-            widget.layout().setSpacing(spacing)
+            # Adjust layout spacing
+            if widget.layout():
+                widget.layout().setSpacing(spacing)
 
-            # Adjust margins for compact mode
-            if self.is_compact:
-                margins = widget.layout().contentsMargins()
-                widget.layout().setContentsMargins(
-                    max(5, margins.left() // 2),
-                    max(5, margins.top() // 2),
-                    max(5, margins.right() // 2),
-                    max(5, margins.bottom() // 2),
-                )
+                # Adjust margins for compact mode
+                if self.is_compact:
+                    margins = widget.layout().contentsMargins()
+                    widget.layout().setContentsMargins(
+                        max(5, margins.left() // 2),
+                        max(5, margins.top() // 2),
+                        max(5, margins.right() // 2),
+                        max(5, margins.bottom() // 2),
+                    )
 
-        # Recursively adjust children
-        for child in widget.findChildren(QWidget):
-            if child.layout() and child.parent() == widget:
-                self._adjust_widget_spacing(child, spacing)
+            # Recursively adjust children
+            for child in widget.findChildren(QWidget):
+                if child.layout() and child.parent() == widget:
+                    self._adjust_widget_spacing(child, spacing)
+        except AttributeError:
+            # Widget might not have a layout, skip it
+            pass
 
-    def _hide_descriptions(self):
+    def _hide_descriptions(self) -> None:
         """Hide description labels and less important widgets."""
         self.hidden_widgets = []
 
         # Find and hide description labels
         for label in self.config_page.findChildren(QWidget):
             # Check various ways description widgets might be identified
-            if any(
-                [
+            is_description = (
+                (
                     hasattr(label, "objectName")
-                    and "description" in label.objectName().lower(),
-                    hasattr(label, "property") and label.property("is_description"),
-                    hasattr(label, "styleSheet")
-                    and "color: gray" in label.styleSheet(),
+                    and "description" in label.objectName().lower()
+                )
+                or (hasattr(label, "property") and label.property("is_description"))
+                or (
+                    hasattr(label, "styleSheet") and "color: gray" in label.styleSheet()
+                )
+                or (
                     isinstance(label.parent(), QWidget)
                     and hasattr(label.parent(), "objectName")
-                    and "description" in label.parent().objectName().lower(),
-                ]
-            ):
+                    and "description" in label.parent().objectName().lower()
+                )
+            )
+            if is_description:
                 label.hide()
                 self.hidden_widgets.append(label)
 
-    def _show_descriptions(self):
+    def _show_descriptions(self) -> None:
         """Show previously hidden widgets."""
         for widget in self.hidden_widgets:
             widget.show()
@@ -151,7 +143,16 @@ class ResponsiveConfigLayout(QObject):
     def create_collapsible_section(
         self, title: str, content_widget: QWidget, start_collapsed: bool = True
     ) -> QGroupBox:
-        """Create a collapsible section for better space usage."""
+        """Create a collapsible section for better space usage.
+
+        Args:
+            title: The title to display for the section.
+            content_widget: The widget to show/hide when toggling.
+            start_collapsed: Whether to start in collapsed state (default: True).
+
+        Returns:
+            QGroupBox: A styled, collapsible group box containing the content.
+        """
         group = QGroupBox(title)
         group.setCheckable(True)
         group.setChecked(not start_collapsed)
@@ -161,27 +162,8 @@ class ResponsiveConfigLayout(QObject):
         layout.addWidget(content_widget)
         group.setLayout(layout)
 
-        # Style for collapsible indicator
-        group.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #d0d0d0;
-                border-radius: 4px;
-                margin-top: 12px;
-                padding-top: 16px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-            }
-            QGroupBox::indicator {
-                width: 13px;
-                height: 13px;
-            }
-        """
-        )
+        # Style for collapsible indicator using StyleManager
+        group.setStyleSheet(StyleManager.get_group_box_style(collapsible=True))
 
         # Update title with indicator
         def update_title():
@@ -193,8 +175,18 @@ class ResponsiveConfigLayout(QObject):
 
         return group
 
-    def create_two_column_layout(self, items: list) -> QHBoxLayout:
-        """Create a two-column layout for better space usage."""
+    def create_two_column_layout(self, items: List[QWidget]) -> QHBoxLayout:
+        """Create a two-column layout for better space usage.
+
+        Distributes widgets evenly between two columns, with the first half
+        in the left column and the second half in the right column.
+
+        Args:
+            items: List of widgets to arrange in two columns.
+
+        Returns:
+            QHBoxLayout: A horizontal layout containing two columns of widgets.
+        """
         layout = QHBoxLayout()
         layout.setSpacing(20)
 
@@ -218,7 +210,7 @@ class ResponsiveConfigLayout(QObject):
 
         return layout
 
-    def make_responsive(self):
+    def make_responsive(self) -> None:
         """Make the config page responsive to size changes."""
         # Override the resizeEvent of the config page
         original_resize_event = self.config_page.resizeEvent
