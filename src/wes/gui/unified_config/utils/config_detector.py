@@ -11,7 +11,7 @@ class ConfigDetector:
     def __init__(self):
         self.required_fields = {
             ServiceType.JIRA: ["url", "username", "api_token"],
-            ServiceType.GOOGLE: ["credentials_path"],  # OAuth or service account
+            ServiceType.GOOGLE: [],  # Google uses OAuth or service account, checked separately
             ServiceType.GEMINI: ["api_key"],
         }
 
@@ -66,6 +66,21 @@ class ConfigDetector:
         """
         if not service_config:
             return False
+
+        # Special handling for Google service which can use OAuth or service account
+        if service_type == ServiceType.GOOGLE:
+            # Check if OAuth credentials exist (client ID and either refresh token or service account)
+            has_oauth = bool(service_config.get("oauth_client_id"))
+            has_service_account = bool(service_config.get("service_account_path"))
+            return has_oauth or has_service_account
+
+        # Special handling for Gemini service
+        if service_type == ServiceType.GEMINI:
+            # Check for either api_key or gemini_api_key (handles both field names)
+            has_api_key = bool(service_config.get("api_key")) or bool(
+                service_config.get("gemini_api_key")
+            )
+            return has_api_key
 
         required = self.required_fields.get(service_type, [])
         return all(
@@ -130,6 +145,27 @@ class ConfigDetector:
         self, service_config: Dict[str, Any], service_type: ServiceType
     ) -> list[str]:
         """Get list of missing required fields for a service."""
+        # Special handling for Google service
+        if service_type == ServiceType.GOOGLE:
+            # Check what's actually missing
+            has_oauth = bool(service_config.get("oauth_client_id"))
+            has_service_account = bool(service_config.get("service_account_path"))
+
+            if not has_oauth and not has_service_account:
+                return ["OAuth or Service Account credentials"]
+            return []
+
+        # Special handling for Gemini service
+        if service_type == ServiceType.GEMINI:
+            # Check for either api_key or gemini_api_key
+            has_api_key = bool(service_config.get("api_key")) or bool(
+                service_config.get("gemini_api_key")
+            )
+
+            if not has_api_key:
+                return ["API key"]
+            return []
+
         required = self.required_fields.get(service_type, [])
         return [
             field

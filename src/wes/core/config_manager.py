@@ -341,6 +341,13 @@ class ConfigManager:
             if "default_query" in kwargs:
                 InputValidator.validate_jira_query(kwargs["default_query"])
 
+            # Store API token securely if provided
+            if "api_token" in kwargs and kwargs["api_token"]:
+                self.store_credential("jira", "api_token", kwargs["api_token"])
+                # Don't store the token in the config object
+                kwargs = kwargs.copy()
+                del kwargs["api_token"]
+
             # Update configuration
             for key, value in kwargs.items():
                 if hasattr(self._config.jira, key):
@@ -356,8 +363,22 @@ class ConfigManager:
     def update_google_config(self, **kwargs) -> None:
         """Update Google configuration."""
         try:
+            # Store OAuth credentials securely if provided
+            credentials_to_store = {
+                "oauth_client_secret": "oauth_client_secret",
+                "oauth_refresh_token": "oauth_refresh_token",
+                "oauth_access_token": "oauth_access_token",
+            }
+
+            kwargs_copy = kwargs.copy()
+            for field, credential_type in credentials_to_store.items():
+                if field in kwargs and kwargs[field]:
+                    self.store_credential("google", credential_type, kwargs[field])
+                    # Don't store sensitive data in the config object
+                    del kwargs_copy[field]
+
             # Update configuration
-            for key, value in kwargs.items():
+            for key, value in kwargs_copy.items():
                 if hasattr(self._config.google, key):
                     setattr(self._config.google, key, value)
 
@@ -371,9 +392,20 @@ class ConfigManager:
     def update_ai_config(self, **kwargs) -> None:
         """Update AI configuration."""
         try:
+            # Handle both field names for compatibility
+            api_key = kwargs.get("api_key") or kwargs.get("gemini_api_key")
+
             # Validate API key if provided
-            if "gemini_api_key" in kwargs:
-                InputValidator.validate_api_key(kwargs["gemini_api_key"])
+            if api_key:
+                InputValidator.validate_api_key(api_key)
+                # Store API key securely
+                self.store_credential("ai", "gemini_api_key", api_key)
+                # Don't store the key in the config object
+                kwargs = kwargs.copy()
+                if "api_key" in kwargs:
+                    del kwargs["api_key"]
+                if "gemini_api_key" in kwargs:
+                    del kwargs["gemini_api_key"]
 
             # Update configuration
             for key, value in kwargs.items():
