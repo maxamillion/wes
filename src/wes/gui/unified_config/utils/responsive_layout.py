@@ -1,8 +1,9 @@
 """Responsive layout manager for configuration pages."""
 
 from typing import Optional
+
 from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGroupBox
+from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QVBoxLayout, QWidget
 
 
 class ResponsiveConfigLayout(QObject):

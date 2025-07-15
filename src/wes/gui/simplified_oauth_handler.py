@@ -7,7 +7,7 @@ import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, Optional, Tuple
-from urllib.parse import parse_qs, urlparse, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import requests
 from PySide6.QtCore import QObject, QTimer, Signal
