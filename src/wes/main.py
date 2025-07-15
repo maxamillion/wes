@@ -25,6 +25,7 @@ except ImportError:
 
 def qt_message_handler(mode: QtMsgType, context, message: str):
     """Custom Qt message handler for logging."""
+    _ = context  # Unused but required by Qt message handler protocol
     logger = get_logger("qt")
 
     if mode == QtMsgType.QtDebugMsg:

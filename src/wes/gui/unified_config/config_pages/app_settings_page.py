@@ -50,13 +50,13 @@ class AppSettingsPage(ConfigPageBase):
 
         # Auto-save interval
         interval_layout = QHBoxLayout()
-        interval_label, self.save_interval_spin = self._create_spinbox(
+        _, self.save_interval_spin = self._create_spinbox(
             "Auto-save interval (minutes):", 5, 1, 60
         )
         interval_layout.addWidget(self.save_interval_spin)
         interval_layout.addWidget(QLabel("minutes"))
         interval_layout.addStretch()
-        general_layout.addRow(interval_label, interval_layout)
+        general_layout.addRow("Save Interval:", interval_layout)
 
         parent_layout.addWidget(general_group)
 
@@ -65,10 +65,10 @@ class AppSettingsPage(ConfigPageBase):
         summary_layout = QFormLayout(summary_group)
 
         # Default date range
-        date_range_label, self.date_range_spin = self._create_spinbox(
+        _, self.date_range_spin = self._create_spinbox(
             "Default date range (days):", 7, 1, 365
         )
-        summary_layout.addRow(date_range_label, self.date_range_spin)
+        summary_layout.addRow("Date Range:", self.date_range_spin)
 
         # Include options
         self.include_subtasks = self._create_checkbox("Include subtasks", True)

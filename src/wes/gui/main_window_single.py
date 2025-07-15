@@ -1384,8 +1384,6 @@ class SingleWindowMainWindow(QMainWindow):
             QDialog,
             QDialogButtonBox,
             QScrollArea,
-            QSizePolicy,
-            QSpacerItem,
         )
 
         dialog = QDialog(self)

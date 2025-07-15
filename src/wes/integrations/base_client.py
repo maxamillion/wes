@@ -384,6 +384,7 @@ class BaseIntegrationClient(ABC):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
+        _ = exc_type, exc_val, exc_tb  # Unused but required by protocol
         asyncio.create_task(self.close())
 
     async def __aenter__(self):
@@ -392,4 +393,5 @@ class BaseIntegrationClient(ABC):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
+        _ = exc_type, exc_val, exc_tb  # Unused but required by protocol
         await self.close()

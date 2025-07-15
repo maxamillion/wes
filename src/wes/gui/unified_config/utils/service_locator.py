@@ -190,6 +190,7 @@ class ServiceScope:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the scope, restoring original services."""
+        _ = exc_type, exc_val, exc_tb  # Unused but required by protocol
         _service_locator._services = self._original_services
         _service_locator._factories = self._original_factories
 

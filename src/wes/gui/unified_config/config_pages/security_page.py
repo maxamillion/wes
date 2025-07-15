@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QFormLayout,
@@ -82,14 +82,14 @@ class SecurityPage(ConfigPageBase):
 
         # Lock timeout
         timeout_layout = QHBoxLayout()
-        timeout_label, self.lock_timeout_spin = self._create_spinbox(
+        _, self.lock_timeout_spin = self._create_spinbox(
             "Lock after inactivity:", 15, 1, 120
         )
         self.lock_timeout_spin.setEnabled(self.enable_auto_lock.isChecked())
         timeout_layout.addWidget(self.lock_timeout_spin)
         timeout_layout.addWidget(QLabel("minutes"))
         timeout_layout.addStretch()
-        session_layout.addRow(timeout_label, timeout_layout)
+        session_layout.addRow("Lock Timeout:", timeout_layout)
 
         # Connect checkbox to spinbox
         self.enable_auto_lock.toggled.connect(self.lock_timeout_spin.setEnabled)
@@ -124,14 +124,14 @@ class SecurityPage(ConfigPageBase):
 
         # Rotation interval
         rotation_layout = QHBoxLayout()
-        rotation_label, self.rotation_days_spin = self._create_spinbox(
+        _, self.rotation_days_spin = self._create_spinbox(
             "Rotation interval:", 90, 30, 365
         )
         self.rotation_days_spin.setEnabled(self.api_key_rotation.isChecked())
         rotation_layout.addWidget(self.rotation_days_spin)
         rotation_layout.addWidget(QLabel("days"))
         rotation_layout.addStretch()
-        api_layout.addRow(rotation_label, rotation_layout)
+        api_layout.addRow("Rotation Interval:", rotation_layout)
 
         # Connect checkbox to spinbox
         self.api_key_rotation.toggled.connect(self.rotation_days_spin.setEnabled)

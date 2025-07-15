@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -15,7 +15,6 @@ from src.wes.integrations.redhat_jira_client import (
 from src.wes.utils.exceptions import (
     AuthenticationError,
     JiraIntegrationError,
-    RateLimitError,
 )
 
 
