@@ -1,6 +1,8 @@
 """Workflow orchestrator for executive summary generation."""
 
 import asyncio
+import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -320,6 +322,37 @@ class WorkflowOrchestrator:
 
             if not activity_data:
                 self.logger.warning("No activity data found for the specified criteria")
+            else:
+                # Log summary of fetched data for debugging
+                valid_activities = [
+                    a for a in activity_data if not a.get("_processing_error")
+                ]
+                error_activities = [
+                    a for a in activity_data if a.get("_processing_error")
+                ]
+
+                self.logger.info(
+                    f"Valid activities: {len(valid_activities)}, Error activities: {len(error_activities)}"
+                )
+
+                if error_activities:
+                    self.logger.warning(
+                        f"Failed to process {len(error_activities)} issues:"
+                    )
+                    for activity in error_activities:
+                        self.logger.warning(
+                            f"  - {activity.get('id', 'UNKNOWN')}: {activity.get('_processing_error', 'Unknown error')}"
+                        )
+
+                # Log a sample of the data structure for debugging (first activity only)
+                if activity_data and self.logger.isEnabledFor(logging.DEBUG):
+                    first_activity = activity_data[0].copy()
+                    # Remove potentially sensitive data for logging
+                    first_activity.pop("description", None)
+                    first_activity.pop("comments", None)
+                    self.logger.debug(
+                        f"Sample activity structure: {json.dumps(first_activity, indent=2, default=str)}"
+                    )
 
             return activity_data
 
@@ -333,10 +366,40 @@ class WorkflowOrchestrator:
         self._update_progress("Generating AI summary...")
 
         try:
+            # Filter out activities with processing errors before sending to Gemini
+            valid_activities = [
+                a for a in activity_data if not a.get("_processing_error")
+            ]
+
+            if not valid_activities:
+                # If all activities had errors, create a special summary
+                self.logger.error(
+                    "No valid activities to summarize - all had processing errors"
+                )
+                return {
+                    "content": (
+                        "# Executive Summary\n\n"
+                        "## Data Processing Error\n\n"
+                        "Unfortunately, we were unable to retrieve valid Jira data for the specified period. "
+                        "All issues encountered processing errors.\n\n"
+                        "### Recommended Actions:\n"
+                        "1. Verify Jira credentials and permissions\n"
+                        "2. Check that the specified users have accessible issues\n"
+                        "3. Ensure the date range contains valid data\n"
+                        "4. Review the application logs for specific error details\n\n"
+                        "Please contact your system administrator if this issue persists."
+                    ),
+                    "model": "error_handler",
+                    "usage": {},
+                    "generated_at": datetime.now().timestamp(),
+                    "safety_ratings": [],
+                    "error": "No valid Jira data available",
+                }
+
             ai_config = self.config_manager.get_ai_config()
 
             summary = await self.gemini_client.generate_summary(
-                activity_data=activity_data,
+                activity_data=valid_activities,  # Only send valid activities
                 custom_prompt=custom_prompt or ai_config.custom_prompt,
                 temperature=ai_config.temperature,
                 max_tokens=ai_config.max_tokens,
