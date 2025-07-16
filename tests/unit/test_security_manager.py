@@ -123,7 +123,7 @@ class TestSecurityManager:
         """Test salt file creation."""
         mock_token_bytes.return_value = b"test_salt_32_bytes_long_exactly"
 
-        manager = SecurityManager()
+        SecurityManager()
         salt_path = mock_home_path / ".wes" / "salt"
 
         # Verify salt file was created
@@ -139,7 +139,7 @@ class TestSecurityManager:
         original_salt = b"existing_salt_32_bytes_long_test"
         salt_path.write_bytes(original_salt)
 
-        manager = SecurityManager()
+        SecurityManager()
 
         # Verify same salt is used
         assert salt_path.read_bytes() == original_salt
@@ -149,7 +149,7 @@ class TestSecurityManager:
         # Mock keyring to return None for existing key
         mock_keyring.get_password.return_value = None
 
-        manager = SecurityManager()
+        SecurityManager()
 
         # Verify keyring set_password was called to store new key
         mock_keyring.set_password.assert_called()
@@ -168,7 +168,7 @@ class TestSecurityManager:
         test_key = base64.b64encode(b"test_master_key_32_bytes_long!!").decode()
         mock_keyring.get_password.return_value = test_key
 
-        manager = SecurityManager()
+        SecurityManager()
 
         # Verify existing key was retrieved, not created
         mock_keyring.get_password.assert_called_with("wes", "master_key")

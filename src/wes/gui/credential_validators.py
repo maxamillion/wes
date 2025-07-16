@@ -1,20 +1,15 @@
 """Credential validation utilities for testing API connections."""
 
-import asyncio
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 from urllib.parse import urlparse
 
 import google.generativeai as genai
-import requests
 from jira import JIRA, JIRAError
 
 from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
 from ..utils.exceptions import (
     AuthenticationError,
-    GeminiIntegrationError,
-    JiraIntegrationError,
-    ValidationError,
 )
 from ..utils.logging_config import get_logger, get_security_logger
 
@@ -39,7 +34,8 @@ class CredentialValidator:
             if not self._validate_url(url):
                 return False, "Invalid URL format"
 
-            # Username validation - email required for Atlassian Cloud, flexible for on-premise
+            # Username validation - email required for Atlassian Cloud, flexible for
+            # on-premise
             if not self._validate_username(url, username):
                 if self._is_atlassian_cloud(url):
                     return (
@@ -159,15 +155,15 @@ class CredentialValidator:
                                 2,
                                 3,
                             ]:  # SAFETY or RECITATION
-                                # This is still a valid connection, just filtered content
+                                # This is still a valid connection, just filtered
+                                # content
                                 self.logger.info(
                                     "Gemini API key valid (test response filtered)"
                                 )
                             else:
                                 return (
-                                    False,
-                                    f"API response blocked: finish_reason={candidate.finish_reason}",
-                                )
+                                    False, f"API response blocked: finish_reason={
+                                        candidate.finish_reason}", )
                     elif response:
                         # We got a response object, so connection is valid
                         self.logger.info("Gemini API key valid (empty test response)")

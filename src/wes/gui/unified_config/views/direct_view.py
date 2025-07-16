@@ -1,6 +1,6 @@
 """Direct view mode for unified configuration - tabbed interface."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -112,13 +112,13 @@ class DirectView(QWidget):
         self.jira_page = JiraConfigPage(self.config_manager)
         self.pages[ServiceType.JIRA] = self.jira_page
         jira_scroll = self._wrap_in_scroll_area(self.jira_page)
-        jira_index = self.tab_widget.addTab(jira_scroll, "Jira")
+        self.tab_widget.addTab(jira_scroll, "Jira")
 
         # Gemini tab
         self.gemini_page = GeminiConfigPage(self.config_manager)
         self.pages[ServiceType.GEMINI] = self.gemini_page
         gemini_scroll = self._wrap_in_scroll_area(self.gemini_page)
-        gemini_index = self.tab_widget.addTab(gemini_scroll, "Gemini AI")
+        self.tab_widget.addTab(gemini_scroll, "Gemini AI")
 
     def _create_app_settings_tab(self):
         """Create application settings tab."""
@@ -128,7 +128,7 @@ class DirectView(QWidget):
 
         self.app_page = AppSettingsPage(self.config_manager)
         app_scroll = self._wrap_in_scroll_area(self.app_page)
-        app_index = self.tab_widget.addTab(app_scroll, "Application")
+        self.tab_widget.addTab(app_scroll, "Application")
 
     def _create_security_tab(self):
         """Create security settings tab."""
@@ -136,7 +136,7 @@ class DirectView(QWidget):
 
         self.security_page = SecurityPage(self.config_manager)
         security_scroll = self._wrap_in_scroll_area(self.security_page)
-        security_index = self.tab_widget.addTab(security_scroll, "Security")
+        self.tab_widget.addTab(security_scroll, "Security")
 
     def _connect_signals(self):
         """Connect signals from all pages."""
@@ -182,7 +182,7 @@ class DirectView(QWidget):
         # Update connection status on the specific tab
         service = result.get("service")
         if service in self.pages:
-            page = self.pages[service]
+            self.pages[service]
             # Page will handle updating its own UI
 
     def _update_tab_icons(self):

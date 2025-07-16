@@ -164,12 +164,10 @@ class BaseIntegrationClient(ABC):
     @abstractmethod
     async def authenticate(self) -> bool:
         """Authenticate with the service."""
-        pass
 
     @abstractmethod
     async def validate_connection(self) -> bool:
         """Validate the connection to the service."""
-        pass
 
     @asynccontextmanager
     async def get_session(self):
@@ -254,8 +252,8 @@ class BaseIntegrationClient(ABC):
                     if response.status >= 400:
                         error_text = await response.text()
                         raise IntegrationError(
-                            f"Request failed with status {response.status}: {error_text}"
-                        )
+                            f"Request failed with status {
+                                response.status}: {error_text}")
 
                     # Parse response
                     if response.content_type == "application/json":

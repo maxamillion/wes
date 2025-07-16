@@ -3,8 +3,6 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from PySide6.QtCore import Qt
-from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from wes.gui.unified_config.components.validation_indicator import (

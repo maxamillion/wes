@@ -1,11 +1,10 @@
 """Red Hat Jira integration client with enhanced authentication and Red Hat-specific features."""
 
 import asyncio
-import json
 import time
 import warnings
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -21,7 +20,7 @@ try:
 except ImportError:
     RHJIRA_AVAILABLE = False
     # Fallback to standard jira library
-    from jira import JIRA, JIRAError
+    from jira import JIRA
     import jira as rhjira
 
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
@@ -114,8 +113,8 @@ class RedHatJiraClient:
             )
 
             self.logger.info(
-                f"Red Hat Jira client initialized successfully using {'rhjira' if self.use_rhjira else 'jira'}"
-            )
+                f"Red Hat Jira client initialized successfully using {
+                    'rhjira' if self.use_rhjira else 'jira'}")
 
         except Exception as e:
             self.security_logger.log_authentication_attempt(
@@ -243,8 +242,7 @@ class RedHatJiraClient:
                     "Red Hat Jira authentication failed. Please ensure you're using a valid "
                     "Personal Access Token (PAT). Go to your Red Hat Jira profile → "
                     "Personal Access Tokens → Create token. Use the token (not your password) "
-                    "in the API Token field."
-                )
+                    "in the API Token field.")
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
 
@@ -337,7 +335,10 @@ class RedHatJiraClient:
             # Build project clause
             project_clause = ""
             if projects:
-                project_clause = f" AND project in ({','.join([f'\"{proj}\"' for proj in projects])})"
+                project_clause = f" AND project in ({
+                    ','.join(
+                        [
+                            f'\"{proj}\"' for proj in projects])})"
 
             # Add Red Hat specific filters if available
             redhat_filters = self._get_redhat_specific_filters()

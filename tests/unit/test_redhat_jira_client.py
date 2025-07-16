@@ -97,7 +97,7 @@ class TestRedHatJiraClient:
 
             client = RedHatJiraClient(**redhat_config)
 
-            assert client.use_rhjira == True
+            assert client.use_rhjira
             assert client._client == mock_client_instance
 
     def test_client_initialization_with_ssl_disabled(self, redhat_config):
@@ -259,7 +259,7 @@ class TestRedHatJiraClient:
 
             assert info["url"] == redhat_config["url"]
             assert info["username"] == redhat_config["username"]
-            assert info["connected"] == True
+            assert info["connected"]
             assert info["client_type"] in ["rhjira", "jira"]
             assert "rhjira_available" in info
             assert "ssl_verification" in info
@@ -394,7 +394,7 @@ class TestRedHatJiraIntegration:
 
             # Test connection info
             info = client.get_connection_info()
-            assert info["connected"] == True
+            assert info["connected"]
             assert (
                 "redhat" not in info.get("server_info", {}).get("version", "").lower()
                 or True
@@ -419,7 +419,7 @@ class TestRedHatJiraIntegration:
         ]
 
         for url in redhat_urls:
-            assert is_redhat_jira(url) == True, f"Should detect {url} as Red Hat Jira"
+            assert is_redhat_jira(url), f"Should detect {url} as Red Hat Jira"
 
         for url in standard_urls:
             assert (
@@ -453,5 +453,5 @@ class TestRHJiraLibraryIntegration:
 
             client = RedHatJiraClient(**config)
 
-            assert client.use_rhjira == True
+            assert client.use_rhjira
             mock_rhjira.JIRA.assert_called_once()

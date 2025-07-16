@@ -5,9 +5,8 @@ and ensure consistent user experience across the application.
 """
 
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
 
 

@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.config_manager import ConfigManager
 from ..utils.exceptions import JiraIntegrationError, WesError

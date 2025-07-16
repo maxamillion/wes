@@ -22,7 +22,6 @@ class BaseValidator(ABC):
         Returns:
             ValidationResult with validation status and details
         """
-        pass
 
     @abstractmethod
     def validate_connection(self, config: Dict[str, Any]) -> Tuple[bool, str]:
@@ -35,7 +34,6 @@ class BaseValidator(ABC):
         Returns:
             Tuple of (success, message)
         """
-        pass
 
     def validate_field(self, field_name: str, value: Any) -> Tuple[bool, str]:
         """

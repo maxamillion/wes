@@ -16,8 +16,6 @@ T = TypeVar("T")
 class ServiceNotFoundError(Exception):
     """Raised when a requested service is not found."""
 
-    pass
-
 
 class ServiceLocator:
     """Service locator for managing application dependencies."""

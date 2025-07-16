@@ -4,10 +4,9 @@ import asyncio
 from datetime import datetime
 from typing import List, Optional
 
-from PySide6.QtCore import QObject, QThread, Signal
+from PySide6.QtCore import QThread, Signal
 
-from ..core.orchestrator import WorkflowOrchestrator, WorkflowResult
-from ..utils.exceptions import WesError
+from ..core.orchestrator import WorkflowOrchestrator
 from ..utils.logging_config import get_logger
 
 

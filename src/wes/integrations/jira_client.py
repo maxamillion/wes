@@ -1,12 +1,10 @@
 """Jira integration client for fetching work item data."""
 
 import asyncio
-import json
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-import requests
 from jira import JIRA, JIRAError
 
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError

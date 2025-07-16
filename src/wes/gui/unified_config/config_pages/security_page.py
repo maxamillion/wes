@@ -2,26 +2,21 @@
 
 from typing import Any, Dict, List
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
     QDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QPushButton,
-    QSpinBox,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.config_pages.base_page import ConfigPageBase
-from wes.gui.unified_config.types import ServiceType, ValidationResult
+from wes.gui.unified_config.types import ValidationResult
 
 
 class SecurityPage(ConfigPageBase):
@@ -335,7 +330,6 @@ class SecurityPage(ConfigPageBase):
 
     def test_connection(self) -> None:
         """No connection test needed for security settings."""
-        pass
 
     def get_basic_fields(self) -> List[QWidget]:
         """Return basic field widgets."""

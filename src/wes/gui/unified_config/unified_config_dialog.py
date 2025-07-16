@@ -1,8 +1,8 @@
 """Unified configuration dialog that adapts based on user context."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from wes.core.config_manager import ConfigManager
-from wes.gui.unified_config.types import ConfigState, ServiceType, UIMode
+from wes.gui.unified_config.types import ConfigState, UIMode
 from wes.gui.unified_config.utils.config_detector import ConfigDetector
 
 

@@ -97,8 +97,8 @@ class CredentialMonitor(QObject):
         self.check_all_credentials()
 
         self.logger.info(
-            f"Credential monitoring started (interval: {self.monitoring_config.check_interval_minutes}m)"
-        )
+            f"Credential monitoring started (interval: {
+                self.monitoring_config.check_interval_minutes}m)")
 
         self.security_logger.log_security_event(
             "credential_monitoring_started",
@@ -438,7 +438,8 @@ class CredentialNotificationManager:
 
     def on_status_changed(self, service: str, credential_type: str, healthy: bool):
         """Handle credential status change."""
-        message = f"Credential {service}:{credential_type} is now {'healthy' if healthy else 'unhealthy'}"
+        message = f"Credential {service}:{credential_type} is now {
+            'healthy' if healthy else 'unhealthy'}"
         severity = "info" if healthy else "warning"
 
         self._send_notification(
