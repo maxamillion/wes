@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QRadioButton,
     QScrollArea,
     QSpinBox,
     QStackedWidget,
@@ -90,6 +91,16 @@ class MainWindow(QMainWindow):
 
         # Check initial configuration state
         self.check_initial_setup()
+
+    @property
+    def is_redhat_jira(self) -> bool:
+        """Check if Red Hat Jira is configured."""
+        try:
+            jira_config = self.config_manager.get_jira_config()
+            ldap_config = self.config_manager.get_ldap_config()
+            return "redhat.com" in jira_config.url.lower() and ldap_config.enabled
+        except Exception:
+            return False
 
     def init_ui(self):
         """Initialize the user interface."""
@@ -264,15 +275,21 @@ class MainWindow(QMainWindow):
 
         options_layout.addRow("Date Range:", date_layout)
 
+        # Manager scope for Red Hat Jira
+        if self.is_redhat_jira:
+            self.manager_scope_widget = self.create_manager_scope_widget()
+            options_layout.addRow("Scope:", self.manager_scope_widget)
+
         # Project filter
         self.project_filter = QLineEdit()
         self.project_filter.setPlaceholderText("e.g., PROJ-123, PROJ-456")
         options_layout.addRow("Projects (optional):", self.project_filter)
 
-        # Assignee filter
+        # Assignee filter (hide when using manager scope)
         self.assignee_filter = QLineEdit()
         self.assignee_filter.setPlaceholderText("e.g., john.doe@company.com")
-        options_layout.addRow("Assignee (optional):", self.assignee_filter)
+        self.assignee_row_label = QLabel("Assignee (optional):")
+        options_layout.addRow(self.assignee_row_label, self.assignee_filter)
 
         layout.addWidget(options_group)
 
@@ -335,6 +352,70 @@ class MainWindow(QMainWindow):
         self.update_config_status()
 
         return widget
+
+    def create_manager_scope_widget(self):
+        """Create widget for manager scope selection (Red Hat Jira only)."""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Radio buttons for scope selection
+        self.use_configured_users = QRadioButton("Use configured users")
+        self.use_configured_users.setChecked(True)
+        self.use_manager_org = QRadioButton("Use manager's organization")
+
+        # Radio button layout
+        radio_layout = QHBoxLayout()
+        radio_layout.addWidget(self.use_configured_users)
+        radio_layout.addWidget(self.use_manager_org)
+        radio_layout.addStretch()
+        layout.addLayout(radio_layout)
+
+        # Manager email input container
+        self.manager_input_container = QWidget()
+        manager_layout = QVBoxLayout(self.manager_input_container)
+        manager_layout.setContentsMargins(20, 5, 0, 0)
+
+        # Manager email input
+        email_layout = QHBoxLayout()
+        email_layout.addWidget(QLabel("Manager Email:"))
+        self.manager_email = QLineEdit()
+        self.manager_email.setPlaceholderText("manager@redhat.com")
+        self.manager_email.setMinimumWidth(250)
+        email_layout.addWidget(self.manager_email)
+        email_layout.addStretch()
+        manager_layout.addLayout(email_layout)
+
+        # Help text
+        help_text = QLabel(
+            "ℹ Enter manager's email to include their entire organizational team"
+        )
+        help_text.setStyleSheet("color: #666; font-size: 12px; padding-left: 100px;")
+        help_text.setWordWrap(True)
+        manager_layout.addWidget(help_text)
+
+        layout.addWidget(self.manager_input_container)
+
+        # Initially hide manager input
+        self.manager_input_container.setVisible(False)
+
+        # Connect signals
+        self.use_manager_org.toggled.connect(self.on_manager_mode_toggled)
+
+        return widget
+
+    def on_manager_mode_toggled(self, checked: bool):
+        """Handle manager mode toggle."""
+        self.manager_input_container.setVisible(checked)
+
+        # Hide/show assignee filter
+        if hasattr(self, "assignee_filter"):
+            self.assignee_filter.setVisible(not checked)
+            self.assignee_row_label.setVisible(not checked)
+
+            # Clear assignee filter when using manager mode
+            if checked:
+                self.assignee_filter.clear()
 
     def create_progress_view(self):
         """Create the progress view for summary generation."""
@@ -506,6 +587,17 @@ class MainWindow(QMainWindow):
         # Update UI elements that depend on configuration
         self.update_config_status()
 
+        # Check if Red Hat Jira status changed - if so, recreate main view
+        if hasattr(self, "main_widget"):
+            old_is_redhat = hasattr(self, "manager_scope_widget")
+            new_is_redhat = self.is_redhat_jira
+
+            if old_is_redhat != new_is_redhat:
+                # Recreate main view to show/hide manager field
+                self.main_stack.removeWidget(self.main_widget)
+                self.main_widget.deleteLater()
+                self.create_main_view()
+
         # If we're on welcome screen and config is now complete,
         # switch to main view
         if self.current_view == ViewState.WELCOME:
@@ -583,17 +675,49 @@ class MainWindow(QMainWindow):
         start_datetime = datetime.combine(start_date, datetime.min.time())
         end_datetime = datetime.combine(end_date, datetime.max.time())
 
-        # Get users (for now, use the configured username)
-        jira_config = self.config_manager.get_jira_config()
-        users = [jira_config.username] if jira_config.username else []
+        # Determine if using manager mode or user list
+        manager_identifier = None
+        use_ldap_hierarchy = False
+        users = []
 
-        if not users:
-            QMessageBox.warning(
-                self,
-                "No User Specified",
-                "Please configure a Jira username in settings.",
-            )
-            return
+        if (
+            self.is_redhat_jira
+            and hasattr(self, "use_manager_org")
+            and self.use_manager_org.isChecked()
+        ):
+            # Manager mode - validate email
+            manager_email = self.manager_email.text().strip()
+            if not manager_email:
+                QMessageBox.warning(
+                    self,
+                    "Manager Email Required",
+                    "Please enter the manager's email address.",
+                )
+                return
+
+            # Basic email validation
+            if "@" not in manager_email:
+                QMessageBox.warning(
+                    self,
+                    "Invalid Email",
+                    "Please enter a valid email address.",
+                )
+                return
+
+            manager_identifier = manager_email
+            use_ldap_hierarchy = True
+        else:
+            # Standard mode - use configured username
+            jira_config = self.config_manager.get_jira_config()
+            users = [jira_config.username] if jira_config.username else []
+
+            if not users:
+                QMessageBox.warning(
+                    self,
+                    "No User Specified",
+                    "Please configure a Jira username in settings.",
+                )
+                return
 
         # Switch to progress view
         self.switch_view(ViewState.PROGRESS)
@@ -607,6 +731,8 @@ class MainWindow(QMainWindow):
             start_date=start_datetime,
             end_date=end_datetime,
             custom_prompt=None,
+            manager_identifier=manager_identifier,
+            use_ldap_hierarchy=use_ldap_hierarchy,
         )
 
         # Connect signals

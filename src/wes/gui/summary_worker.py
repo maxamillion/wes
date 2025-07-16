@@ -29,6 +29,8 @@ class SummaryWorker(QThread):
         start_date: datetime,
         end_date: datetime,
         custom_prompt: Optional[str] = None,
+        manager_identifier: Optional[str] = None,
+        use_ldap_hierarchy: bool = False,
     ):
         """Initialize summary worker.
 
@@ -38,6 +40,8 @@ class SummaryWorker(QThread):
             start_date: Start date for activity range
             end_date: End date for activity range
             custom_prompt: Optional custom prompt for AI generation
+            manager_identifier: Optional manager email/username for LDAP hierarchy
+            use_ldap_hierarchy: Whether to use LDAP to fetch team hierarchy
         """
         super().__init__()
 
@@ -47,6 +51,8 @@ class SummaryWorker(QThread):
         self.start_date = start_date
         self.end_date = end_date
         self.custom_prompt = custom_prompt
+        self.manager_identifier = manager_identifier
+        self.use_ldap_hierarchy = use_ldap_hierarchy
 
         # Set up progress callback
         self.orchestrator.set_progress_callback(self._on_progress)
@@ -76,6 +82,8 @@ class SummaryWorker(QThread):
                     start_date=self.start_date,
                     end_date=self.end_date,
                     custom_prompt=self.custom_prompt,
+                    manager_identifier=self.manager_identifier,
+                    use_ldap_hierarchy=self.use_ldap_hierarchy,
                 )
             )
 
