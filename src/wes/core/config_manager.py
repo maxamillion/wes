@@ -63,6 +63,20 @@ class SecurityConfig:
 
 
 @dataclass
+class LDAPConfig:
+    """LDAP configuration for Red Hat organizational queries."""
+
+    enabled: bool = False
+    server_url: str = "ldaps://ldap.corp.redhat.com"
+    base_dn: str = "ou=users,dc=redhat,dc=com"
+    timeout: int = 30
+    use_ssl: bool = True
+    validate_certs: bool = True
+    max_hierarchy_depth: int = 3
+    cache_ttl_minutes: int = 60
+
+
+@dataclass
 class Configuration:
     """Main configuration container."""
 
@@ -70,6 +84,7 @@ class Configuration:
     ai: AIConfig = field(default_factory=AIConfig)
     app: AppConfig = field(default_factory=AppConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
+    ldap: LDAPConfig = field(default_factory=LDAPConfig)
     version: str = "1.0.0"
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -137,6 +152,10 @@ class ConfigManager:
             if "security" in config_data:
                 security_data = config_data["security"]
                 self._config.security = SecurityConfig(**security_data)
+
+            if "ldap" in config_data:
+                ldap_data = config_data["ldap"]
+                self._config.ldap = LDAPConfig(**ldap_data)
 
             # Update metadata
             self._config.version = config_data.get("version", self._config.version)
@@ -215,6 +234,7 @@ class ConfigManager:
             "ai": asdict(ai_config),
             "app": asdict(self._config.app),
             "security": asdict(self._config.security),
+            "ldap": asdict(self._config.ldap),
             "version": self._config.version,
             "created_at": self._config.created_at,
             "updated_at": self._config.updated_at,
@@ -333,6 +353,33 @@ class ConfigManager:
         except Exception as e:
             self.logger.error(f"Failed to update AI configuration: {e}")
             raise ConfigurationError(f"Failed to update AI configuration: {e}")
+
+    def get_ldap_config(self) -> LDAPConfig:
+        """Get LDAP configuration."""
+        return self._config.ldap
+
+    def update_ldap_config(self, **kwargs) -> None:
+        """Update LDAP configuration."""
+        try:
+            # Validate LDAP server URL if provided
+            if "server_url" in kwargs:
+                url = kwargs["server_url"]
+                if not url.startswith(("ldap://", "ldaps://")):
+                    raise ValueError(
+                        "LDAP server URL must start with ldap:// or ldaps://"
+                    )
+
+            # Update configuration
+            for key, value in kwargs.items():
+                if hasattr(self._config.ldap, key):
+                    setattr(self._config.ldap, key, value)
+
+            self._save_configuration()
+            self.logger.info("LDAP configuration updated")
+
+        except Exception as e:
+            self.logger.error(f"Failed to update LDAP configuration: {e}")
+            raise ConfigurationError(f"Failed to update LDAP configuration: {e}")
 
     def store_credential(self, service: str, credential_type: str, value: str) -> None:
         """Store sensitive credential securely."""
