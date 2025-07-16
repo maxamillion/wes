@@ -9,6 +9,7 @@ from ..integrations.base_client import BaseIntegrationClient
 from ..integrations.gemini_client import GeminiClient
 from ..integrations.jira_client import JiraClient
 from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
+from ..integrations.redhat_jira_ldap_integration import RedHatJiraLDAPIntegration
 from ..utils.exceptions import ConfigurationError
 from ..utils.logging_config import get_logger
 
@@ -119,6 +120,41 @@ class ServiceFactory:
         self._clients["gemini"] = client
         return client
 
+    async def create_redhat_jira_ldap_integration(self) -> RedHatJiraLDAPIntegration:
+        """Create Red Hat Jira client with LDAP integration."""
+        if "redhat_jira_ldap" in self._clients:
+            return self._clients["redhat_jira_ldap"]
+
+        # Get configuration
+        jira_config = self.config_manager.get_jira_config()
+        ldap_config = self.config_manager.get_ldap_config()
+
+        # Check if it's Red Hat Jira and LDAP is enabled
+        if not is_redhat_jira(jira_config.url):
+            raise ConfigurationError("LDAP integration requires Red Hat Jira URL")
+
+        if not ldap_config.enabled:
+            self.logger.warning(
+                "LDAP is not enabled, creating standard Red Hat Jira client"
+            )
+            return await self.create_jira_client()
+
+        # Create integration
+        integration = RedHatJiraLDAPIntegration(self.config_manager)
+
+        # Initialize and validate
+        try:
+            await integration.initialize()
+            self.logger.info("Successfully created Red Hat Jira-LDAP integration")
+        except Exception as e:
+            self.logger.error(
+                f"Failed to initialize Red Hat Jira-LDAP integration: {e}"
+            )
+            raise
+
+        self._clients["redhat_jira_ldap"] = integration
+        return integration
+
     async def get_client(self, service_name: str) -> BaseIntegrationClient:
         """Get or create a client for the specified service."""
         # Check if client already exists
@@ -130,6 +166,8 @@ class ServiceFactory:
             return await self.create_jira_client()
         elif service_name == "gemini":
             return await self.create_gemini_client()
+        elif service_name == "redhat_jira_ldap":
+            return await self.create_redhat_jira_ldap_integration()
         else:
             raise ValueError(f"Unknown service: {service_name}")
 
@@ -218,3 +256,4 @@ service_registry = ServiceRegistry()
 service_registry.register("jira", JiraClient)
 service_registry.register("redhat_jira", RedHatJiraClient)
 service_registry.register("gemini", GeminiClient)
+service_registry.register("redhat_jira_ldap", RedHatJiraLDAPIntegration)

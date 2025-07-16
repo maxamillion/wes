@@ -129,12 +129,44 @@ class WorkflowOrchestrator:
         self.is_cancelled = True
         self.logger.info("Workflow cancellation requested")
 
+    async def execute_manager_team_workflow(
+        self,
+        manager_identifier: str,
+        start_date: datetime,
+        end_date: datetime,
+        custom_prompt: Optional[str] = None,
+    ) -> WorkflowResult:
+        """Execute workflow for a manager's entire team using LDAP.
+
+        This is a convenience method that automatically uses LDAP to fetch
+        the full organizational hierarchy for a manager.
+
+        Args:
+            manager_identifier: Manager's email or username
+            start_date: Start date for activity range
+            end_date: End date for activity range
+            custom_prompt: Optional custom prompt for AI generation
+
+        Returns:
+            WorkflowResult containing status, summary data, and execution details
+        """
+        return await self.execute_workflow(
+            users=[manager_identifier],  # Fallback in case LDAP is not available
+            start_date=start_date,
+            end_date=end_date,
+            custom_prompt=custom_prompt,
+            manager_identifier=manager_identifier,
+            use_ldap_hierarchy=True,
+        )
+
     async def execute_workflow(
         self,
         users: List[str],
         start_date: datetime,
         end_date: datetime,
         custom_prompt: Optional[str] = None,
+        manager_identifier: Optional[str] = None,
+        use_ldap_hierarchy: bool = False,
     ) -> WorkflowResult:
         """Execute the complete workflow.
 
@@ -146,6 +178,8 @@ class WorkflowOrchestrator:
             start_date: Start date for activity range
             end_date: End date for activity range
             custom_prompt: Optional custom prompt for AI generation
+            manager_identifier: Manager email/username for LDAP hierarchy queries
+            use_ldap_hierarchy: Whether to use LDAP to get full team hierarchy
 
         Returns:
             WorkflowResult containing status, summary data, and execution details
@@ -175,9 +209,20 @@ class WorkflowOrchestrator:
                 return self._handle_cancellation(result)
 
             # Stage 3: Fetch Jira data
-            activity_data = await self._execute_stage(
-                "fetch_jira_data", result, users, start_date, end_date
-            )
+            if use_ldap_hierarchy and manager_identifier:
+                # Use LDAP to get team hierarchy
+                activity_data = await self._execute_stage(
+                    "fetch_jira_data_with_ldap",
+                    result,
+                    manager_identifier,
+                    start_date,
+                    end_date,
+                )
+            else:
+                # Use standard user list
+                activity_data = await self._execute_stage(
+                    "fetch_jira_data", result, users, start_date, end_date
+                )
             if self.is_cancelled:
                 return self._handle_cancellation(result)
 
@@ -294,8 +339,20 @@ class WorkflowOrchestrator:
         self._update_progress("Initializing API clients...")
 
         try:
-            # Create clients using factory
-            self.jira_client = await self.service_factory.create_jira_client()
+            # Check if we should use LDAP-enabled Red Hat Jira
+            jira_config = self.config_manager.get_jira_config()
+            ldap_config = self.config_manager.get_ldap_config()
+
+            if ldap_config.enabled and "redhat.com" in jira_config.url:
+                # Use LDAP-enabled Red Hat Jira integration
+                self.jira_client = (
+                    await self.service_factory.create_redhat_jira_ldap_integration()
+                )
+                self.logger.info("Using Red Hat Jira with LDAP integration")
+            else:
+                # Use standard Jira client
+                self.jira_client = await self.service_factory.create_jira_client()
+
             self.gemini_client = await self.service_factory.create_gemini_client()
 
             self.logger.info("API clients initialized successfully")
@@ -358,6 +415,51 @@ class WorkflowOrchestrator:
 
         except Exception as e:
             raise JiraIntegrationError(f"Failed to fetch Jira data: {e}")
+
+    async def _stage_fetch_jira_data_with_ldap(
+        self, manager_identifier: str, start_date: datetime, end_date: datetime
+    ) -> List[Dict[str, Any]]:
+        """Stage 3 Alternative: Fetch data from Jira using LDAP hierarchy."""
+        self._update_progress("Fetching team hierarchy from LDAP...")
+
+        try:
+            # Check if we have the LDAP-enabled integration
+            from ..integrations.redhat_jira_ldap_integration import (
+                RedHatJiraLDAPIntegration,
+            )
+
+            if not isinstance(self.jira_client, RedHatJiraLDAPIntegration):
+                self.logger.warning(
+                    "LDAP-enabled Jira client not available, falling back to standard fetch"
+                )
+                # Fall back to using manager identifier as single user
+                return await self._stage_fetch_jira_data(
+                    [manager_identifier], start_date, end_date
+                )
+
+            # Use LDAP to get full team
+            activity_data, hierarchy = (
+                await self.jira_client.get_manager_team_activities(
+                    manager_identifier=manager_identifier,
+                    start_date=start_date,
+                    end_date=end_date,
+                    include_comments=True,
+                    max_results=1000,
+                )
+            )
+
+            self.logger.info(
+                f"Fetched {len(activity_data)} activities for manager {manager_identifier}'s team"
+            )
+
+            # Store hierarchy info in result for reference
+            if hasattr(self, "result"):
+                self.result.hierarchy = hierarchy
+
+            return activity_data
+
+        except Exception as e:
+            raise JiraIntegrationError(f"Failed to fetch Jira data with LDAP: {e}")
 
     async def _stage_generate_summary(
         self, activity_data: List[Dict[str, Any]], custom_prompt: Optional[str] = None

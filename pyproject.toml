@@ -52,6 +52,8 @@ dependencies = [
     "reportlab>=4.0.0",
     "pyinstaller>=6.14.2",
     "pytest>=8.4.1",
+    # LDAP integration
+    "ldap3>=2.9.0",
 ]
 
 [project.optional-dependencies]
@@ -102,6 +104,8 @@ build = [
 redhat = [
     # Red Hat Jira integration - optional dependency for Red Hat environments
     "rhjira @ git+https://gitlab.com/prarit/rhjira-python.git",
+    # LDAP integration for Red Hat organizational queries
+    "ldap3>=2.9.0",
 ]
 
 [project.urls]
