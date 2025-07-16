@@ -70,7 +70,7 @@ class BaseValidator(ABC):
             if field not in config or not config[field]:
                 return ValidationResult(
                     is_valid=False,
-                    message=f"{field.replace('_', ' ').title()} is required",
+                    message=f"{field} is required",
                     service=self.service_type,
                     details={"field": field},
                 )

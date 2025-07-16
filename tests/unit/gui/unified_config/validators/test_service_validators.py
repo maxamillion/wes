@@ -59,16 +59,29 @@ class TestJiraValidator:
         assert "api_token" in result["message"].lower()
 
     def test_validate_config_redhat_jira(self, validator):
-        """Test validation of Red Hat Jira (no API token required)."""
+        """Test validation of Red Hat Jira (API token required)."""
         config = {
             "type": "redhat",
             "url": "https://issues.redhat.com",
             "username": "user@redhat.com",
-            # No api_token needed
+            "api_token": "redhat-api-token-12345",
         }
 
         result = validator.validate_config(config)
         assert result["is_valid"] is True
+
+    def test_validate_config_redhat_jira_missing_token(self, validator):
+        """Test validation of Red Hat Jira without API token should fail."""
+        config = {
+            "type": "redhat",
+            "url": "https://issues.redhat.com",
+            "username": "user@redhat.com",
+            # Missing api_token
+        }
+
+        result = validator.validate_config(config)
+        assert result["is_valid"] is False
+        assert "api_token" in result["message"].lower()
 
     def test_validate_config_invalid_url(self, validator):
         """Test validation with invalid URL."""

@@ -6,12 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from src.wes.core.orchestrator import (
+from wes.core.orchestrator import (
     WorkflowOrchestrator,
     WorkflowResult,
     WorkflowStatus,
 )
-from src.wes.utils.exceptions import (
+from wes.utils.exceptions import (
     GeminiIntegrationError,
     JiraIntegrationError,
     WesError,
@@ -53,7 +53,7 @@ def mock_config_manager():
 @pytest.fixture
 def orchestrator(mock_config_manager):
     """Create an orchestrator instance with mocked dependencies."""
-    with patch("src.wes.core.orchestrator.ServiceFactory") as MockServiceFactory:
+    with patch("wes.core.orchestrator.ServiceFactory") as MockServiceFactory:
         mock_factory = Mock()
         MockServiceFactory.return_value = mock_factory
         return WorkflowOrchestrator(mock_config_manager)

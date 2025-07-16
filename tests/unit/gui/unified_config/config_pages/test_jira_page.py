@@ -25,6 +25,7 @@ class TestJiraConfigPage:
         """Create a mock ConfigManager."""
         manager = Mock(spec=ConfigManager)
         manager.config = {}
+        manager.retrieve_credential.return_value = None
         return manager
 
     @pytest.fixture

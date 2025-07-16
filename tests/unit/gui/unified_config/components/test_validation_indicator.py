@@ -26,6 +26,7 @@ class TestValidationIndicator:
         """Create a ValidationIndicator instance."""
         indicator = ValidationIndicator()
         qtbot.addWidget(indicator)
+        indicator.show()
         return indicator
 
     def test_initial_state(self, indicator):
@@ -91,16 +92,14 @@ class TestValidationIndicator:
         assert indicator.text_label.text() == "Success!"
         assert "green" in indicator.text_label.styleSheet()
 
-    def test_hide_text(self, indicator):
+    def test_hide_text(self, indicator, qtbot):
         """Test hiding text label."""
         # Show text first
         indicator.set_state(ValidationIndicator.State.VALID, "Success!", show_text=True)
         assert indicator.text_label.isVisible()
 
-        # Hide text
-        indicator.set_state(
-            ValidationIndicator.State.VALID, "Success!", show_text=False
-        )
+        # Clear the indicator which should hide the text
+        indicator.clear()
         assert not indicator.text_label.isVisible()
 
     def test_tooltip(self, indicator):

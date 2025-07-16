@@ -242,13 +242,13 @@ class GeminiValidator(BaseValidator):
         if not api_key.startswith("AIza"):
             return False, "Invalid API key format (should start with 'AIza')"
 
+        # Check for valid characters first
+        if not re.match(r"^[A-Za-z0-9\-_]+$", api_key):
+            return False, "API key contains invalid characters"
+
         # Check length
         if len(api_key) < 30:
             return False, "API key appears too short"
-
-        # Check for valid characters
-        if not re.match(r"^[A-Za-z0-9\-_]+$", api_key):
-            return False, "API key contains invalid characters"
 
         return True, "API key format is valid"
 
