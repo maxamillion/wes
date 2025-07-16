@@ -74,7 +74,7 @@ class AppSettingsPage(ConfigPageBase):
         self.include_subtasks = self._create_checkbox("Include subtasks", True)
         summary_layout.addRow("Subtasks:", self.include_subtasks)
 
-        self.include_comments = self._create_checkbox("Include comments", False)
+        self.include_comments = self._create_checkbox("Include comments", True)
         summary_layout.addRow("Comments:", self.include_comments)
 
         self.group_by_epic = self._create_checkbox("Group by epic", True)
@@ -219,7 +219,7 @@ class AppSettingsPage(ConfigPageBase):
         # Summary settings
         self.date_range_spin.setValue(app_config.get("default_date_range", 7))
         self.include_subtasks.setChecked(app_config.get("include_subtasks", True))
-        self.include_comments.setChecked(app_config.get("include_comments", False))
+        self.include_comments.setChecked(app_config.get("include_comments", True))
         self.group_by_epic.setChecked(app_config.get("group_by_epic", True))
 
         # Output settings
