@@ -3,7 +3,6 @@
 from .base_validator import BaseValidator
 from .service_validators import (
     GeminiValidator,
-    GoogleValidator,
     JiraValidator,
     get_validator,
 )
@@ -11,7 +10,6 @@ from .service_validators import (
 __all__ = [
     "BaseValidator",
     "JiraValidator",
-    "GoogleValidator",
     "GeminiValidator",
     "get_validator",
 ]

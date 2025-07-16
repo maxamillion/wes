@@ -451,7 +451,38 @@ class GeminiClient:
             await self.rate_limiter.acquire()
 
             response = await self._generate_content("Test", 0.1, 10)
-            return bool(response.text)
+
+            # Try to access response.text safely
+            try:
+                if response.text:
+                    return True
+            except Exception as text_error:
+                # Check if this is the expected error for filtered content
+                if "response.text" in str(text_error) and "finish_reason" in str(
+                    text_error
+                ):
+                    # This means the API is working but content was filtered
+                    self.logger.info("API key validation successful (content filtered)")
+                    return True
+
+            # Check response structure for other validation patterns
+            if hasattr(response, "candidates") and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, "finish_reason"):
+                    # Finish reason 2 = SAFETY, 3 = RECITATION, etc.
+                    if candidate.finish_reason in [2, 3]:
+                        # This is actually a successful connection, just blocked content
+                        self.logger.info(
+                            "API key validation successful (content filtered)"
+                        )
+                        return True
+
+            # If we have a response object but no text, connection is still valid
+            if response:
+                self.logger.info("API key validation successful (empty response)")
+                return True
+
+            return False
 
         except Exception as e:
             self.logger.error(f"API key validation failed: {e}")

@@ -27,19 +27,6 @@ class JiraConfig:
 
 
 @dataclass
-class GoogleConfig:
-    """Google services configuration."""
-
-    service_account_path: str = ""
-    oauth_client_id: str = ""
-    oauth_client_secret: str = ""
-    oauth_refresh_token: str = ""
-    docs_folder_id: str = ""
-    rate_limit: int = 100
-    timeout: int = 30
-
-
-@dataclass
 class AIConfig:
     """AI service configuration."""
 
@@ -80,7 +67,6 @@ class Configuration:
     """Main configuration container."""
 
     jira: JiraConfig = field(default_factory=JiraConfig)
-    google: GoogleConfig = field(default_factory=GoogleConfig)
     ai: AIConfig = field(default_factory=AIConfig)
     app: AppConfig = field(default_factory=AppConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
@@ -139,10 +125,6 @@ class ConfigManager:
             if "jira" in config_data:
                 jira_data = config_data["jira"]
                 self._config.jira = JiraConfig(**jira_data)
-
-            if "google" in config_data:
-                google_data = config_data["google"]
-                self._config.google = GoogleConfig(**google_data)
 
             if "ai" in config_data:
                 ai_data = config_data["ai"]
@@ -225,13 +207,11 @@ class ConfigManager:
 
         # Get configurations with loaded credentials
         jira_config = self.get_jira_config()
-        google_config = self.get_google_config()
         ai_config = self.get_ai_config()
 
         # Create config dict with loaded credentials
         config_dict = {
             "jira": asdict(jira_config),
-            "google": asdict(google_config),
             "ai": asdict(ai_config),
             "app": asdict(self._config.app),
             "security": asdict(self._config.security),
@@ -266,42 +246,6 @@ class ConfigManager:
                     default_project=config.default_project,
                     default_users=config.default_users,
                     default_query=config.default_query,
-                    rate_limit=config.rate_limit,
-                    timeout=config.timeout,
-                )
-
-        return config
-
-    def get_google_config(self) -> GoogleConfig:
-        """Get Google configuration with sensitive data loaded."""
-        config = self._config.google
-
-        # Load sensitive data from secure storage if not already loaded
-        if not config.oauth_client_secret:
-            stored_secret = self.retrieve_credential("google", "oauth_client_secret")
-            if stored_secret:
-                config = GoogleConfig(
-                    service_account_path=config.service_account_path,
-                    oauth_client_id=config.oauth_client_id,
-                    oauth_client_secret=stored_secret,
-                    oauth_refresh_token=config.oauth_refresh_token
-                    or self.retrieve_credential("google", "oauth_refresh_token")
-                    or "",
-                    docs_folder_id=config.docs_folder_id,
-                    rate_limit=config.rate_limit,
-                    timeout=config.timeout,
-                )
-        elif not config.oauth_refresh_token:
-            stored_refresh_token = self.retrieve_credential(
-                "google", "oauth_refresh_token"
-            )
-            if stored_refresh_token:
-                config = GoogleConfig(
-                    service_account_path=config.service_account_path,
-                    oauth_client_id=config.oauth_client_id,
-                    oauth_client_secret=config.oauth_client_secret,
-                    oauth_refresh_token=stored_refresh_token,
-                    docs_folder_id=config.docs_folder_id,
                     rate_limit=config.rate_limit,
                     timeout=config.timeout,
                 )
@@ -359,35 +303,6 @@ class ConfigManager:
         except Exception as e:
             self.logger.error(f"Failed to update Jira configuration: {e}")
             raise ConfigurationError(f"Failed to update Jira configuration: {e}")
-
-    def update_google_config(self, **kwargs) -> None:
-        """Update Google configuration."""
-        try:
-            # Store OAuth credentials securely if provided
-            credentials_to_store = {
-                "oauth_client_secret": "oauth_client_secret",
-                "oauth_refresh_token": "oauth_refresh_token",
-                "oauth_access_token": "oauth_access_token",
-            }
-
-            kwargs_copy = kwargs.copy()
-            for field, credential_type in credentials_to_store.items():
-                if field in kwargs and kwargs[field]:
-                    self.store_credential("google", credential_type, kwargs[field])
-                    # Don't store sensitive data in the config object
-                    del kwargs_copy[field]
-
-            # Update configuration
-            for key, value in kwargs_copy.items():
-                if hasattr(self._config.google, key):
-                    setattr(self._config.google, key, value)
-
-            self._save_configuration()
-            self.logger.info("Google configuration updated")
-
-        except Exception as e:
-            self.logger.error(f"Failed to update Google configuration: {e}")
-            raise ConfigurationError(f"Failed to update Google configuration: {e}")
 
     def update_ai_config(self, **kwargs) -> None:
         """Update AI configuration."""

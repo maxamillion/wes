@@ -7,17 +7,12 @@ from urllib.parse import urlparse
 
 import google.generativeai as genai
 import requests
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from jira import JIRA, JIRAError
 
 from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
 from ..utils.exceptions import (
     AuthenticationError,
     GeminiIntegrationError,
-    GoogleDocsIntegrationError,
     JiraIntegrationError,
     ValidationError,
 )
@@ -120,70 +115,6 @@ class CredentialValidator:
         except Exception as e:
             self.logger.error(f"Jira validation error: {e}")
             return False, f"Connection failed: {e}"
-
-    def validate_google_credentials(
-        self, cred_data: Dict[str, str]
-    ) -> Tuple[bool, str]:
-        """Validate Google OAuth credentials."""
-        try:
-            required_fields = ["client_id", "client_secret", "refresh_token"]
-            missing_fields = [
-                field for field in required_fields if not cred_data.get(field)
-            ]
-
-            if missing_fields:
-                return False, f"Missing required fields: {', '.join(missing_fields)}"
-
-            # Create credentials object
-            credentials = Credentials(
-                token=cred_data.get("access_token"),
-                refresh_token=cred_data.get("refresh_token"),
-                token_uri=cred_data.get(
-                    "token_uri", "https://oauth2.googleapis.com/token"
-                ),
-                client_id=cred_data.get("client_id"),
-                client_secret=cred_data.get("client_secret"),
-                scopes=cred_data.get(
-                    "scopes",
-                    [
-                        "https://www.googleapis.com/auth/documents",
-                        "https://www.googleapis.com/auth/drive.file",
-                    ],
-                ),
-            )
-
-            # Refresh if needed
-            if credentials.expired and credentials.refresh_token:
-                credentials.refresh(Request())
-
-            # Test Drive API access
-            drive_service = build("drive", "v3", credentials=credentials)
-            about = drive_service.about().get(fields="user,storageQuota").execute()
-
-            user_info = about.get("user", {})
-            user_email = user_info.get("emailAddress", "Unknown")
-
-            # Test Docs API access
-            docs_service = build("docs", "v1", credentials=credentials)
-
-            self.security_logger.log_security_event(
-                "google_credential_validation_success",
-                severity="INFO",
-                user_email=user_email,
-            )
-
-            return True, f"Connected successfully as {user_email}"
-
-        except HttpError as e:
-            error_msg = self._parse_google_error(e)
-            self.security_logger.log_security_event(
-                "google_credential_validation_failed", severity="WARNING", error=str(e)
-            )
-            return False, error_msg
-
-        except Exception as e:
-            self.logger.error(f"Google validation error: {e}")
-            return False, f"Authentication failed: {e}"
 
     def validate_gemini_credentials(self, api_key: str) -> Tuple[bool, str]:
         """Validate Google Gemini API key."""
@@ -347,21 +278,6 @@ class CredentialValidator:
         else:
             return f"Connection failed: {error}"
 
-    def _parse_google_error(self, error: HttpError) -> str:
-        """Parse Google API error into user-friendly message."""
-        status_code = error.resp.status
-
-        if status_code == 401:
-            return "Authentication failed. Please re-authorize the application."
-        elif status_code == 403:
-            return "Access forbidden. Please check API permissions and quotas."
-        elif status_code == 404:
-            return "Resource not found."
-        elif status_code == 429:
-            return "Rate limit exceeded. Please try again later."
-        else:
-            return f"Google API error: {error}"
-
     def _parse_gemini_error(self, error: Exception) -> str:
         """Parse Gemini error into user-friendly message."""
         error_str = str(error).lower()
@@ -409,8 +325,6 @@ class CredentialHealthMonitor:
                     credentials.get("username", ""),
                     credentials.get("api_token", ""),
                 )
-            elif service == "google":
-                success, message = validator.validate_google_credentials(credentials)
             elif service == "gemini":
                 success, message = validator.validate_gemini_credentials(
                     credentials.get("api_key", "")

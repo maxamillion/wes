@@ -6,13 +6,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.wes.integrations.redhat_jira_client import (
+from wes.integrations.redhat_jira_client import (
     RHJIRA_AVAILABLE,
     RedHatJiraClient,
     get_redhat_jira_client,
     is_redhat_jira,
 )
-from src.wes.utils.exceptions import (
+from wes.utils.exceptions import (
     AuthenticationError,
     JiraIntegrationError,
 )
@@ -71,10 +71,10 @@ class TestRedHatJiraClient:
             "timeout": 30,
         }
 
-    @patch("src.wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", False)
+    @patch("wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", False)
     def test_client_initialization_without_rhjira(self, redhat_config):
         """Test client initialization when rhjira is not available."""
-        with patch("src.wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -85,10 +85,10 @@ class TestRedHatJiraClient:
             assert client._client == mock_jira_instance
             mock_jira.assert_called_once()
 
-    @patch("src.wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", True)
+    @patch("wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", True)
     def test_client_initialization_with_rhjira(self, redhat_config):
         """Test client initialization when rhjira is available."""
-        with patch("src.wes.integrations.redhat_jira_client.rhjira") as mock_rhjira:
+        with patch("wes.integrations.redhat_jira_client.rhjira") as mock_rhjira:
             mock_client_instance = Mock()
             mock_client_instance.current_user.return_value = "testuser"
             mock_rhjira.RHJIRA.return_value = (

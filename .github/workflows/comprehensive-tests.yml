@@ -32,11 +32,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --frozen --extra dev
+        uv sync --extra dev
 
     - name: Install Red Hat Jira dependencies
       run: |
-        uv sync --frozen --extra redhat || echo "Red Hat dependencies not available, continuing with standard tests"
+        uv sync --extra redhat || echo "Red Hat dependencies not available, continuing with standard tests"
       continue-on-error: true
 
     - name: Install system dependencies
@@ -75,9 +75,13 @@ jobs:
 
     - name: Run end-to-end tests
       run: |
-        uv run pytest tests/e2e/ \
-          --junitxml=test-results-e2e.xml \
-          -v
+        if [ -d "tests/e2e" ] && [ "$(ls -A tests/e2e/*.py 2>/dev/null)" ]; then
+          uv run pytest tests/e2e/ \
+            --junitxml=test-results-e2e.xml \
+            -v
+        else
+          echo "No e2e tests found, skipping"
+        fi
       env:
         DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
@@ -105,7 +109,12 @@ jobs:
         uv run safety check --json --output safety-report.json || true
         
         echo "Running Semgrep security scan..."
-        uv run semgrep --config=auto src/ --json --output=semgrep-report.json || true
+        if command -v semgrep &> /dev/null; then
+          semgrep --config=auto src/ --json --output=semgrep-report.json || true
+        else
+          python -m pip install semgrep || true
+          semgrep --config=auto src/ --json --output=semgrep-report.json || true
+        fi
 
     - name: Generate coverage report
       run: |
@@ -198,8 +207,8 @@ jobs:
 
     - name: Install build dependencies
       run: |
-        uv sync --frozen --extra build
-        uv sync --frozen --extra redhat || echo "Red Hat dependencies not available for build"
+        uv sync --extra build
+        uv sync --extra redhat || echo "Red Hat dependencies not available for build"
       continue-on-error: true
 
     - name: Install system dependencies (Linux)

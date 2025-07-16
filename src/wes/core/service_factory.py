@@ -7,7 +7,6 @@ from typing import Any, Dict, Optional, Protocol, Type
 from ..core.config_manager import ConfigManager
 from ..integrations.base_client import BaseIntegrationClient
 from ..integrations.gemini_client import GeminiClient
-from ..integrations.google_docs_client import GoogleDocsClient
 from ..integrations.jira_client import JiraClient
 from ..integrations.redhat_jira_client import RedHatJiraClient, is_redhat_jira
 from ..utils.exceptions import ConfigurationError
@@ -37,7 +36,6 @@ class ServiceFactory:
             "jira": JiraClient,
             "redhat_jira": RedHatJiraClient,
             "gemini": GeminiClient,
-            "google_docs": GoogleDocsClient,
         }
 
     def register_client_class(
@@ -121,82 +119,6 @@ class ServiceFactory:
         self._clients["gemini"] = client
         return client
 
-    async def create_google_docs_client(self) -> GoogleDocsClient:
-        """Create and configure Google Docs client."""
-        if "google_docs" in self._clients:
-            return self._clients["google_docs"]
-
-        # Get configuration
-        google_config = self.config_manager.get_google_config()
-
-        if google_config.service_account_path:
-            # Service account authentication
-            client = GoogleDocsClient(
-                service_account_path=google_config.service_account_path,
-                rate_limit=google_config.rate_limit,
-                timeout=google_config.timeout,
-            )
-        else:
-            # OAuth authentication
-            oauth_credentials = self._get_oauth_credentials()
-            if not oauth_credentials:
-                raise ConfigurationError("Google OAuth credentials not configured")
-
-            client = GoogleDocsClient(
-                oauth_credentials=oauth_credentials,
-                rate_limit=google_config.rate_limit,
-                timeout=google_config.timeout,
-            )
-
-        # Validate connection
-        try:
-            await client.validate_connection()
-            self.logger.info("Successfully created Google Docs client")
-        except Exception as e:
-            self.logger.error(f"Failed to validate Google Docs connection: {e}")
-            raise
-
-        self._clients["google_docs"] = client
-        return client
-
-    def _get_oauth_credentials(self) -> Optional[Dict[str, str]]:
-        """Get OAuth credentials for Google services."""
-        google_config = self.config_manager.get_google_config()
-
-        # Check for simplified OAuth tokens first
-        access_token = self.config_manager.retrieve_credential(
-            "google", "oauth_access_token"
-        )
-        refresh_token = self.config_manager.retrieve_credential(
-            "google", "oauth_refresh_token"
-        )
-
-        if access_token and refresh_token:
-            # Using simplified OAuth (proxy-managed)
-            return {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "client_id": google_config.oauth_client_id or "proxy-managed",
-                "client_secret": "proxy-managed",
-                "token_uri": google_config.oauth_token_uri
-                or "https://oauth2.googleapis.com/token",
-            }
-
-        # Fallback to manual OAuth configuration
-        client_secret = self.config_manager.retrieve_credential(
-            "google", "oauth_client_secret"
-        )
-
-        if not client_secret or not refresh_token:
-            return None
-
-        return {
-            "client_id": google_config.oauth_client_id,
-            "client_secret": client_secret,
-            "refresh_token": refresh_token,
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
-
     async def get_client(self, service_name: str) -> BaseIntegrationClient:
         """Get or create a client for the specified service."""
         # Check if client already exists
@@ -208,8 +130,6 @@ class ServiceFactory:
             return await self.create_jira_client()
         elif service_name == "gemini":
             return await self.create_gemini_client()
-        elif service_name == "google_docs":
-            return await self.create_google_docs_client()
         else:
             raise ValueError(f"Unknown service: {service_name}")
 
@@ -247,16 +167,6 @@ class ServiceFactory:
             results["gemini"] = await gemini_client.health_check()
         except Exception as e:
             results["gemini"] = {
-                "healthy": False,
-                "error": str(e),
-            }
-
-        # Check Google Docs
-        try:
-            google_client = await self.get_client("google_docs")
-            results["google_docs"] = await google_client.health_check()
-        except Exception as e:
-            results["google_docs"] = {
                 "healthy": False,
                 "error": str(e),
             }
@@ -308,4 +218,3 @@ service_registry = ServiceRegistry()
 service_registry.register("jira", JiraClient)
 service_registry.register("redhat_jira", RedHatJiraClient)
 service_registry.register("gemini", GeminiClient)
-service_registry.register("google_docs", GoogleDocsClient)

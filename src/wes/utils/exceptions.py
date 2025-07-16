@@ -82,3 +82,9 @@ class ConnectionError(WesError):
     """Connection-related errors."""
 
     pass
+
+
+class ExportError(WesError):
+    """Export-related errors."""
+
+    pass

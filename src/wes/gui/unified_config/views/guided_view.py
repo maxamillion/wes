@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.config_pages import (
     GeminiConfigPage,
-    GoogleConfigPage,
     JiraConfigPage,
 )
 from wes.gui.unified_config.types import ServiceType, ValidationResult
@@ -68,7 +67,6 @@ class ServiceCard(QFrame):
         # Title
         titles = {
             ServiceType.JIRA: "Jira Connection",
-            ServiceType.GOOGLE: "Google Docs",
             ServiceType.GEMINI: "Gemini AI",
         }
 
@@ -81,7 +79,6 @@ class ServiceCard(QFrame):
         # Description
         descriptions = {
             ServiceType.JIRA: "Connect to your Jira instance to fetch activity data",
-            ServiceType.GOOGLE: "Set up Google Docs for creating summaries",
             ServiceType.GEMINI: "Configure Gemini AI for intelligent summarization",
         }
 
@@ -277,8 +274,6 @@ class GuidedView(QWidget):
             # Create appropriate config page
             if service_type == ServiceType.JIRA:
                 page = JiraConfigPage(self.config_manager)
-            elif service_type == ServiceType.GOOGLE:
-                page = GoogleConfigPage(self.config_manager)
             elif service_type == ServiceType.GEMINI:
                 page = GeminiConfigPage(self.config_manager)
 

@@ -155,101 +155,6 @@ class JiraValidator(BaseValidator):
         return True, "Token format is valid"
 
 
-class GoogleValidator(BaseValidator):
-    """Validator for Google services configuration."""
-
-    service_type = ServiceType.GOOGLE
-
-    def validate_config(self, config: Dict[str, Any]) -> ValidationResult:
-        """Validate Google configuration."""
-        auth_method = config.get("auth_method", "oauth")
-
-        if auth_method == "oauth":
-            # Check for OAuth credentials
-            creds_path = config.get("credentials_path", "")
-            if not creds_path:
-                return ValidationResult(
-                    is_valid=False,
-                    message="OAuth authentication required",
-                    service=self.service_type,
-                    details={"auth_method": "oauth", "authenticated": False},
-                )
-
-            if not os.path.exists(creds_path):
-                return ValidationResult(
-                    is_valid=False,
-                    message="OAuth credentials file not found",
-                    service=self.service_type,
-                    details={"auth_method": "oauth", "creds_path": creds_path},
-                )
-        else:
-            # Service account validation
-            key_path = config.get("service_account_key_path", "")
-            if not key_path:
-                return ValidationResult(
-                    is_valid=False,
-                    message="Service account key file required",
-                    service=self.service_type,
-                    details={"auth_method": "service_account"},
-                )
-
-            if not os.path.exists(key_path):
-                return ValidationResult(
-                    is_valid=False,
-                    message="Service account key file not found",
-                    service=self.service_type,
-                    details={"auth_method": "service_account", "key_path": key_path},
-                )
-
-            # Validate key file format
-            try:
-                import json
-
-                with open(key_path, "r") as f:
-                    key_data = json.load(f)
-
-                if "client_email" not in key_data:
-                    return ValidationResult(
-                        is_valid=False,
-                        message="Invalid service account key format",
-                        service=self.service_type,
-                        details={
-                            "auth_method": "service_account",
-                            "missing": "client_email",
-                        },
-                    )
-            except Exception as e:
-                return ValidationResult(
-                    is_valid=False,
-                    message=f"Error reading service account key: {str(e)}",
-                    service=self.service_type,
-                    details={"auth_method": "service_account", "error": str(e)},
-                )
-
-        return ValidationResult(
-            is_valid=True,
-            message="Google configuration is valid",
-            service=self.service_type,
-            details={"auth_method": auth_method},
-        )
-
-    def validate_connection(self, config: Dict[str, Any]) -> Tuple[bool, str]:
-        """Test Google services connection."""
-        try:
-            # Import here to avoid circular imports
-            from wes.integrations.google_docs_client import GoogleDocsClient
-
-            # Create client
-            client = GoogleDocsClient(config)
-
-            # Test connection by listing documents (with limit)
-            client.test_connection()
-            return True, "Successfully connected to Google services"
-
-        except Exception as e:
-            return False, f"Connection failed: {str(e)}"
-
-
 class GeminiValidator(BaseValidator):
     """Validator for Gemini AI configuration."""
 
@@ -337,13 +242,13 @@ class GeminiValidator(BaseValidator):
         if not api_key.startswith("AIza"):
             return False, "Invalid API key format (should start with 'AIza')"
 
+        # Check for valid characters first
+        if not re.match(r"^[A-Za-z0-9\-_]+$", api_key):
+            return False, "API key contains invalid characters"
+
         # Check length
         if len(api_key) < 30:
             return False, "API key appears too short"
-
-        # Check for valid characters
-        if not re.match(r"^[A-Za-z0-9\-_]+$", api_key):
-            return False, "API key contains invalid characters"
 
         return True, "API key format is valid"
 
@@ -351,7 +256,6 @@ class GeminiValidator(BaseValidator):
 # Validator registry
 VALIDATORS = {
     ServiceType.JIRA: JiraValidator(),
-    ServiceType.GOOGLE: GoogleValidator(),
     ServiceType.GEMINI: GeminiValidator(),
 }
 

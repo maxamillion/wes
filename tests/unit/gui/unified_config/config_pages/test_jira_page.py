@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QLabel, QMessageBox
 
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.config_pages.jira_page import JiraConfigPage
@@ -25,6 +25,7 @@ class TestJiraConfigPage:
         """Create a mock ConfigManager."""
         manager = Mock(spec=ConfigManager)
         manager.config = {}
+        manager.retrieve_credential.return_value = None
         return manager
 
     @pytest.fixture

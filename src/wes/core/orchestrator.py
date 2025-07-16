@@ -1,6 +1,8 @@
 """Workflow orchestrator for executive summary generation."""
 
 import asyncio
+import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -12,7 +14,6 @@ from ..integrations.gemini_client import SummaryFormatter
 from ..integrations.jira_client import JiraActivitySummary
 from ..utils.exceptions import (
     GeminiIntegrationError,
-    GoogleDocsIntegrationError,
     JiraIntegrationError,
     WesError,
 )
@@ -34,8 +35,7 @@ class WorkflowResult:
     """Result of workflow execution."""
 
     status: WorkflowStatus
-    document_id: Optional[str] = None
-    document_url: Optional[str] = None
+    summary_data: Optional[Dict[str, Any]] = None
     summary_content: Optional[str] = None
     activity_count: int = 0
     execution_time: float = 0.0
@@ -50,8 +50,8 @@ class WorkflowResult:
 class WorkflowOrchestrator:
     """Orchestrates the complete executive summary generation workflow.
 
-    This class manages the entire workflow from fetching Jira data to creating
-    Google Docs. It coordinates between different service clients and handles
+    This class manages the entire workflow from fetching Jira data to generating
+    executive summaries. It coordinates between different service clients and handles
     the workflow stages, error recovery, and progress tracking.
 
     Attributes:
@@ -87,7 +87,6 @@ class WorkflowOrchestrator:
         # Clients (will be created by factory)
         self.jira_client = None
         self.gemini_client = None
-        self.google_docs_client = None
 
         # Workflow state
         self.is_cancelled = False
@@ -99,7 +98,6 @@ class WorkflowOrchestrator:
             "initialize_clients",
             "fetch_jira_data",
             "generate_summary",
-            "create_document",
             "finalize",
         ]
         self.current_stage = 0
@@ -136,27 +134,21 @@ class WorkflowOrchestrator:
         users: List[str],
         start_date: datetime,
         end_date: datetime,
-        document_title: Optional[str] = None,
-        folder_id: Optional[str] = None,
-        share_email: Optional[str] = None,
         custom_prompt: Optional[str] = None,
     ) -> WorkflowResult:
         """Execute the complete workflow.
 
         Runs through all workflow stages: validation, client initialization,
-        data fetching, summary generation, and document creation.
+        data fetching, and summary generation.
 
         Args:
             users: List of usernames to fetch activities for
             start_date: Start date for activity range
             end_date: End date for activity range
-            document_title: Optional custom document title
-            folder_id: Optional Google Drive folder ID
-            share_email: Optional email to share document with
             custom_prompt: Optional custom prompt for AI generation
 
         Returns:
-            WorkflowResult containing status, document info, and execution details
+            WorkflowResult containing status, summary data, and execution details
 
         Raises:
             WesError: If any stage fails during execution
@@ -199,23 +191,9 @@ class WorkflowOrchestrator:
                 return self._handle_cancellation(result)
 
             result.summary_content = summary.get("content", "")
+            result.summary_data = summary
 
-            # Stage 5: Create document
-            document_info = await self._execute_stage(
-                "create_document",
-                result,
-                summary,
-                document_title,
-                folder_id,
-                share_email,
-            )
-            if self.is_cancelled:
-                return self._handle_cancellation(result)
-
-            result.document_id = document_info.get("document_id")
-            result.document_url = document_info.get("document_url")
-
-            # Stage 6: Finalize
+            # Stage 5: Finalize
             await self._execute_stage("finalize", result)
 
             # Complete workflow
@@ -229,7 +207,6 @@ class WorkflowOrchestrator:
                 "workflow_completed",
                 execution_time=result.execution_time,
                 activity_count=result.activity_count,
-                document_id=result.document_id,
             )
 
             return result
@@ -320,9 +297,6 @@ class WorkflowOrchestrator:
             # Create clients using factory
             self.jira_client = await self.service_factory.create_jira_client()
             self.gemini_client = await self.service_factory.create_gemini_client()
-            self.google_docs_client = (
-                await self.service_factory.create_google_docs_client()
-            )
 
             self.logger.info("API clients initialized successfully")
 
@@ -348,6 +322,37 @@ class WorkflowOrchestrator:
 
             if not activity_data:
                 self.logger.warning("No activity data found for the specified criteria")
+            else:
+                # Log summary of fetched data for debugging
+                valid_activities = [
+                    a for a in activity_data if not a.get("_processing_error")
+                ]
+                error_activities = [
+                    a for a in activity_data if a.get("_processing_error")
+                ]
+
+                self.logger.info(
+                    f"Valid activities: {len(valid_activities)}, Error activities: {len(error_activities)}"
+                )
+
+                if error_activities:
+                    self.logger.warning(
+                        f"Failed to process {len(error_activities)} issues:"
+                    )
+                    for activity in error_activities:
+                        self.logger.warning(
+                            f"  - {activity.get('id', 'UNKNOWN')}: {activity.get('_processing_error', 'Unknown error')}"
+                        )
+
+                # Log a sample of the data structure for debugging (first activity only)
+                if activity_data and self.logger.isEnabledFor(logging.DEBUG):
+                    first_activity = activity_data[0].copy()
+                    # Remove potentially sensitive data for logging
+                    first_activity.pop("description", None)
+                    first_activity.pop("comments", None)
+                    self.logger.debug(
+                        f"Sample activity structure: {json.dumps(first_activity, indent=2, default=str)}"
+                    )
 
             return activity_data
 
@@ -361,10 +366,40 @@ class WorkflowOrchestrator:
         self._update_progress("Generating AI summary...")
 
         try:
+            # Filter out activities with processing errors before sending to Gemini
+            valid_activities = [
+                a for a in activity_data if not a.get("_processing_error")
+            ]
+
+            if not valid_activities:
+                # If all activities had errors, create a special summary
+                self.logger.error(
+                    "No valid activities to summarize - all had processing errors"
+                )
+                return {
+                    "content": (
+                        "# Executive Summary\n\n"
+                        "## Data Processing Error\n\n"
+                        "Unfortunately, we were unable to retrieve valid Jira data for the specified period. "
+                        "All issues encountered processing errors.\n\n"
+                        "### Recommended Actions:\n"
+                        "1. Verify Jira credentials and permissions\n"
+                        "2. Check that the specified users have accessible issues\n"
+                        "3. Ensure the date range contains valid data\n"
+                        "4. Review the application logs for specific error details\n\n"
+                        "Please contact your system administrator if this issue persists."
+                    ),
+                    "model": "error_handler",
+                    "usage": {},
+                    "generated_at": datetime.now().timestamp(),
+                    "safety_ratings": [],
+                    "error": "No valid Jira data available",
+                }
+
             ai_config = self.config_manager.get_ai_config()
 
             summary = await self.gemini_client.generate_summary(
-                activity_data=activity_data,
+                activity_data=valid_activities,  # Only send valid activities
                 custom_prompt=custom_prompt or ai_config.custom_prompt,
                 temperature=ai_config.temperature,
                 max_tokens=ai_config.max_tokens,
@@ -376,50 +411,8 @@ class WorkflowOrchestrator:
         except Exception as e:
             raise GeminiIntegrationError(f"Failed to generate summary: {e}")
 
-    async def _stage_create_document(
-        self,
-        summary: Dict[str, Any],
-        document_title: Optional[str] = None,
-        folder_id: Optional[str] = None,
-        share_email: Optional[str] = None,
-    ) -> Dict[str, str]:
-        """Stage 5: Create Google Doc."""
-        self._update_progress("Creating Google Doc...")
-
-        try:
-            # Prepare document title
-            if not document_title:
-                date_str = datetime.now().strftime("%Y-%m-%d")
-                document_title = f"Executive Summary - {date_str}"
-
-            # Format summary content
-            formatted_content = SummaryFormatter.format_for_document(summary)
-
-            # Create document
-            document_id = await self.google_docs_client.create_formatted_summary(
-                title=document_title,
-                summary_content=formatted_content,
-                folder_id=folder_id,
-            )
-
-            # Share document if email provided
-            if share_email:
-                await self.google_docs_client.share_document(
-                    document_id=document_id, email=share_email, role="reader"
-                )
-
-            # Get document URL
-            document_url = await self.google_docs_client.get_document_url(document_id)
-
-            self.logger.info(f"Google Doc created: {document_id}")
-
-            return {"document_id": document_id, "document_url": document_url}
-
-        except Exception as e:
-            raise GoogleDocsIntegrationError(f"Failed to create document: {e}")
-
     async def _stage_finalize(self) -> None:
-        """Stage 6: Finalize workflow."""
+        """Stage 5: Finalize workflow."""
         self._update_progress("Finalizing...")
 
         # Perform any cleanup or final tasks
@@ -471,7 +464,7 @@ class WorkflowOrchestrator:
 
         except Exception as e:
             self.logger.error(f"Connection test error: {e}")
-            return {"jira": False, "gemini": False, "google_docs": False}
+            return {"jira": False, "gemini": False}
 
         finally:
             await self._cleanup_clients()

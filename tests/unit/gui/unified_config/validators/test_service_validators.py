@@ -10,7 +10,6 @@ import pytest
 from wes.gui.unified_config.types import JiraType, ServiceType
 from wes.gui.unified_config.validators.service_validators import (
     GeminiValidator,
-    GoogleValidator,
     JiraValidator,
     get_validator,
 )
@@ -60,16 +59,29 @@ class TestJiraValidator:
         assert "api_token" in result["message"].lower()
 
     def test_validate_config_redhat_jira(self, validator):
-        """Test validation of Red Hat Jira (no API token required)."""
+        """Test validation of Red Hat Jira (API token required)."""
         config = {
             "type": "redhat",
             "url": "https://issues.redhat.com",
             "username": "user@redhat.com",
-            # No api_token needed
+            "api_token": "redhat-api-token-12345",
         }
 
         result = validator.validate_config(config)
         assert result["is_valid"] is True
+
+    def test_validate_config_redhat_jira_missing_token(self, validator):
+        """Test validation of Red Hat Jira without API token should fail."""
+        config = {
+            "type": "redhat",
+            "url": "https://issues.redhat.com",
+            "username": "user@redhat.com",
+            # Missing api_token
+        }
+
+        result = validator.validate_config(config)
+        assert result["is_valid"] is False
+        assert "api_token" in result["message"].lower()
 
     def test_validate_config_invalid_url(self, validator):
         """Test validation with invalid URL."""
@@ -142,92 +154,6 @@ class TestJiraValidator:
         success, message = validator.validate_connection(config)
         assert success is True
         assert "connected" in message.lower()
-
-
-class TestGoogleValidator:
-    """Test GoogleValidator functionality."""
-
-    @pytest.fixture
-    def validator(self):
-        """Create a GoogleValidator instance."""
-        return GoogleValidator()
-
-    def test_validate_config_oauth_valid(self, validator):
-        """Test validation of valid OAuth configuration."""
-        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
-            creds_path = f.name
-
-        try:
-            config = {"auth_method": "oauth", "credentials_path": creds_path}
-
-            result = validator.validate_config(config)
-            assert result["is_valid"] is True
-            assert result["service"] == ServiceType.GOOGLE
-        finally:
-            os.unlink(creds_path)
-
-    def test_validate_config_oauth_missing_creds(self, validator):
-        """Test validation with missing OAuth credentials."""
-        config = {
-            "auth_method": "oauth"
-            # Missing credentials_path
-        }
-
-        result = validator.validate_config(config)
-        assert result["is_valid"] is False
-        assert "authentication required" in result["message"].lower()
-
-    def test_validate_config_oauth_creds_not_found(self, validator):
-        """Test validation with non-existent credentials file."""
-        config = {"auth_method": "oauth", "credentials_path": "/non/existent/path.json"}
-
-        result = validator.validate_config(config)
-        assert result["is_valid"] is False
-        assert "not found" in result["message"].lower()
-
-    def test_validate_config_service_account_valid(self, validator):
-        """Test validation of valid service account configuration."""
-        # Create a temporary service account key file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump(
-                {
-                    "type": "service_account",
-                    "client_email": "test@project.iam.gserviceaccount.com",
-                    "private_key": "test-key",
-                },
-                f,
-            )
-            key_path = f.name
-
-        try:
-            config = {
-                "auth_method": "service_account",
-                "service_account_key_path": key_path,
-            }
-
-            result = validator.validate_config(config)
-            assert result["is_valid"] is True
-        finally:
-            os.unlink(key_path)
-
-    def test_validate_config_service_account_invalid_format(self, validator):
-        """Test validation with invalid service account key format."""
-        # Create a key file without required fields
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump({"type": "service_account"}, f)  # Missing client_email
-            key_path = f.name
-
-        try:
-            config = {
-                "auth_method": "service_account",
-                "service_account_key_path": key_path,
-            }
-
-            result = validator.validate_config(config)
-            assert result["is_valid"] is False
-            assert "invalid" in result["message"].lower()
-        finally:
-            os.unlink(key_path)
 
 
 class TestGeminiValidator:
@@ -317,8 +243,7 @@ class TestValidatorRegistry:
         jira_validator = get_validator(ServiceType.JIRA)
         assert isinstance(jira_validator, JiraValidator)
 
-        google_validator = get_validator(ServiceType.GOOGLE)
-        assert isinstance(google_validator, GoogleValidator)
+        # Google validator removed
 
         gemini_validator = get_validator(ServiceType.GEMINI)
         assert isinstance(gemini_validator, GeminiValidator)

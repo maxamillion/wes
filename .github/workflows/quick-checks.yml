@@ -24,7 +24,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --frozen --extra dev
+        uv sync --extra dev
 
     - name: Check code formatting
       run: |
@@ -37,7 +37,7 @@ jobs:
 
     - name: Run type checking
       run: |
-        uv run mypy src/wes --fast
+        uv run mypy src/wes
 
     - name: Run quick unit tests
       run: |
@@ -75,7 +75,7 @@ jobs:
       run: uv python install 3.12
 
     - name: Install dependencies
-      run: uv sync --frozen --extra dev
+      run: uv sync --extra dev
 
     - name: Run pre-commit hooks
       run: |

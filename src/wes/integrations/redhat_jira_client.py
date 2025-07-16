@@ -248,6 +248,29 @@ class RedHatJiraClient:
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
 
+    async def validate_connection(self) -> bool:
+        """Validate the connection to Red Hat Jira.
+
+        Returns:
+            True if connection is valid
+
+        Raises:
+            AuthenticationError: If authentication fails
+        """
+        # The connection is already validated during initialization
+        # Just do a simple test to ensure it's still valid
+        try:
+            # Try to get current user info as a validation test
+            if hasattr(self, "_client") and self._client:
+                myself = self._client.myself()
+                self.logger.debug(f"Connection validated for user: {myself['name']}")
+                return True
+            else:
+                raise AuthenticationError("Jira client not initialized")
+        except Exception as e:
+            self.logger.error(f"Connection validation failed: {e}")
+            raise AuthenticationError(f"Failed to validate connection: {e}")
+
     async def get_user_activities(
         self,
         users: List[str],
@@ -357,6 +380,7 @@ class RedHatJiraClient:
                 "created",
                 "updated",
                 "priority",
+                "project",  # Add project field to prevent AttributeError
                 "issuelinks",
                 "components",
                 "fixVersions",
@@ -398,27 +422,52 @@ class RedHatJiraClient:
     ) -> Dict[str, Any]:
         """Process Red Hat Jira issue with enhanced data extraction."""
         try:
+            # Log the issue being processed for debugging
+            self.logger.debug(f"Processing issue {issue.key}")
+
+            # Build basic activity data with safe field access
             activity = {
                 "id": issue.key,
                 "type": "issue",
-                "title": InputValidator.sanitize_text(issue.fields.summary),
+                "title": InputValidator.sanitize_text(
+                    getattr(issue.fields, "summary", "No summary")
+                ),
                 "description": InputValidator.sanitize_text(
-                    issue.fields.description or ""
+                    getattr(issue.fields, "description", "") or ""
                 ),
-                "status": issue.fields.status.name,
-                "assignee": (
-                    issue.fields.assignee.displayName if issue.fields.assignee else None
+                "status": (
+                    getattr(issue.fields.status, "name", "Unknown")
+                    if hasattr(issue.fields, "status")
+                    else "Unknown"
                 ),
-                "priority": (
-                    issue.fields.priority.name if issue.fields.priority else None
-                ),
-                "created": issue.fields.created,
-                "updated": issue.fields.updated,
+                "assignee": None,
+                "priority": None,
+                "created": getattr(issue.fields, "created", None),
+                "updated": getattr(issue.fields, "updated", None),
                 "url": f"{self.url}/browse/{issue.key}",
-                "project": issue.fields.project.key,
-                "project_name": issue.fields.project.name,
+                "project": "Unknown",
+                "project_name": "Unknown Project",
                 "changes": [],
             }
+
+            # Safely extract assignee
+            if hasattr(issue.fields, "assignee") and issue.fields.assignee:
+                activity["assignee"] = getattr(
+                    issue.fields.assignee, "displayName", None
+                )
+
+            # Safely extract priority
+            if hasattr(issue.fields, "priority") and issue.fields.priority:
+                activity["priority"] = getattr(issue.fields.priority, "name", None)
+
+            # Safely extract project information
+            if hasattr(issue.fields, "project") and issue.fields.project:
+                activity["project"] = getattr(issue.fields.project, "key", "Unknown")
+                activity["project_name"] = getattr(
+                    issue.fields.project, "name", "Unknown Project"
+                )
+            else:
+                self.logger.warning(f"Issue {issue.key} has no project field")
 
             # Add Red Hat specific fields
             if hasattr(issue.fields, "components") and issue.fields.components:
@@ -448,12 +497,28 @@ class RedHatJiraClient:
             return activity
 
         except Exception as e:
-            self.logger.error(f"Failed to process Red Hat issue {issue.key}: {e}")
+            self.logger.error(
+                f"Failed to process Red Hat issue {issue.key}: {e}", exc_info=True
+            )
+            # Return a minimal valid activity instead of an error object
+            # This prevents error messages from being sent to Gemini as data
             return {
-                "id": issue.key,
+                "id": getattr(issue, "key", "UNKNOWN"),
                 "type": "issue",
-                "title": "Error processing issue",
-                "error": str(e),
+                "title": f"Issue {getattr(issue, 'key', 'UNKNOWN')} (processing error)",
+                "description": "Unable to retrieve issue details due to a processing error.",
+                "status": "Error",
+                "assignee": None,
+                "priority": None,
+                "created": None,
+                "updated": None,
+                "url": f"{self.url}/browse/{getattr(issue, 'key', 'UNKNOWN')}",
+                "project": "Unknown",
+                "project_name": "Unknown Project",
+                "changes": [],
+                "_processing_error": str(
+                    e
+                ),  # Store error for debugging but prefix with _ so it's clear it's metadata
             }
 
     def _extract_redhat_fields(self, issue: Any) -> Dict[str, Any]:

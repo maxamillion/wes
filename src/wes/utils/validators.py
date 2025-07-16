@@ -216,7 +216,7 @@ class InputValidator:
             raise ValidationError("Configuration must be a dictionary")
 
         # Check for required keys
-        required_keys = ["jira", "google", "ai"]
+        required_keys = ["jira", "ai"]
         for key in required_keys:
             if key not in config:
                 raise ValidationError(f"Missing required configuration key: {key}")
@@ -228,11 +228,6 @@ class InputValidator:
 
         if "url" in jira_config:
             InputValidator.validate_jira_url(jira_config["url"])
-
-        # Validate Google config
-        google_config = config.get("google", {})
-        if not isinstance(google_config, dict):
-            raise ValidationError("Google configuration must be a dictionary")
 
         # Validate AI config
         ai_config = config.get("ai", {})

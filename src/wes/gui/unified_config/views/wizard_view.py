@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.config_pages import (
     GeminiConfigPage,
-    GoogleConfigPage,
     JiraConfigPage,
 )
 from wes.gui.unified_config.types import ServiceType
@@ -109,7 +108,6 @@ class SummaryPage(WizardPage):
         # Status for each service
         services = [
             ("Jira", "jira_status"),
-            ("Google Docs", "google_status"),
             ("Gemini AI", "gemini_status"),
         ]
 
@@ -141,7 +139,7 @@ class SummaryPage(WizardPage):
         next_steps.setStyleSheet("margin-top: 20px;")
         layout.addWidget(next_steps)
 
-    def update_status(self, jira: bool, google: bool, gemini: bool):
+    def update_status(self, jira: bool, gemini: bool):
         """Update service status display."""
 
         def format_status(configured: bool):
@@ -151,7 +149,6 @@ class SummaryPage(WizardPage):
                 return '<span style="color: red;">✗ Not configured</span>'
 
         self.status_labels["jira_status"].setText(format_status(jira))
-        self.status_labels["google_status"].setText(format_status(google))
         self.status_labels["gemini_status"].setText(format_status(gemini))
 
 
@@ -226,11 +223,6 @@ class WizardView(QWidget):
         self.pages.append(self.jira_page)
         self.page_stack.addWidget(self.jira_page)
 
-        # Google configuration
-        self.google_page = GoogleConfigPage(self.config_manager)
-        self.pages.append(self.google_page)
-        self.page_stack.addWidget(self.google_page)
-
         # Gemini configuration
         self.gemini_page = GeminiConfigPage(self.config_manager)
         self.pages.append(self.gemini_page)
@@ -302,10 +294,9 @@ class WizardView(QWidget):
         """Update the summary page with configuration status."""
         # Check each service configuration
         jira_valid = self.jira_page.validate()["is_valid"]
-        google_valid = self.google_page.validate()["is_valid"]
         gemini_valid = self.gemini_page.validate()["is_valid"]
 
-        self.summary_page.update_status(jira_valid, google_valid, gemini_valid)
+        self.summary_page.update_status(jira_valid, gemini_valid)
 
     def get_configuration(self) -> Dict[str, Any]:
         """Get the complete configuration from all pages."""
@@ -313,9 +304,6 @@ class WizardView(QWidget):
 
         # Get Jira config
         config.update(self.jira_page.save_config())
-
-        # Get Google config
-        config.update(self.google_page.save_config())
 
         # Get Gemini config
         config.update(self.gemini_page.save_config())
