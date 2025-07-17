@@ -151,7 +151,7 @@ class TestValidatedLineEdit:
     def test_password_mode(self, qtbot):
         """Test password mode."""
         from PySide6.QtWidgets import QLineEdit
-        
+
         line_edit = ValidatedLineEdit("Password", password=True)
         qtbot.addWidget(line_edit)
 

@@ -185,7 +185,7 @@ class TestRedHatJiraIntegration:
 
             # Override rate_limit in config
             config_with_custom_rate_limit = redhat_jira_config.copy()
-            config_with_custom_rate_limit['rate_limit'] = 50
+            config_with_custom_rate_limit["rate_limit"] = 50
             client = RedHatJiraClient(**config_with_custom_rate_limit)
 
             # Test rate limiting is configured

@@ -157,7 +157,7 @@ class TestUnifiedConfigDialog:
     def test_close_with_unsaved_changes(self, dialog, qtbot, monkeypatch):
         """Test close dialog with unsaved changes."""
         from PySide6.QtWidgets import QMessageBox
-        
+
         dialog.dirty = True
 
         # Mock QMessageBox to return Save
@@ -214,22 +214,24 @@ class TestUnifiedConfigDialog:
             "gemini": {"api_key": "AIzaSyTest123456789"},
         }
         config_manager.retrieve_credential.return_value = None
-        
+
         # Create a fresh dialog for this test
         dialog = UnifiedConfigDialog(config_manager)
         qtbot.addWidget(dialog)
-        
+
         # Initially, wizard widget should be None (it starts in direct mode)
         assert dialog.wizard_widget is None
 
         # Create a mock that tracks calls
         calls = []
-        
+
         # Patch the import
-        with patch("wes.gui.unified_config.views.wizard_view.WizardView") as mock_wizard_class:
+        with patch(
+            "wes.gui.unified_config.views.wizard_view.WizardView"
+        ) as mock_wizard_class:
             # Create a mock widget that inherits from QWidget
             from PySide6.QtWidgets import QWidget
-            
+
             class MockWizardView(QWidget):
                 def __init__(self, *args, **kwargs):
                     super().__init__()
@@ -239,9 +241,9 @@ class TestUnifiedConfigDialog:
                     self.wizard_complete.connect = Mock()
                     self.page_changed = Mock()
                     self.page_changed.connect = Mock()
-            
+
             mock_wizard_class.side_effect = lambda *args, **kwargs: MockWizardView()
-            
+
             # Switch to wizard mode
             dialog.set_mode(UIMode.WIZARD)
 
