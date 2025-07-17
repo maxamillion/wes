@@ -1,14 +1,12 @@
 """Tests for the unified configuration dialog."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from PySide6.QtCore import Qt
-from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QDialogButtonBox
 
 from wes.core.config_manager import ConfigManager
-from wes.gui.unified_config import ConfigState, UIMode, UnifiedConfigDialog
+from wes.gui.unified_config import UIMode, UnifiedConfigDialog
 
 
 class TestUnifiedConfigDialog:

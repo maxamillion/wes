@@ -1,6 +1,5 @@
 """Service-specific validators for configuration validation."""
 
-import os
 import re
 from typing import Any, Dict, Tuple
 from urllib.parse import urlparse
@@ -136,7 +135,8 @@ class JiraValidator(BaseValidator):
             return False, "Username too short"
 
         # Allow alphanumeric, hyphens, underscores, dots, and @ symbols
-        # This supports various formats including Red Hat usernames like rhn-support-admiller
+        # This supports various formats including Red Hat usernames like
+        # rhn-support-admiller
         import re
 
         if not re.match(r"^[a-zA-Z0-9._@-]+$", username):
@@ -227,7 +227,7 @@ class GeminiValidator(BaseValidator):
             )
 
             # Test connection with a simple prompt
-            response = client.test_connection()
+            client.test_connection()
             return True, "Successfully connected to Gemini AI"
 
         except Exception as e:

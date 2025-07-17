@@ -1,10 +1,5 @@
 """Configuration dialog for the Executive Summary Tool."""
 
-from pathlib import Path
-from typing import Optional
-
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -668,7 +663,8 @@ class ConfigDialog(QDialog):
                             QMessageBox.warning(
                                 self,
                                 "Validation Error",
-                                "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens.",
+                                "Red Hat Jira username should contain only letters, "
+                                "numbers, dots, underscores, and hyphens.",
                             )
                             return False
                 except Exception:

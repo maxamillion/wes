@@ -1,19 +1,15 @@
 """Unified credential setup wizard for simplified onboarding."""
 
-import asyncio
 import json
-import threading
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict
 from urllib.parse import urlparse
 
-from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
-from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtCore import QObject, Qt, QThread, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
-    QFileDialog,
     QFormLayout,
     QFrame,
     QGroupBox,
@@ -25,14 +21,12 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QStackedWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from ..core.config_manager import ConfigManager
 from ..integrations.redhat_jira_client import is_redhat_jira
-from ..utils.exceptions import ConfigurationError
 from ..utils.logging_config import get_logger
 from .credential_validators import CredentialValidator
 from .oauth_handler import GoogleOAuthHandler
@@ -129,7 +123,6 @@ class WizardPage(QWidget):
 
     def set_data(self, data: Dict[str, Any]):
         """Set the page data."""
-        pass
 
 
 class WelcomePage(WizardPage):
@@ -353,7 +346,10 @@ class JiraSetupPage(WizardPage):
         """Open help for API token generation."""
         url = self.url_edit.text().strip()
         if url:
-            token_url = f"{url.rstrip('/')}/secure/ViewProfile.jspa?selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens"
+            token_url = (
+                f"{url.rstrip('/')}/secure/ViewProfile.jspa?"
+                "selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens"
+            )
         else:
             token_url = "https://id.atlassian.com/manage-profile/security/api-tokens"
 
@@ -372,7 +368,7 @@ class JiraSetupPage(WizardPage):
         open_btn = msg.addButton("Open Token Page", QMessageBox.ActionRole)
         msg.addButton(QMessageBox.Ok)
 
-        result = msg.exec()
+        msg.exec()
         if msg.clickedButton() == open_btn:
             import webbrowser
 
@@ -908,7 +904,7 @@ class GeminiSetupPage(WizardPage):
         open_btn = msg.addButton("Open AI Studio", QMessageBox.ActionRole)
         msg.addButton(QMessageBox.Ok)
 
-        result = msg.exec()
+        msg.exec()
         if msg.clickedButton() == open_btn:
             import webbrowser
 

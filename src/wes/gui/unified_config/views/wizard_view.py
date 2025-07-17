@@ -1,8 +1,8 @@
 """Wizard view mode for unified configuration - step-by-step setup."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -19,7 +19,6 @@ from wes.gui.unified_config.config_pages import (
     GeminiConfigPage,
     JiraConfigPage,
 )
-from wes.gui.unified_config.types import ServiceType
 
 
 class WizardPage(QWidget):
@@ -57,7 +56,6 @@ class WizardPage(QWidget):
 
     def _add_content(self, layout: QVBoxLayout):
         """Add page-specific content. Override in subclasses."""
-        pass
 
     def validate(self) -> bool:
         """Validate page content. Override in subclasses."""

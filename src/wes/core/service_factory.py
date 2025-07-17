@@ -1,7 +1,6 @@
 """Factory for creating integration service clients."""
 
 import asyncio
-from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Protocol, Type
 
 from ..core.config_manager import ConfigManager

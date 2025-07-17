@@ -1,17 +1,15 @@
 """Base class for configuration pages."""
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
-from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QSpinBox,
     QStyle,
@@ -113,7 +111,6 @@ class ConfigPageBase(QWidget):
     @abstractmethod
     def _setup_page_ui(self, parent_layout: QVBoxLayout):
         """Setup page-specific UI. Must be implemented by subclasses."""
-        pass
 
     def _load_current_config(self):
         """Load current configuration into UI."""
@@ -123,17 +120,14 @@ class ConfigPageBase(QWidget):
     @abstractmethod
     def load_config(self, config: Dict[str, Any]) -> None:
         """Load configuration into UI fields."""
-        pass
 
     @abstractmethod
     def save_config(self) -> Dict[str, Any]:
         """Extract configuration from UI fields."""
-        pass
 
     @abstractmethod
     def validate(self) -> ValidationResult:
         """Validate current configuration."""
-        pass
 
     def test_connection(self) -> None:
         """Test connection with current settings."""
@@ -192,12 +186,10 @@ class ConfigPageBase(QWidget):
     @abstractmethod
     def get_basic_fields(self) -> List[QWidget]:
         """Return list of basic/required field widgets."""
-        pass
 
     @abstractmethod
     def get_advanced_fields(self) -> List[QWidget]:
         """Return list of advanced/optional field widgets."""
-        pass
 
     def is_dirty(self) -> bool:
         """Check if configuration has unsaved changes."""
@@ -223,7 +215,6 @@ class ConfigPageBase(QWidget):
     def _connect_change_tracking(self):
         """Connect change tracking to form fields."""
         # This should be called by subclasses after creating their widgets
-        pass
 
     def _perform_validation(self):
         """Perform validation and emit result."""

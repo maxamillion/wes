@@ -1,6 +1,6 @@
 """Guided view mode for unified configuration - highlights incomplete items."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont

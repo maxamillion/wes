@@ -1,13 +1,10 @@
 """Tests for service-specific validators."""
 
-import json
-import os
-import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
 
-from wes.gui.unified_config.types import JiraType, ServiceType
+from wes.gui.unified_config.types import ServiceType
 from wes.gui.unified_config.validators.service_validators import (
     GeminiValidator,
     JiraValidator,

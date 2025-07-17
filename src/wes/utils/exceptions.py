@@ -15,76 +15,50 @@ class WesError(Exception):
 class SecurityError(WesError):
     """Security-related errors."""
 
-    pass
-
 
 class AuthenticationError(WesError):
     """Authentication failures."""
-
-    pass
 
 
 class AuthorizationError(WesError):
     """Authorization failures."""
 
-    pass
-
 
 class ValidationError(WesError):
     """Input validation errors."""
-
-    pass
 
 
 class ConfigurationError(WesError):
     """Configuration-related errors."""
 
-    pass
-
 
 class IntegrationError(WesError):
     """External integration errors."""
-
-    pass
 
 
 class JiraIntegrationError(IntegrationError):
     """Jira-specific integration errors."""
 
-    pass
-
 
 class GeminiIntegrationError(IntegrationError):
     """Google Gemini AI integration errors."""
-
-    pass
 
 
 class GoogleDocsIntegrationError(IntegrationError):
     """Google Docs integration errors."""
 
-    pass
-
 
 class RateLimitError(IntegrationError):
     """API rate limiting errors."""
-
-    pass
 
 
 class NetworkError(WesError):
     """Network connectivity errors."""
 
-    pass
-
 
 class ConnectionError(WesError):
     """Connection-related errors."""
 
-    pass
-
 
 class ExportError(WesError):
     """Export-related errors."""
-
-    pass

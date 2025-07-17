@@ -2,19 +2,17 @@
 
 import os
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from src.wes.gui.credential_validators import CredentialValidator
-from src.wes.gui.setup_wizard import JiraSetupPage
 from src.wes.integrations.redhat_jira_client import (
     RHJIRA_AVAILABLE,
     RedHatJiraClient,
     get_redhat_jira_client,
     is_redhat_jira,
 )
-from src.wes.utils.exceptions import JiraIntegrationError
 
 
 class TestRedHatJiraIntegration:
@@ -53,7 +51,8 @@ class TestRedHatJiraIntegration:
             redhat_jira_config["username"],
             redhat_jira_config["api_token"],
         )
-        # Note: This might fail during testing due to mock requirements, but structure is correct
+        # Note: This might fail during testing due to mock requirements, but
+        # structure is correct
         assert isinstance(success, bool)
         assert isinstance(message, str)
 
@@ -141,7 +140,7 @@ class TestRedHatJiraIntegration:
         ]
 
         for domain in redhat_domains:
-            assert is_redhat_jira(domain) == True, f"Should detect {domain} as Red Hat"
+            assert is_redhat_jira(domain), f"Should detect {domain} as Red Hat"
 
         for domain in non_redhat_domains:
             assert (
@@ -207,10 +206,10 @@ class TestRedHatJiraIntegration:
 
             client = RedHatJiraClient(**redhat_jira_config)
 
-            assert client.use_rhjira == True
+            assert client.use_rhjira
             info = client.get_connection_info()
             assert info["client_type"] == "rhjira"
-            assert info["rhjira_available"] == True
+            assert info["rhjira_available"]
 
     @pytest.mark.integration
     def test_redhat_environment_detection(self):
@@ -264,7 +263,7 @@ class TestRedHatJiraIntegration:
             # Step 1: Create and validate client
             client = RedHatJiraClient(**redhat_jira_config)
             info = client.get_connection_info()
-            assert info["connected"] == True
+            assert info["connected"]
 
             # Step 2: Test projects retrieval
             projects = await client.get_projects()
@@ -305,10 +304,10 @@ class TestRedHatJiraGuiIntegration:
         # For now, test the underlying logic
 
         redhat_url = "https://issues.redhat.com"
-        assert is_redhat_jira(redhat_url) == True
+        assert is_redhat_jira(redhat_url)
 
         # Test that validator can handle Red Hat URLs
-        validator = CredentialValidator()
+        CredentialValidator()
         # Note: CredentialValidator doesn't have validate_url method,
         # but the URL detection logic is tested elsewhere
 

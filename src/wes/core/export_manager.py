@@ -1,6 +1,5 @@
 """Export manager for generating summary outputs in various formats."""
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional

@@ -1,8 +1,6 @@
 """Service type selector component for Jira configuration."""
 
-from typing import Optional
-
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QGroupBox,

@@ -1,18 +1,15 @@
 """Unit tests for the workflow orchestrator."""
 
-import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 from wes.core.orchestrator import (
     WorkflowOrchestrator,
-    WorkflowResult,
     WorkflowStatus,
 )
 from wes.utils.exceptions import (
-    GeminiIntegrationError,
     JiraIntegrationError,
     WesError,
 )

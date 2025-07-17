@@ -144,7 +144,7 @@ class TestConfigDetector:
                 # No api_token needed
             }
         }
-        status = detector.get_service_status(config)
+        detector.get_service_status(config)
         # This would need custom logic in detector for Red Hat Jira
 
         # Test minimal Gemini config

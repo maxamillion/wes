@@ -4,7 +4,7 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -14,7 +14,6 @@ from src.wes.core.config_manager import (
     ConfigManager,
     JiraConfig,
 )
-from src.wes.utils.exceptions import ConfigurationError
 
 
 @pytest.fixture
@@ -174,7 +173,8 @@ class TestConfigManager:
 
     def test_update_app_config(self, config_manager):
         """Test updating app configuration."""
-        # Directly update app config attributes since there's no update_app_config method
+        # Directly update app config attributes since there's no update_app_config
+        # method
         config_manager._config.app.auto_save = False
         config_manager._config.app.check_updates = False
         config_manager._config.app.log_level = "ERROR"
@@ -230,7 +230,8 @@ class TestConfigManager:
         """Test validation with missing Jira URL."""
         config_manager._config.jira.url = ""
 
-        # validate_configuration returns True for empty fields (only validates if field has value)
+        # validate_configuration returns True for empty fields (only validates if
+        # field has value)
         assert config_manager.validate_configuration() is True
 
     def test_validate_configuration_invalid_model(self, config_manager):

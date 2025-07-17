@@ -1,22 +1,17 @@
 """Jira configuration page for unified config dialog."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
-    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
-from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.components.service_selector import ServiceSelector
 from wes.gui.unified_config.components.validation_indicator import ValidatedLineEdit
 from wes.gui.unified_config.config_pages.base_page import ConfigPageBase

@@ -38,14 +38,8 @@ class DefaultConfigPageFactory:
     def _initialize_defaults(self) -> None:
         """Initialize default page mappings."""
         # Import here to avoid circular imports
-        from wes.gui.unified_config.config_pages.app_settings_page import (
-            AppSettingsPage,
-        )
         from wes.gui.unified_config.config_pages.gemini_page import GeminiConfigPage
         from wes.gui.unified_config.config_pages.jira_page import JiraConfigPage
-        from wes.gui.unified_config.config_pages.security_page import (
-            SecurityPage,
-        )
 
         self._page_registry = {
             ServiceType.JIRA: JiraConfigPage,

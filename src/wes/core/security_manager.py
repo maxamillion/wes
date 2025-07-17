@@ -1,10 +1,9 @@
 """Security manager for credential encryption and secure operations."""
 
 import base64
-import os
 import secrets
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import keyring
 from cryptography.fernet import Fernet

@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 from ..core.config_manager import ConfigManager
 from ..core.service_factory import ServiceFactory
-from ..integrations.gemini_client import SummaryFormatter
 from ..integrations.jira_client import JiraActivitySummary
 from ..utils.exceptions import (
     GeminiIntegrationError,
@@ -389,7 +388,9 @@ class WorkflowOrchestrator:
                 ]
 
                 self.logger.info(
-                    f"Valid activities: {len(valid_activities)}, Error activities: {len(error_activities)}"
+                    f"Valid activities: {
+                        len(valid_activities)}, Error activities: {
+                        len(error_activities)}"
                 )
 
                 if error_activities:
@@ -408,7 +409,11 @@ class WorkflowOrchestrator:
                     first_activity.pop("description", None)
                     first_activity.pop("comments", None)
                     self.logger.debug(
-                        f"Sample activity structure: {json.dumps(first_activity, indent=2, default=str)}"
+                        f"Sample activity structure: {
+                            json.dumps(
+                                first_activity,
+                                indent=2,
+                                default=str)}"
                     )
 
             return activity_data
@@ -449,7 +454,8 @@ class WorkflowOrchestrator:
             )
 
             self.logger.info(
-                f"Fetched {len(activity_data)} activities for manager {manager_identifier}'s team"
+                f"Fetched {
+                    len(activity_data)} activities for manager {manager_identifier}'s team"
             )
 
             # Store hierarchy info in result for reference

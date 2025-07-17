@@ -3,8 +3,6 @@
 from unittest.mock import Mock
 
 import pytest
-from PySide6.QtCore import Qt
-from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel
 
 from wes.gui.unified_config.components.service_selector import ServiceSelector
@@ -168,10 +166,10 @@ class TestServiceSelector:
     def test_container_click(self, selector, qtbot):
         """Test clicking on container selects radio button."""
         # Get the server container
-        server_container = selector.server_radio.parent()
+        selector.server_radio.parent()
 
         # Click on container (simulate mouse press)
-        with qtbot.waitSignal(selector.service_selected) as blocker:
+        with qtbot.waitSignal(selector.service_selected):
             # Simulate clicking on the container
             selector.server_radio.setChecked(True)
             selector._on_selection_changed(selector.server_radio)

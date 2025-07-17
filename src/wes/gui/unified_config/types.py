@@ -1,7 +1,7 @@
 """Type definitions for unified configuration system."""
 
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, Optional, TypedDict
 
 
 class UIMode(Enum):

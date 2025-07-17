@@ -3,7 +3,7 @@
 import html
 import re
 import unicodedata
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from urllib.parse import urlparse
 
 from .exceptions import ValidationError
@@ -137,7 +137,8 @@ class InputValidator:
         patterns = [
             r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",  # Email
             r"^[a-zA-Z0-9._@-]+$",  # Username (includes Red Hat format with hyphens)
-            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",  # UUID
+            # UUID
+            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
         ]
 
         for pattern in patterns:

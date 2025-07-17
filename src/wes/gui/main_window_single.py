@@ -1,12 +1,9 @@
 """Single-window main application for the Executive Summary Tool."""
 
-import asyncio
 import json
-import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from PySide6.QtCore import (
     QDate,
@@ -17,7 +14,6 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QComboBox,
     QDateEdit,
@@ -45,8 +41,6 @@ from PySide6.QtWidgets import (
 
 from ..core.config_manager import ConfigManager
 from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
-from ..integrations.redhat_jira_client import is_redhat_jira
-from ..utils.exceptions import WesError
 from ..utils.logging_config import get_logger
 from .credential_validators import CredentialValidator
 from .oauth_handler import GoogleOAuthHandler
@@ -1002,12 +996,12 @@ class SingleWindowMainWindow(QMainWindow):
         QMainWindow {
             background-color: #f5f5f5;
         }
-        
+
         #navBar {
             background-color: #ffffff;
             border-bottom: 1px solid #e0e0e0;
         }
-        
+
         #navBar QPushButton {
             background-color: transparent;
             border: none;
@@ -1016,33 +1010,33 @@ class SingleWindowMainWindow(QMainWindow):
             font-weight: bold;
             color: #666666;
         }
-        
+
         #navBar QPushButton:hover {
             color: #4CAF50;
         }
-        
+
         #navBar QPushButton:checked {
             color: #4CAF50;
             border-bottom: 2px solid #4CAF50;
         }
-        
+
         QTabWidget::pane {
             border: 1px solid #e0e0e0;
             background-color: white;
         }
-        
+
         QTabBar::tab {
             background-color: #f0f0f0;
             border: 1px solid #e0e0e0;
             padding: 8px 16px;
             margin-right: 2px;
         }
-        
+
         QTabBar::tab:selected {
             background-color: white;
             border-bottom: 1px solid white;
         }
-        
+
         QGroupBox {
             font-weight: bold;
             border: 1px solid #e0e0e0;
@@ -1051,14 +1045,14 @@ class SingleWindowMainWindow(QMainWindow):
             padding-top: 10px;
             background-color: white;
         }
-        
+
         QGroupBox::title {
             subcontrol-origin: margin;
             subcontrol-position: top left;
             padding: 0 10px;
             background-color: white;
         }
-        
+
         QPushButton {
             background-color: #4CAF50;
             color: white;
@@ -1067,38 +1061,38 @@ class SingleWindowMainWindow(QMainWindow):
             border-radius: 4px;
             font-weight: bold;
         }
-        
+
         QPushButton:hover {
             background-color: #45a049;
         }
-        
+
         QPushButton:pressed {
             background-color: #3d8b40;
         }
-        
+
         QPushButton:disabled {
             background-color: #cccccc;
             color: #666666;
         }
-        
+
         QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 5px;
             background-color: white;
         }
-        
+
         QLineEdit:focus, QTextEdit:focus {
             border: 2px solid #4CAF50;
         }
-        
+
         /* Setup steps styling */
         QLabel[objectName^="stepCircle_"] {
             background-color: #e0e0e0;
             border-radius: 15px;
             color: #666666;
         }
-        
+
         QLabel#stepCircle_0 {
             background-color: #4CAF50;
             color: white;
@@ -1194,7 +1188,6 @@ class SingleWindowMainWindow(QMainWindow):
     def update_config_status(self):
         """Update configuration status display."""
         # This updates any status indicators in the UI
-        pass
 
     # OLD SETUP METHODS - Replaced by UnifiedConfigDialog
     # These methods are kept commented for reference but are no longer used
@@ -1382,7 +1375,6 @@ class SingleWindowMainWindow(QMainWindow):
         """Show OAuth configuration dialog."""
         from PySide6.QtWidgets import (
             QDialog,
-            QDialogButtonBox,
             QScrollArea,
         )
 

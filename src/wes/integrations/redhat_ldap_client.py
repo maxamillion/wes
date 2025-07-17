@@ -3,11 +3,11 @@
 import asyncio
 import ssl
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import ldap3
 from ldap3 import ALL, Connection, Server, Tls
-from ldap3.core.exceptions import LDAPBindError, LDAPException
+from ldap3.core.exceptions import LDAPBindError
 
 from ..utils.exceptions import AuthenticationError, WesError
 from ..utils.logging_config import get_logger, get_security_logger
@@ -16,8 +16,6 @@ from ..utils.validators import InputValidator
 
 class LDAPIntegrationError(WesError):
     """Raised when LDAP integration fails."""
-
-    pass
 
 
 @dataclass
@@ -514,7 +512,7 @@ class RedHatLDAPClient:
             await self.connect()
 
             # Test with a simple search
-            test_result = await asyncio.get_event_loop().run_in_executor(
+            await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: self._connection.search(
                     search_base=self.base_dn,

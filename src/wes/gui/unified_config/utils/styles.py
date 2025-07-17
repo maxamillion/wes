@@ -4,8 +4,6 @@ This module provides consistent styling across all UI components to improve
 maintainability and ensure a cohesive visual design.
 """
 
-from typing import Dict
-
 
 class StyleManager:
     """Manages application-wide styles and themes."""
@@ -219,15 +217,15 @@ class StyleManager:
             QString: CSS stylesheet for compact mode.
         """
         return f"""
-            QLabel {{ 
-                font-size: {cls.FONT_SIZES['small']}; 
+            QLabel {{
+                font-size: {cls.FONT_SIZES['small']};
                 padding: 1px;
             }}
-            QLineEdit {{ 
+            QLineEdit {{
                 padding: 2px;
                 font-size: {cls.FONT_SIZES['small']};
             }}
-            QPushButton {{ 
+            QPushButton {{
                 padding: 4px 8px;
                 font-size: {cls.FONT_SIZES['small']};
             }}

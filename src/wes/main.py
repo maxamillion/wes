@@ -2,10 +2,8 @@
 
 import argparse
 import asyncio
-import os
 import sys
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import QDir, QtMsgType, qInstallMessageHandler
 from PySide6.QtGui import QIcon
@@ -152,27 +150,27 @@ def setup_application_style(app: QApplication):
         font-family: "Segoe UI", "San Francisco", "Helvetica Neue", Arial, sans-serif;
         font-size: 9pt;
     }
-    
+
     QMainWindow {
         background-color: #f5f5f5;
     }
-    
+
     QMenuBar {
         background-color: #ffffff;
         border-bottom: 1px solid #d0d0d0;
         padding: 2px;
     }
-    
+
     QMenuBar::item {
         background-color: transparent;
         padding: 4px 8px;
     }
-    
+
     QMenuBar::item:selected {
         background-color: #e0e0e0;
         border-radius: 4px;
     }
-    
+
     QStatusBar {
         background-color: #ffffff;
         border-top: 1px solid #d0d0d0;
