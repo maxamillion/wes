@@ -31,6 +31,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        make install-dev
         uv sync --extra security
 
     - name: Install Semgrep
@@ -79,15 +80,10 @@ jobs:
     - name: Run security tests
       run: |
         if [ -d "tests/security" ] && [ "$(ls -A tests/security/*.py 2>/dev/null)" ]; then
-          uv run pytest tests/security/ \
-            --junitxml=security-test-results.xml \
-            -v
+          make test-security VERBOSE=true
         else
           echo "No security tests found, skipping"
         fi
-      env:
-        QT_QPA_PLATFORM: "offscreen"
-        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
 
     - name: Generate security report
       if: always()

@@ -1,0 +1,72 @@
+# Additional Makefile targets that could be added for better GitHub Actions integration
+
+# Check-only targets for CI
+format-check: ## Check code formatting without modifying
+	@echo "Checking code formatting..."
+	$(UV) run --extra dev black --check $(SRC_DIR) $(TESTS_DIR) $(VERBOSE_FLAG)
+	$(UV) run --extra dev isort --check-only $(SRC_DIR) $(TESTS_DIR) $(VERBOSE_FLAG)
+
+# Quick linting for fast CI checks
+lint-quick: ## Run quick linting (critical errors only)
+	@echo "Running quick linting..."
+	$(UV) run --extra dev flake8 $(SRC_DIR) $(TESTS_DIR) --select=E9,F63,F7,F82 --show-source --statistics
+
+# Extra dependency installations
+install-security: validate-env ## Install security extra dependencies
+	@echo "Installing security dependencies..."
+	$(UV) sync --frozen --extra security $(QUIET_FLAG)
+	@echo "Security dependencies installed"
+
+install-redhat: validate-env ## Install Red Hat Jira dependencies
+	@echo "Installing Red Hat dependencies..."
+	$(UV) sync --frozen --extra redhat $(QUIET_FLAG) || echo "Red Hat dependencies not available"
+	@echo "Red Hat dependencies installed (if available)"
+
+install-build: validate-env ## Install build dependencies
+	@echo "Installing build dependencies..."
+	$(UV) sync --frozen --extra build $(QUIET_FLAG)
+	@echo "Build dependencies installed"
+
+install-all: validate-env ## Install all dependencies including extras
+	@echo "Installing all dependencies..."
+	$(UV) sync --frozen --all-extras $(QUIET_FLAG)
+	@echo "All dependencies installed"
+
+# Security scan with different output formats
+security-scan-sarif: ## Run security scans with SARIF output for GitHub
+	@echo "Running security scans with SARIF output..."
+	$(UV) run --extra dev bandit -r $(SRC_DIR) -f sarif -o bandit-results.sarif $(VERBOSE_FLAG)
+	semgrep --config=auto $(SRC_DIR) --sarif --output=semgrep-results.sarif $(QUIET_FLAG)
+	@echo "SARIF security scan results saved"
+
+# Specific test targets
+test-redhat: ## Run Red Hat Jira specific tests
+	@echo "Running Red Hat Jira tests..."
+	$(UV) run --extra dev pytest $(TESTS_DIR)/unit/test_redhat_jira_client.py $(VERBOSE_FLAG) \
+		-m "not integration" \
+		--junitxml=test-results-redhat.xml
+
+# System dependency installation (informational only)
+install-system-deps: ## Show system dependencies needed (does not install)
+	@echo "System dependencies required for Qt/PySide6:"
+	@echo "  Ubuntu/Debian:"
+	@echo "    sudo apt-get update"
+	@echo "    sudo apt-get install -y \\"
+	@echo "      libgl1-mesa-glx libgl1-mesa-dri libegl1-mesa \\"
+	@echo "      libxcb-cursor0 libxcb-icccm4 libxcb-image0 \\"
+	@echo "      libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \\"
+	@echo "      libxcb-xinerama0 libxcb-xfixes0 xvfb"
+	@echo ""
+	@echo "  macOS:"
+	@echo "    No additional dependencies needed"
+	@echo ""
+	@echo "  Windows:"
+	@echo "    No additional dependencies needed"
+
+# CI-specific target that combines multiple checks
+ci-quick: validate-env ## Run quick CI checks
+	@echo "Running quick CI checks..."
+	@$(MAKE) install-dev
+	@$(MAKE) format-check
+	@$(MAKE) lint-quick
+	@$(MAKE) test-unit VERBOSE=false

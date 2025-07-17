@@ -29,7 +29,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --extra dev
+        make install-dev
 
     - name: Install Red Hat Jira dependencies (optional)
       run: |
@@ -55,12 +55,11 @@ jobs:
 
     - name: Run linting
       run: |
-        uv run --extra dev flake8 src tests
-        uv run --extra dev pylint src/wes
+        make lint
 
-    # - name: Run type checking
-    #   run: |
-    #     uv run --extra dev mypy src/wes
+    - name: Run type checking
+      run: |
+        make typecheck
 
     - name: Setup headless testing environment
       run: |
@@ -71,21 +70,13 @@ jobs:
 
     - name: Run unit tests
       run: |
-        uv run --extra dev pytest tests/unit/ \
-          --cov=src/wes \
-          --cov-report=xml \
-          --cov-report=term-missing \
-          --cov-fail-under=50 \
-          --junitxml=test-results-unit.xml
+        make test-unit
       env:
-        QT_QPA_PLATFORM: "offscreen"
-        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run integration tests  
       run: |
-        uv run --extra dev pytest tests/integration/ \
-          --junitxml=test-results-integration.xml
+        make test-integration
       env:
         QT_QPA_PLATFORM: "offscreen"
         QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
@@ -94,8 +85,7 @@ jobs:
     - name: Run security tests
       run: |
         if [ -d "tests/security" ] && [ "$(ls -A tests/security/*.py 2>/dev/null)" ]; then
-          uv run --extra dev pytest tests/security/ \
-            --junitxml=test-results-security.xml
+          make test-security
         else
           echo "No security tests found, skipping"
         fi
@@ -117,8 +107,7 @@ jobs:
 
     - name: Run security scanning
       run: |
-        uv run --extra dev bandit -r src/ -f json -o bandit-report.json || true
-        uv run --extra dev safety check --json --output safety-report.json || true
+        make security-scan || true
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
@@ -159,7 +148,9 @@ jobs:
       run: uv python install 3.12
 
     - name: Install build dependencies
-      run: uv sync --extra build
+      run: |
+        make install-dev
+        uv sync --extra build
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
