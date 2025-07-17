@@ -1,6 +1,6 @@
 """Service type selector component for Jira configuration."""
 
-from typing import Optional
+from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -23,15 +23,15 @@ class ServiceSelector(QWidget):
     Jira instance type with auto-detection capabilities.
     """
 
-    service_selected = Signal(JiraType)
+    service_selected = Signal(JiraType)  # type: ignore[misc]
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget]=None) -> None:
         super().__init__(parent)
         self.button_group = QButtonGroup()
         self.current_type = JiraType.CLOUD
         self._init_ui()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -116,11 +116,12 @@ class ServiceSelector(QWidget):
         # Make entire container clickable
         container.mousePressEvent = lambda e: radio.setChecked(True)
 
-        self.layout().addWidget(container)
+        if self.layout():
+            if self.layout(): self.layout().addWidget(container)
 
         return radio
 
-    def _on_selection_changed(self, button: QRadioButton):
+    def _on_selection_changed(self, button: QRadioButton) -> None:
         """Handle service type selection change."""
         # Get button ID and convert to JiraType
         button_id = self.button_group.id(button)
@@ -133,7 +134,7 @@ class ServiceSelector(QWidget):
         """Get currently selected service type."""
         return self.current_type
 
-    def set_service_type(self, jira_type: JiraType):
+    def set_service_type(self, jira_type: JiraType) -> None:
         """Set the selected service type."""
         self.current_type = jira_type
 
@@ -145,7 +146,7 @@ class ServiceSelector(QWidget):
         elif jira_type == JiraType.REDHAT:
             self.redhat_radio.setChecked(True)
 
-    def enable_auto_detect(self, url_callback):
+    def enable_auto_detect(self, url_callback: Callable[[], str]) -> None:
         """
         Enable auto-detection with a callback to get the current URL.
 
@@ -155,7 +156,7 @@ class ServiceSelector(QWidget):
         self.detect_button.setEnabled(True)
         self.detect_button.clicked.connect(lambda: self._auto_detect(url_callback()))
 
-    def _auto_detect(self, url: str):
+    def _auto_detect(self, url: str) -> None:
         """
         Auto-detect Jira type from URL.
 

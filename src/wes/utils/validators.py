@@ -76,7 +76,7 @@ class InputValidator:
         ]
 
         # Check if it looks like a Jira URL
-        hostname = parsed.hostname.lower()
+        hostname = parsed.hostname.lower() if parsed.hostname else ""
         is_jira_url = any(re.search(pattern, hostname) for pattern in jira_patterns)
 
         if not is_jira_url:

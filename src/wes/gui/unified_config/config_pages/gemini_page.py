@@ -32,7 +32,7 @@ class GeminiConfigPage(ConfigPageBase):
     page_icon = "SP_FileDialogInfoView"
     page_description = "Configure Google's Gemini AI for intelligent summarization"
 
-    def _setup_page_ui(self, parent_layout: QVBoxLayout):
+    def _setup_page_ui(self, parent_layout: QVBoxLayout) -> None:
         """Setup Gemini-specific UI."""
         # API Key configuration
         api_group = QGroupBox("API Configuration")
@@ -166,7 +166,7 @@ class GeminiConfigPage(ConfigPageBase):
 
         return group
 
-    def _on_model_changed(self, model: str):
+    def _on_model_changed(self, model: str) -> None:
         """Update model description when selection changes."""
         descriptions = {
             "gemini-2.5-pro": "Most capable model with 2M token context window. "
@@ -178,13 +178,13 @@ class GeminiConfigPage(ConfigPageBase):
         self.model_desc.setText(descriptions.get(model, ""))
         self.mark_dirty()
 
-    def _on_temperature_changed(self, value: int):
+    def _on_temperature_changed(self, value: int) -> None:
         """Update temperature display when slider changes."""
         temp = value / 100.0
         self.temp_value_label.setText(f"{temp:.1f}")
         self.mark_dirty()
 
-    def _reset_prompt_template(self):
+    def _reset_prompt_template(self) -> None:
         """Reset prompt template to default."""
         default_prompt = (
             "Based on the following Jira activity data:\n"
@@ -268,8 +268,8 @@ class GeminiConfigPage(ConfigPageBase):
             return ValidationResult(
                 is_valid=False,
                 message="API key is required",
-                service=self.service_type,
-                details={"field": "api_key"},
+                service=ServiceType.GEMINI,
+                details={"field": "api_key", "validation_type": "required"}
             )
 
         # Validate API key format
@@ -278,11 +278,8 @@ class GeminiConfigPage(ConfigPageBase):
             return ValidationResult(
                 is_valid=False,
                 message=message,
-                service=self.service_type,
-                details={
-                    "field": "api_key",
-                    "current_value_length": len(config["api_key"]),
-                },
+                service=ServiceType.GEMINI,
+                details={"field": "api_key", "validation_type": "format"}
             )
 
         # Check model selection
@@ -290,15 +287,15 @@ class GeminiConfigPage(ConfigPageBase):
             return ValidationResult(
                 is_valid=False,
                 message="Model selection is required",
-                service=self.service_type,
-                details={"field": "model"},
+                service=ServiceType.GEMINI,
+                details={"field": "model", "validation_type": "required"}
             )
 
         return ValidationResult(
             is_valid=True,
-            message="Configuration valid",
-            service=self.service_type,
-            details={"configured": True},
+            message="Gemini configuration is valid",
+            service=ServiceType.GEMINI,
+            details={"validated_fields": ["api_key", "model"]}
         )
 
     def get_basic_fields(self) -> List[QWidget]:
@@ -314,7 +311,7 @@ class GeminiConfigPage(ConfigPageBase):
         """Return advanced field widgets."""
         return [self.prompt_template]
 
-    def _connect_change_tracking(self):
+    def _connect_change_tracking(self) -> None:
         """Connect change tracking to form fields."""
         # Most connections already made during widget creation
         self.api_key_input.text_changed.connect(lambda: self.mark_dirty())

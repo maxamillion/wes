@@ -3,7 +3,7 @@
 from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QCloseEvent
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -12,7 +12,9 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
+from PySide6.QtGui import QTextCursor
 
 
 class ProgressDialog(QDialog):
@@ -21,7 +23,7 @@ class ProgressDialog(QDialog):
     # Signals
     cancelled = Signal()
 
-    def __init__(self, title: str = "Processing", parent=None):
+    def __init__(self, title: str = "Processing", parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setWindowTitle(title)
@@ -34,14 +36,14 @@ class ProgressDialog(QDialog):
 
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """Initialize the user interface."""
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
 
         # Main message
         self.main_label = QLabel("Processing...")
-        self.main_label.setAlignment(Qt.AlignCenter)
+        self.main_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         font = QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -50,7 +52,7 @@ class ProgressDialog(QDialog):
 
         # Detail message
         self.detail_label = QLabel("")
-        self.detail_label.setAlignment(Qt.AlignCenter)
+        self.detail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.detail_label.setWordWrap(True)
         layout.addWidget(self.detail_label)
 
@@ -86,15 +88,15 @@ class ProgressDialog(QDialog):
         self.pulse_value = 0
         self.pulse_direction = 1
 
-    def set_message(self, message: str):
+    def set_message(self, message: str) -> None:
         """Set the main message."""
         self.main_label.setText(message)
 
-    def set_detail(self, detail: str):
+    def set_detail(self, detail: str) -> None:
         """Set the detail message."""
         self.detail_label.setText(detail)
 
-    def set_progress(self, value: int):
+    def set_progress(self, value: int) -> None:
         """Set progress value (0-100)."""
         if self.pulse_timer.isActive():
             self.pulse_timer.stop()
@@ -102,12 +104,12 @@ class ProgressDialog(QDialog):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(max(0, min(100, value)))
 
-    def set_indeterminate(self):
+    def set_indeterminate(self) -> None:
         """Set indeterminate progress (pulsing)."""
         self.progress_bar.setRange(0, 0)
         self.pulse_timer.start(50)  # 50ms pulse
 
-    def pulse_progress(self):
+    def pulse_progress(self) -> None:
         """Animate indeterminate progress."""
         self.pulse_value += self.pulse_direction * 2
 
@@ -118,15 +120,15 @@ class ProgressDialog(QDialog):
 
         self.progress_bar.setValue(self.pulse_value)
 
-    def add_log_message(self, message: str):
+    def add_log_message(self, message: str) -> None:
         """Add a message to the log."""
         self.log_text.append(message)
         # Auto-scroll to bottom
         cursor = self.log_text.textCursor()
-        cursor.movePosition(cursor.End)
+        cursor.movePosition(QTextCursor.MoveOperation.End)
         self.log_text.setTextCursor(cursor)
 
-    def toggle_log(self):
+    def toggle_log(self) -> None:
         """Toggle log visibility."""
         if self.log_text.isVisible():
             self.log_text.setVisible(False)
@@ -137,15 +139,15 @@ class ProgressDialog(QDialog):
             self.show_log_btn.setText("Hide Log")
             self.setFixedSize(400, 300)
 
-    def set_cancel_callback(self, callback: Callable):
+    def set_cancel_callback(self, callback: Callable) -> None:
         """Set callback function for cancel operation."""
         self.cancel_callback = callback
 
-    def enable_cancel(self, enabled: bool = True):
+    def enable_cancel(self, enabled: bool = True) -> None:
         """Enable or disable cancel button."""
         self.cancel_btn.setEnabled(enabled)
 
-    def cancel_operation(self):
+    def cancel_operation(self) -> None:
         """Cancel the current operation."""
         self.is_cancelled = True
         self.cancel_btn.setEnabled(False)
@@ -156,7 +158,7 @@ class ProgressDialog(QDialog):
 
         self.cancelled.emit()
 
-    def complete(self, success: bool = True, message: str = None):
+    def complete(self, success: bool = True, message: Optional[str] = None) -> None:
         """Mark operation as complete."""
         self.pulse_timer.stop()
 
@@ -172,7 +174,7 @@ class ProgressDialog(QDialog):
         self.cancel_btn.clicked.disconnect()
         self.cancel_btn.clicked.connect(self.accept)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Handle dialog close event."""
         if not self.is_cancelled and self.cancel_btn.isEnabled():
             self.cancel_operation()
@@ -184,7 +186,7 @@ class ProgressDialog(QDialog):
 class WorkflowProgressDialog(ProgressDialog):
     """Enhanced progress dialog for workflow operations."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget]=None) -> None:
         super().__init__("Executive Summary Generation", parent)
 
         # Workflow stages
@@ -206,13 +208,14 @@ class WorkflowProgressDialog(ProgressDialog):
 
         # Add stage indicator
         self.stage_label = QLabel(f"Stage 1 of {self.total_stages}")
-        self.stage_label.setAlignment(Qt.AlignCenter)
+        self.stage_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Insert stage label after main label
         layout = self.layout()
-        layout.insertWidget(1, self.stage_label)
+        if layout is not None:
+            layout.insertWidget(1, self.stage_label)
 
-    def start_stage(self, stage_index: int):
+    def start_stage(self, stage_index: int) -> None:
         """Start a specific stage."""
         if 0 <= stage_index < self.total_stages:
             self.current_stage = stage_index
@@ -227,7 +230,7 @@ class WorkflowProgressDialog(ProgressDialog):
 
             self.add_log_message(f"Started: {stage_name}")
 
-    def complete_stage(self, stage_index: int, success: bool = True):
+    def complete_stage(self, stage_index: int, success: bool = True) -> None:
         """Complete a specific stage."""
         if 0 <= stage_index < self.total_stages:
             stage_name = self.stages[stage_index]
@@ -241,20 +244,20 @@ class WorkflowProgressDialog(ProgressDialog):
             overall_progress = int(((stage_index + 1) / self.total_stages) * 100)
             self.set_progress(overall_progress)
 
-    def next_stage(self):
+    def next_stage(self) -> None:
         """Move to the next stage."""
         if self.current_stage < self.total_stages - 1:
             self.complete_stage(self.current_stage, True)
             self.start_stage(self.current_stage + 1)
 
-    def fail_stage(self, error_message: str = None):
+    def fail_stage(self, error_message: Optional[str] = None) -> None:
         """Mark current stage as failed."""
         self.complete_stage(self.current_stage, False)
 
         error_msg = error_message or f"Failed during: {self.stages[self.current_stage]}"
         self.complete(False, error_msg)
 
-    def complete_workflow(self):
+    def complete_workflow(self) -> None:
         """Complete the entire workflow."""
         if self.current_stage < self.total_stages - 1:
             # Complete remaining stages
@@ -267,7 +270,7 @@ class WorkflowProgressDialog(ProgressDialog):
 class SimpleProgressDialog(ProgressDialog):
     """Simplified progress dialog for basic operations."""
 
-    def __init__(self, title: str, message: str, parent=None):
+    def __init__(self, title: str, message: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(title, parent)
 
         self.setFixedSize(350, 150)
@@ -277,6 +280,6 @@ class SimpleProgressDialog(ProgressDialog):
         # Hide log button for simple operations
         self.show_log_btn.setVisible(False)
 
-    def update_message(self, message: str):
+    def update_message(self, message: str) -> None:
         """Update the progress message."""
         self.set_message(message)

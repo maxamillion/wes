@@ -22,7 +22,7 @@ from ..utils.logging_config import get_logger, get_security_logger
 class CredentialValidator:
     """Validate credentials for various services."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
 
@@ -42,10 +42,7 @@ class CredentialValidator:
             # Username validation - email required for Atlassian Cloud, flexible for on-premise
             if not self._validate_username(url, username):
                 if self._is_atlassian_cloud(url):
-                    return (
-                        False,
-                        "Username must be a valid email address for Jira Cloud",
-                    )
+                    return False, "Email address required for Atlassian Cloud"
                 else:
                     return False, "Username is required"
 
@@ -66,6 +63,8 @@ class CredentialValidator:
                     timeout=10,
                     verify_ssl=True,
                 )
+                if rh_jira_client._client is None:
+                    return False, "Red Hat Jira client failed to initialize"
                 current_user = rh_jira_client._client.current_user()
                 client_type = "Red Hat Jira"
             else:
@@ -164,10 +163,7 @@ class CredentialValidator:
                                     "Gemini API key valid (test response filtered)"
                                 )
                             else:
-                                return (
-                                    False,
-                                    f"API response blocked: finish_reason={candidate.finish_reason}",
-                                )
+                                return False, "Gemini API test failed"
                     elif response:
                         # We got a response object, so connection is valid
                         self.logger.info("Gemini API key valid (empty test response)")
@@ -287,9 +283,7 @@ class CredentialValidator:
         elif "quota" in error_str or "limit" in error_str:
             return "API quota exceeded. Please check your usage limits."
         elif "permission" in error_str:
-            return (
-                "Permission denied. Please ensure the API key has proper permissions."
-            )
+            return "Permission denied. Please check your API key permissions."
         elif "network" in error_str or "connection" in error_str:
             return "Network error. Please check your internet connection."
         else:
@@ -299,7 +293,7 @@ class CredentialValidator:
 class CredentialHealthMonitor:
     """Monitor credential health and expiration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
 

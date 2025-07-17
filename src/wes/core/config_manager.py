@@ -93,7 +93,7 @@ class Configuration:
 class ConfigManager:
     """Manages application configuration with secure storage."""
 
-    def __init__(self, config_dir: Optional[Path] = None):
+    def __init__(self, config_dir: Optional[Path] = None) -> None:
         self.logger = get_logger(__name__)
         self.security_manager = SecurityManager()
 
@@ -365,9 +365,7 @@ class ConfigManager:
             if "server_url" in kwargs:
                 url = kwargs["server_url"]
                 if not url.startswith(("ldap://", "ldaps://")):
-                    raise ValueError(
-                        "LDAP server URL must start with ldap:// or ldaps://"
-                    )
+                    raise ValueError("LDAP URL must start with ldap:// or ldaps://")
 
             # Update configuration
             for key, value in kwargs.items():

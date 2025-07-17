@@ -26,10 +26,10 @@ class DirectView(QWidget):
     """
 
     # Signals
-    configuration_changed = Signal()
+    configuration_changed = Signal()  # type: ignore[misc]
     validation_state_changed = Signal(bool)  # all_valid
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
         self.pages = {}
@@ -37,7 +37,7 @@ class DirectView(QWidget):
         self._init_ui()
         self._connect_signals()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -60,7 +60,7 @@ class DirectView(QWidget):
         # Update tab icons based on validation
         self._update_tab_icons()
 
-    def _wrap_in_scroll_area(self, widget):
+    def _wrap_in_scroll_area(self, widget) -> None:
         """Wrap a widget in a scroll area for better small screen support."""
         scroll_area = QScrollArea()
         scroll_area.setWidget(widget)
@@ -106,7 +106,7 @@ class DirectView(QWidget):
 
         return scroll_area
 
-    def _create_service_tabs(self):
+    def _create_service_tabs(self) -> None:
         """Create tabs for each service configuration."""
         # Jira tab
         self.jira_page = JiraConfigPage(self.config_manager)
@@ -120,7 +120,7 @@ class DirectView(QWidget):
         gemini_scroll = self._wrap_in_scroll_area(self.gemini_page)
         gemini_index = self.tab_widget.addTab(gemini_scroll, "Gemini AI")
 
-    def _create_app_settings_tab(self):
+    def _create_app_settings_tab(self) -> None:
         """Create application settings tab."""
         from wes.gui.unified_config.config_pages.app_settings_page import (
             AppSettingsPage,
@@ -130,7 +130,7 @@ class DirectView(QWidget):
         app_scroll = self._wrap_in_scroll_area(self.app_page)
         app_index = self.tab_widget.addTab(app_scroll, "Application")
 
-    def _create_security_tab(self):
+    def _create_security_tab(self) -> None:
         """Create security settings tab."""
         from wes.gui.unified_config.config_pages.security_page import SecurityPage
 
@@ -138,7 +138,7 @@ class DirectView(QWidget):
         security_scroll = self._wrap_in_scroll_area(self.security_page)
         security_index = self.tab_widget.addTab(security_scroll, "Security")
 
-    def _connect_signals(self):
+    def _connect_signals(self) -> None:
         """Connect signals from all pages."""
         # Connect configuration changes
         for page in self.pages.values():
@@ -155,11 +155,11 @@ class DirectView(QWidget):
         if hasattr(self, "security_page"):
             self.security_page.config_changed.connect(self._on_config_changed)
 
-    def _on_config_changed(self, config: Dict[str, Any]):
+    def _on_config_changed(self, config: Dict[str, Any]) -> None:
         """Handle configuration change from any page."""
         self.configuration_changed.emit()
 
-    def _on_page_validated(self, page, is_valid: bool):
+    def _on_page_validated(self, page, is_valid: bool) -> None:
         """Handle page validation state change."""
         # Find which service this page belongs to
         for service, p in self.pages.items():
@@ -177,7 +177,7 @@ class DirectView(QWidget):
         )
         self.validation_state_changed.emit(all_valid)
 
-    def _on_validation_complete(self, result: Dict[str, Any]):
+    def _on_validation_complete(self, result: Dict[str, Any]) -> None:
         """Handle validation completion with detailed result."""
         # Update connection status on the specific tab
         service = result.get("service")
@@ -185,7 +185,7 @@ class DirectView(QWidget):
             page = self.pages[service]
             # Page will handle updating its own UI
 
-    def _update_tab_icons(self):
+    def _update_tab_icons(self) -> None:
         """Update tab icons based on validation state."""
         style = self.style()
 
@@ -251,7 +251,7 @@ class DirectView(QWidget):
 
         return results
 
-    def show_service(self, service: ServiceType):
+    def show_service(self, service: ServiceType) -> None:
         """
         Show a specific service tab.
 
@@ -262,7 +262,7 @@ class DirectView(QWidget):
             index = list(self.pages.keys()).index(service)
             self.tab_widget.setCurrentIndex(index)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh all pages with current configuration."""
         # Each page will reload from config manager
         for page in self.pages.values():

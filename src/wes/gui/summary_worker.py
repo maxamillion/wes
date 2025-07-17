@@ -57,7 +57,7 @@ class SummaryWorker(QThread):
         # Set up progress callback
         self.orchestrator.set_progress_callback(self._on_progress)
 
-    def _on_progress(self, message: str, percentage: int):
+    def _on_progress(self, message: str, percentage: int) -> None:
         """Handle progress updates from orchestrator.
 
         Args:
@@ -66,7 +66,7 @@ class SummaryWorker(QThread):
         """
         self.progress_update.emit(message, percentage)
 
-    def run(self):
+    def run(self) -> None:
         """Run the summary generation workflow."""
         try:
             self.logger.info("Starting summary generation in background")
@@ -106,7 +106,7 @@ class SummaryWorker(QThread):
             self.logger.error(f"Summary worker error: {e}")
             self.generation_failed.emit(str(e))
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the summary generation."""
         self.logger.info("Cancelling summary generation")
         self.orchestrator.cancel()

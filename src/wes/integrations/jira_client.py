@@ -18,7 +18,7 @@ from .redhat_jira_client import RedHatJiraClient, is_redhat_jira
 class RateLimiter:
     """Rate limiter for API requests."""
 
-    def __init__(self, max_requests: int = 100, time_window: int = 60):
+    def __init__(self, max_requests: int = 100, time_window: int = 60) -> None:
         self.max_requests = max_requests
         self.time_window = time_window
         self.requests = []
@@ -130,6 +130,9 @@ class JiraClient:
         """Test Jira connection."""
         try:
             # Get current user to test authentication
+            if self._jira_client is None:
+                raise AuthenticationError("Jira client not initialized")
+                
             user = self._jira_client.current_user()
             self.logger.info(f"Connected to Jira as user: {user}")
 
@@ -150,7 +153,7 @@ class JiraClient:
             # Delegate to Red Hat client if this is a Red Hat instance
             if self.is_redhat and self._redhat_client:
                 return await self._redhat_client.get_user_activities(
-                    users, start_date, end_date, projects, include_comments, max_results
+                    users, start_date, end_date, include_comments, max_results
                 )
 
             # Standard Jira processing
@@ -225,6 +228,9 @@ class JiraClient:
         """Execute JQL query and return results."""
         try:
             # Search for issues
+            if self._jira_client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             issues = self._jira_client.search_issues(
                 jql,
                 maxResults=max_results,
@@ -288,10 +294,9 @@ class JiraClient:
         except Exception as e:
             self.logger.error(f"Failed to process issue {issue.key}: {e}")
             return {
-                "id": issue.key,
-                "type": "issue",
-                "title": "Error processing issue",
+                "key": getattr(issue, "key", "unknown"),
                 "error": str(e),
+                "status": "error"
             }
 
     async def _process_changelog(self, changelog: Any) -> List[Dict[str, Any]]:
@@ -320,6 +325,9 @@ class JiraClient:
         comments = []
 
         try:
+            if self._jira_client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             issue_comments = self._jira_client.comments(issue)
 
             for comment in issue_comments:
@@ -351,6 +359,9 @@ class JiraClient:
             # Standard Jira processing
             await self.rate_limiter.acquire()
 
+            if self._jira_client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             projects = self._jira_client.projects()
 
             project_list = []
@@ -386,6 +397,9 @@ class JiraClient:
         try:
             await self.rate_limiter.acquire()
 
+            if self._jira_client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             if project_key:
                 # Get users for specific project
                 users = self._jira_client.search_assignable_users_for_projects(
@@ -431,6 +445,9 @@ class JiraClient:
             InputValidator.validate_jira_query(jql)
 
             # Test query with limit
+            if self._jira_client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             self._jira_client.search_issues(jql, maxResults=1)
 
             return True
@@ -447,13 +464,10 @@ class JiraClient:
 
         # Standard Jira connection info
         return {
-            "url": self.url,
-            "username": self.username,
-            "connected": self._jira_client is not None,
-            "server_info": (
-                self._jira_client.server_info() if self._jira_client else None
-            ),
-            "client_type": "jira",
+            "server": self.base_url,
+            "user": self.username,
+            "type": "Standard Jira",
+            "authenticated": True
         }
 
     async def close(self) -> None:
@@ -482,13 +496,10 @@ class JiraActivitySummary:
         """Generate summary of activities."""
         if not activities:
             return {
-                "total_issues": 0,
-                "total_comments": 0,
-                "total_changes": 0,
+                "summary": "No activities found",
                 "users": [],
                 "projects": [],
-                "status_distribution": {},
-                "priority_distribution": {},
+                "total_issues": 0
             }
 
         users = set()
@@ -516,10 +527,11 @@ class JiraActivitySummary:
 
         return {
             "total_issues": len(activities),
-            "total_comments": total_comments,
-            "total_changes": total_changes,
             "users": list(users),
             "projects": list(projects),
-            "status_distribution": statuses,
-            "priority_distribution": priorities,
+            "statuses": statuses,
+            "priorities": priorities,
+            "total_comments": total_comments,
+            "total_changes": total_changes,
+            "summary": f"Found {len(activities)} issues across {len(projects)} projects by {len(users)} users"
         }

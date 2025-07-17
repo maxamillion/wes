@@ -42,16 +42,15 @@ class DialogManager:
             details: Optional detailed message text.
         """
         if message_type == MessageType.INFO:
-            icon = QMessageBox.Information
-            if title.lower() == "success" or message_type == MessageType.SUCCESS:
-                # Use success styling for info messages about success
-                title = "Success" if title.lower() == "success" else title
+            icon = QMessageBox.Icon.Information
+            if title.lower() == "success":  # Use success styling for info messages about success
+                title = "Success"
         elif message_type == MessageType.WARNING:
-            icon = QMessageBox.Warning
+            icon = QMessageBox.Icon.Warning
         elif message_type == MessageType.ERROR:
-            icon = QMessageBox.Critical
+            icon = QMessageBox.Icon.Critical
         else:
-            icon = QMessageBox.Information
+            icon = QMessageBox.Icon.Information
 
         msg_box = QMessageBox(parent)
         msg_box.setWindowTitle(title)
@@ -154,18 +153,18 @@ class DialogManager:
         msg_box = QMessageBox(parent)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
-        msg_box.setIcon(QMessageBox.Question)
-        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
 
         if default_yes:
-            msg_box.setDefaultButton(QMessageBox.Yes)
+            msg_box.setDefaultButton(QMessageBox.StandardButton.Yes)
         else:
-            msg_box.setDefaultButton(QMessageBox.No)
+            msg_box.setDefaultButton(QMessageBox.StandardButton.No)
 
         if details:
             msg_box.setDetailedText(details)
 
-        return msg_box.exec() == QMessageBox.Yes
+        return msg_box.exec() == QMessageBox.StandardButton.Yes
 
     @staticmethod
     def ask_confirmation(
@@ -192,10 +191,10 @@ class DialogManager:
         msg_box = QMessageBox(parent)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
-        msg_box.setIcon(QMessageBox.Warning if dangerous else QMessageBox.Question)
+        msg_box.setIcon(QMessageBox.Icon.Warning if dangerous else QMessageBox.Icon.Question)
 
-        confirm_btn = msg_box.addButton(confirm_text, QMessageBox.AcceptRole)
-        cancel_btn = msg_box.addButton(cancel_text, QMessageBox.RejectRole)
+        confirm_btn = msg_box.addButton(confirm_text, QMessageBox.ButtonRole.AcceptRole)
+        cancel_btn = msg_box.addButton(cancel_text, QMessageBox.ButtonRole.RejectRole)
 
         msg_box.setDefaultButton(cancel_btn if dangerous else confirm_btn)
 
@@ -221,17 +220,17 @@ class DialogManager:
         msg_box = QMessageBox(parent)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
-        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
         msg_box.setStandardButtons(
-            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
+            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
         )
-        msg_box.setDefaultButton(QMessageBox.Cancel)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Cancel)
 
         result = msg_box.exec()
 
-        if result == QMessageBox.Save:
+        if result == QMessageBox.StandardButton.Save:
             return True
-        elif result == QMessageBox.Discard:
+        elif result == QMessageBox.StandardButton.Discard:
             return False
         else:
             return None
@@ -305,7 +304,7 @@ class FileDialogManager:
             Optional[str]: Selected file path or None if cancelled.
         """
         file_path, _ = QFileDialog.getOpenFileName(
-            parent, title, directory, filter, selected_filter
+            parent, title, directory, filter, selected_filter or ""
         )
         return file_path if file_path else None
 
@@ -330,7 +329,7 @@ class FileDialogManager:
             Optional[str]: Selected file path or None if cancelled.
         """
         file_path, _ = QFileDialog.getSaveFileName(
-            parent, title, directory, filter, selected_filter
+            parent, title, directory, filter, selected_filter or ""
         )
         return file_path if file_path else None
 
@@ -371,5 +370,8 @@ class FileDialogManager:
             Optional[str]: Selected JSON file path or None if cancelled.
         """
         return FileDialogManager.get_open_file_path(
-            parent, title, directory, "JSON Files (*.json);;All Files (*)"
+            parent=parent,
+            title=title,
+            directory=directory,
+            filter="JSON Files (*.json);;All Files (*)"
         )

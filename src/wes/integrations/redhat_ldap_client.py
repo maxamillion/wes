@@ -28,7 +28,7 @@ class LDAPUser:
     email: str
     display_name: str
     manager_dn: Optional[str] = None
-    direct_reports: List[str] = None
+    direct_reports: Optional[List[str]] = None
     title: Optional[str] = None
     department: Optional[str] = None
 
@@ -171,11 +171,11 @@ class RedHatLDAPClient:
 
         return LDAPUser(
             uid=uid,
-            email=mail,
+            email=email,
             display_name=name,
-            manager_dn=manager,
+            manager_dn=manager_dn,
             title=title,
-            department=department,
+            department=department
         )
 
     async def search_user_by_email(self, email: str) -> Optional[LDAPUser]:
@@ -198,9 +198,14 @@ class RedHatLDAPClient:
             search_filter = f"(mail={email})"
 
             # Execute search
+            if self._connection is None:
+                raise LDAPIntegrationError("LDAP connection not established")
+                
+            # Store connection in a local variable to avoid mypy issues with lambda
+            connection = self._connection
             search_result = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._connection.search(
+                lambda: connection.search(
                     search_base=self.base_dn,
                     search_filter=search_filter,
                     attributes=self.USER_ATTRIBUTES,
@@ -243,9 +248,14 @@ class RedHatLDAPClient:
             search_filter = f"(uid={uid})"
 
             # Execute search
+            if self._connection is None:
+                raise LDAPIntegrationError("LDAP connection not established")
+                
+            # Store connection in a local variable to avoid mypy issues with lambda
+            connection = self._connection
             search_result = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._connection.search(
+                lambda: connection.search(
                     search_base=self.base_dn,
                     search_filter=search_filter,
                     attributes=self.USER_ATTRIBUTES,
@@ -285,9 +295,14 @@ class RedHatLDAPClient:
             search_filter = f"(manager={manager_dn})"
 
             # Execute search
+            if self._connection is None:
+                raise LDAPIntegrationError("LDAP connection not established")
+                
+            # Store connection in a local variable to avoid mypy issues with lambda
+            connection = self._connection
             search_result = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._connection.search(
+                lambda: connection.search(
                     search_base=self.base_dn,
                     search_filter=search_filter,
                     attributes=self.USER_ATTRIBUTES,
@@ -364,7 +379,7 @@ class RedHatLDAPClient:
         Returns:
             Dictionary representing the hierarchy
         """
-        hierarchy = {
+        hierarchy: Dict[str, Any] = {
             "uid": user.uid,
             "email": user.email,
             "display_name": user.display_name,
@@ -514,9 +529,14 @@ class RedHatLDAPClient:
             await self.connect()
 
             # Test with a simple search
+            if self._connection is None:
+                raise LDAPIntegrationError("LDAP connection not established")
+                
+            # Store connection in a local variable to avoid mypy issues with lambda
+            connection = self._connection
             test_result = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._connection.search(
+                lambda: connection.search(
                     search_base=self.base_dn,
                     search_filter="(uid=nobody)",  # Unlikely to exist
                     attributes=["uid"],

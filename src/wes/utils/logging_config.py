@@ -63,7 +63,7 @@ class LogSanitizer:
 class SecureFormatter(logging.Formatter):
     """Custom formatter that sanitizes sensitive data."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.sanitizer = LogSanitizer()
 
@@ -176,12 +176,12 @@ def setup_logging(
 class SecurityLogger:
     """Specialized logger for security events."""
 
-    def __init__(self, name: str = "security"):
+    def __init__(self, name: str = "security") -> None:
         self.logger = structlog.get_logger(name)
         self.sanitizer = LogSanitizer()
 
     def log_security_event(
-        self, event_type: str, severity: str = "INFO", **kwargs
+        self, event_type: str, severity: str = "INFO", **kwargs: Any
     ) -> None:
         """Log security event with sanitization."""
         # Sanitize all values
@@ -197,7 +197,7 @@ class SecurityLogger:
         service: str,
         username: Optional[str] = None,
         success: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Log authentication attempt."""
         self.log_security_event(
@@ -215,7 +215,7 @@ class SecurityLogger:
         endpoint: str,
         method: str = "GET",
         status_code: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Log API request."""
         self.log_security_event(
@@ -228,7 +228,7 @@ class SecurityLogger:
         )
 
     def log_configuration_change(
-        self, component: str, change_type: str, **kwargs
+        self, component: str, change_type: str, **kwargs: Any
     ) -> None:
         """Log configuration change."""
         self.log_security_event(
@@ -239,7 +239,7 @@ class SecurityLogger:
             **kwargs,
         )
 
-    def log_error(self, error_type: str, error_message: str, **kwargs) -> None:
+    def log_error(self, error_type: str, error_message: str, **kwargs: Any) -> None:
         """Log error event."""
         self.log_security_event(
             "error_occurred",

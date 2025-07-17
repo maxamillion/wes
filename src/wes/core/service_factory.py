@@ -29,7 +29,7 @@ class ServiceClientProtocol(Protocol):
 class ServiceFactory:
     """Factory for creating and managing integration service clients."""
 
-    def __init__(self, config_manager: ConfigManager):
+    def __init__(self, config_manager: ConfigManager) -> None:
         self.config_manager = config_manager
         self.logger = get_logger(__name__)
         self._clients: Dict[str, BaseIntegrationClient] = {}
@@ -112,7 +112,6 @@ class ServiceFactory:
             is_valid = await client.validate_api_key()
             if not is_valid:
                 raise ConfigurationError("Invalid Gemini API key")
-            self.logger.info("Successfully created Gemini client")
         except Exception as e:
             self.logger.error(f"Failed to validate Gemini connection: {e}")
             raise
@@ -236,7 +235,7 @@ class ServiceRegistry:
             cls._instance._registry = {}
         return cls._instance
 
-    def register(self, service_type: str, client_class: Type[BaseIntegrationClient]):
+    def register(self, service_type: str, client_class: Type[BaseIntegrationClient]) -> None:
         """Register a client implementation for a service type."""
         self._registry[service_type] = client_class
 

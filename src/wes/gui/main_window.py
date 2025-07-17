@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QCloseEvent
 
 from ..core.config_manager import ConfigManager
 from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
@@ -63,7 +64,7 @@ class ViewState(Enum):
 class MainWindow(QMainWindow):
     """Main application window with unified configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.logger = get_logger(__name__)
@@ -82,8 +83,8 @@ class MainWindow(QMainWindow):
 
         # Current state
         self.current_view = ViewState.WELCOME
-        self.summary_worker = None
-        self.current_result = None
+        self.summary_worker: Optional[SummaryWorker] = None
+        self.current_result: Optional[WorkflowResult] = None
         self.orchestrator = WorkflowOrchestrator(self.config_manager)
 
         # Initialize UI
@@ -102,7 +103,7 @@ class MainWindow(QMainWindow):
         except Exception:
             return False
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """Initialize the user interface."""
         self.setWindowTitle("WES - Executive Summary Tool")
         self.setMinimumSize(1200, 800)
@@ -139,7 +140,7 @@ class MainWindow(QMainWindow):
             self.on_credential_validation_complete
         )
 
-    def create_menu_bar(self):
+    def create_menu_bar(self) -> None:
         """Create the application menu bar."""
         menubar = self.menuBar()
 
@@ -180,11 +181,11 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
-    def create_welcome_view(self):
+    def create_welcome_view(self) -> None:
         """Create the welcome view."""
         self.welcome_widget = QWidget()
         layout = QVBoxLayout(self.welcome_widget)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(20)
 
         # Logo placeholder
@@ -193,7 +194,7 @@ class MainWindow(QMainWindow):
         logo_font.setPointSize(48)
         logo_font.setBold(True)
         logo_label.setFont(logo_font)
-        logo_label.setAlignment(Qt.AlignCenter)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         logo_label.setStyleSheet("color: #0084ff;")
         layout.addWidget(logo_label)
 
@@ -203,7 +204,7 @@ class MainWindow(QMainWindow):
         title_font.setPointSize(24)
         title_font.setBold(True)
         title_label.setFont(title_font)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
 
         # Subtitle
@@ -211,7 +212,7 @@ class MainWindow(QMainWindow):
         subtitle_font = QFont()
         subtitle_font.setPointSize(14)
         subtitle_label.setFont(subtitle_font)
-        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle_label.setStyleSheet("color: #666;")
         layout.addWidget(subtitle_label)
 
@@ -233,11 +234,11 @@ class MainWindow(QMainWindow):
         """
         )
         self.get_started_button.clicked.connect(self.show_settings)
-        layout.addWidget(self.get_started_button, alignment=Qt.AlignCenter)
+        layout.addWidget(self.get_started_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.main_stack.addWidget(self.welcome_widget)
 
-    def create_main_view(self):
+    def create_main_view(self) -> None:
         """Create the main summary generation view."""
         self.main_widget = QWidget()
         layout = QVBoxLayout(self.main_widget)
@@ -320,7 +321,7 @@ class MainWindow(QMainWindow):
 
         self.main_stack.addWidget(self.main_widget)
 
-    def create_config_status_widget(self):
+    def create_config_status_widget(self) -> None:
         """Create configuration status widget."""
         widget = QFrame()
         widget.setFrameStyle(QFrame.Box)
@@ -353,7 +354,7 @@ class MainWindow(QMainWindow):
 
         return widget
 
-    def create_manager_scope_widget(self):
+    def create_manager_scope_widget(self) -> None:
         """Create widget for manager scope selection (Red Hat Jira only)."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -404,7 +405,7 @@ class MainWindow(QMainWindow):
 
         return widget
 
-    def on_manager_mode_toggled(self, checked: bool):
+    def on_manager_mode_toggled(self, checked: bool) -> None:
         """Handle manager mode toggle."""
         self.manager_input_container.setVisible(checked)
 
@@ -417,11 +418,11 @@ class MainWindow(QMainWindow):
             if checked:
                 self.assignee_filter.clear()
 
-    def create_progress_view(self):
+    def create_progress_view(self) -> None:
         """Create the progress view for summary generation."""
         self.progress_widget = QWidget()
         layout = QVBoxLayout(self.progress_widget)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Title
         title = QLabel("Generating Summary")
@@ -447,7 +448,7 @@ class MainWindow(QMainWindow):
 
         self.main_stack.addWidget(self.progress_widget)
 
-    def create_result_view(self):
+    def create_result_view(self) -> None:
         """Create the result view for displaying generated summary."""
         self.result_widget = QWidget()
         layout = QVBoxLayout(self.result_widget)
@@ -515,7 +516,7 @@ class MainWindow(QMainWindow):
 
         self.main_stack.addWidget(self.result_widget)
 
-    def check_initial_setup(self):
+    def check_initial_setup(self) -> None:
         """Check if initial setup is needed."""
         config_state = self.config_detector.detect_state(self.config_manager.config)
 
@@ -529,21 +530,21 @@ class MainWindow(QMainWindow):
             # Configuration complete
             self.switch_view(ViewState.MAIN)
 
-    def show_initial_setup(self):
+    def show_initial_setup(self) -> None:
         """Show initial setup dialog."""
         reply = QMessageBox.information(
             self,
             "Welcome to WES",
             "Welcome! Let's set up WES to create executive summaries.\n\n"
             "Click OK to begin the setup wizard.",
-            QMessageBox.Ok | QMessageBox.Cancel,
-            QMessageBox.Ok,
+            QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Ok,
         )
 
-        if reply == QMessageBox.Ok:
+        if reply == QMessageBox.StandardButton.Ok:
             self.show_settings()
 
-    def show_incomplete_setup_warning(self):
+    def show_incomplete_setup_warning(self) -> None:
         """Show warning about incomplete setup."""
         missing_services = self.config_detector.get_missing_services(
             self.config_manager.config
@@ -557,17 +558,17 @@ class MainWindow(QMainWindow):
             f"The following services need to be configured:\n"
             f"• {chr(10).join(service_names)}\n\n"
             f"Would you like to complete the setup now?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             self.show_settings()
         else:
             # Allow user to continue with incomplete config
             self.switch_view(ViewState.MAIN)
 
-    def show_settings(self):
+    def show_settings(self) -> None:
         """Show the unified settings dialog."""
         dialog = UnifiedConfigDialog(self.config_manager, self)
 
@@ -582,7 +583,7 @@ class MainWindow(QMainWindow):
             self.update_config_status()
             self.status_bar.showMessage("Configuration updated", 3000)
 
-    def on_configuration_updated(self, config: Dict[str, Any]):
+    def on_configuration_updated(self, config: Dict[str, Any]) -> None:
         """Handle configuration updates from the unified dialog."""
         # Update UI elements that depend on configuration
         self.update_config_status()
@@ -605,7 +606,7 @@ class MainWindow(QMainWindow):
             if config_state == UnifiedConfigState.COMPLETE:
                 self.switch_view(ViewState.MAIN)
 
-    def update_config_status(self):
+    def update_config_status(self) -> None:
         """Update configuration status display."""
         if not hasattr(self, "config_status_label"):
             return
@@ -635,7 +636,7 @@ class MainWindow(QMainWindow):
             if hasattr(self, "generate_button"):
                 self.generate_button.setEnabled(False)
 
-    def switch_view(self, view_state: ViewState):
+    def switch_view(self, view_state: ViewState) -> None:
         """Switch between different views."""
         self.current_view = view_state
 
@@ -649,11 +650,11 @@ class MainWindow(QMainWindow):
         elif view_state == ViewState.RESULT:
             self.main_stack.setCurrentWidget(self.result_widget)
 
-    def new_summary(self):
+    def new_summary(self) -> None:
         """Start a new summary."""
         self.switch_view(ViewState.MAIN)
 
-    def generate_summary(self):
+    def generate_summary(self) -> None:
         """Generate executive summary."""
         # Validate configuration first
         config_state = self.config_detector.detect_state(self.config_manager.config)
@@ -743,7 +744,7 @@ class MainWindow(QMainWindow):
         # Start generation
         self.summary_worker.start()
 
-    def cancel_summary(self):
+    def cancel_summary(self) -> None:
         """Cancel summary generation."""
         if self.summary_worker and self.summary_worker.isRunning():
             self.summary_worker.cancel()
@@ -752,7 +753,7 @@ class MainWindow(QMainWindow):
 
         self.switch_view(ViewState.MAIN)
 
-    def on_progress_update(self, message: str, percentage: int):
+    def on_progress_update(self, message: str, percentage: int) -> None:
         """Handle progress updates from worker.
 
         Args:
@@ -762,7 +763,7 @@ class MainWindow(QMainWindow):
         self.progress_status.setText(message)
         self.progress_bar.setValue(percentage)
 
-    def on_generation_complete(self, result: WorkflowResult):
+    def on_generation_complete(self, result: WorkflowResult) -> None:
         """Handle successful summary generation.
 
         Args:
@@ -778,7 +779,7 @@ class MainWindow(QMainWindow):
         else:
             self.result_text.setPlainText("No summary content generated.")
 
-    def on_generation_failed(self, error_message: str):
+    def on_generation_failed(self, error_message: str) -> None:
         """Handle failed summary generation.
 
         Args:
@@ -789,7 +790,7 @@ class MainWindow(QMainWindow):
             self, "Generation Failed", f"Failed to generate summary:\n\n{error_message}"
         )
 
-    def show_about(self):
+    def show_about(self) -> None:
         """Show about dialog."""
         QMessageBox.about(
             self,
@@ -813,7 +814,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, "config_status_label"):
             self.update_config_status()
 
-    def show_export_dialog(self):
+    def show_export_dialog(self) -> None:
         """Show the export dialog for the current summary."""
         if not self.current_result or not self.current_result.summary_data:
             QMessageBox.warning(self, "No Summary", "No summary available to export.")
@@ -823,7 +824,7 @@ class MainWindow(QMainWindow):
         dialog.export_complete.connect(self.on_export_complete)
         dialog.exec()
 
-    def copy_summary_to_clipboard(self):
+    def copy_summary_to_clipboard(self) -> None:
         """Copy the current summary to clipboard."""
         if not self.current_result or not self.current_result.summary_data:
             return
@@ -841,7 +842,7 @@ class MainWindow(QMainWindow):
                 self, "Copy Failed", f"Failed to copy to clipboard: {str(e)}"
             )
 
-    def quick_export(self, format: str):
+    def quick_export(self, format: str) -> None:
         """Quick export to a specific format."""
         if not self.current_result or not self.current_result.summary_data:
             return
@@ -890,7 +891,7 @@ class MainWindow(QMainWindow):
                     self, "Export Failed", f"Failed to export summary:\n{str(e)}"
                 )
 
-    def on_export_complete(self, format: str, filepath: str):
+    def on_export_complete(self, format: str, filepath: str) -> None:
         """Handle export completion.
 
         Args:
@@ -905,7 +906,7 @@ class MainWindow(QMainWindow):
             filename = Path(filepath).name
             self.status_bar.showMessage(f"Summary exported to {filename}", 3000)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Handle application close."""
         # Stop credential monitor
         self.credential_monitor.stop_monitoring()

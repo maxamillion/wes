@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QCloseEvent
 
 from wes.core.config_manager import ConfigManager
 from wes.gui.unified_config.types import ConfigState, ServiceType, UIMode
@@ -28,14 +29,14 @@ class UnifiedConfigDialog(QDialog):
     """
 
     # Signals
-    configuration_complete = Signal(dict)
-    mode_changed = Signal(UIMode)
+    configuration_complete = Signal(dict)  # type: ignore[misc]
+    mode_changed = Signal(UIMode)  # type: ignore[misc]
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
         self.config_detector = ConfigDetector()
-        self.current_mode = None
+        self.current_mode: Optional[UIMode] = None
         self.dirty = False
 
         # Track which pages have been validated
@@ -47,7 +48,7 @@ class UnifiedConfigDialog(QDialog):
         # Detect and set appropriate mode
         self._detect_and_set_mode()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI components."""
         self.setWindowTitle("WES Configuration")
 
@@ -128,9 +129,9 @@ class UnifiedConfigDialog(QDialog):
         self.stack.setContentsMargins(0, 0, 0, 0)
 
         # Create mode-specific widgets (lazy loading)
-        self.wizard_widget = None
-        self.guided_widget = None
-        self.direct_widget = None
+        self.wizard_widget: Optional[QWidget] = None
+        self.guided_widget: Optional[QWidget] = None
+        self.direct_widget: Optional[QWidget] = None
 
         # Add placeholder widgets - actual widgets created on demand
         self.stack.addWidget(QWidget())  # Index 0: Wizard
@@ -192,7 +193,7 @@ class UnifiedConfigDialog(QDialog):
 
         self._update_buttons_for_mode()
 
-    def _setup_wizard_mode(self):
+    def _setup_wizard_mode(self) -> None:
         """Setup wizard mode UI."""
         # Set header
         icon = self.style().standardIcon(QStyle.SP_DialogYesButton)
@@ -211,13 +212,15 @@ class UnifiedConfigDialog(QDialog):
             self.wizard_widget = WizardView(self.config_manager, self)
             self.wizard_widget.wizard_complete.connect(self._on_wizard_complete)
             self.wizard_widget.page_changed.connect(self._on_wizard_page_changed)
-            self.stack.widget(0).deleteLater()
-            self.stack.removeWidget(self.stack.widget(0))
+            widget_to_remove = self.stack.widget(0)
+            if widget_to_remove:
+                widget_to_remove.deleteLater()
+                self.stack.removeWidget(widget_to_remove)
             self.stack.insertWidget(0, self.wizard_widget)
 
         self.stack.setCurrentIndex(0)
 
-    def _setup_guided_mode(self):
+    def _setup_guided_mode(self) -> None:
         """Setup guided mode UI."""
         # Set header
         icon = self.style().standardIcon(QStyle.SP_MessageBoxWarning)
@@ -236,15 +239,18 @@ class UnifiedConfigDialog(QDialog):
             self.guided_widget = GuidedView(self.config_manager, self)
             self.guided_widget.configuration_updated.connect(self._on_config_updated)
             self.guided_widget.setup_complete.connect(self._on_guided_complete)
-            self.stack.widget(1).deleteLater()
-            self.stack.removeWidget(self.stack.widget(1))
+            widget_to_remove = self.stack.widget(1)
+            if widget_to_remove:
+                widget_to_remove.deleteLater()
+                self.stack.removeWidget(widget_to_remove)
             self.stack.insertWidget(1, self.guided_widget)
 
         # Update guided view with current state
-        self.guided_widget.refresh_status()
+        if self.guided_widget is not None:
+            self.guided_widget.refresh_status()
         self.stack.setCurrentIndex(1)
 
-    def _setup_direct_mode(self):
+    def _setup_direct_mode(self) -> None:
         """Setup direct mode UI."""
         # Set header
         icon = self.style().standardIcon(QStyle.SP_ComputerIcon)
@@ -263,8 +269,10 @@ class UnifiedConfigDialog(QDialog):
             self.direct_widget.validation_state_changed.connect(
                 self._on_validation_changed
             )
-            self.stack.widget(2).deleteLater()
-            self.stack.removeWidget(self.stack.widget(2))
+            widget_to_remove = self.stack.widget(2)
+            if widget_to_remove:
+                widget_to_remove.deleteLater()
+                self.stack.removeWidget(widget_to_remove)
             self.stack.insertWidget(2, self.direct_widget)
 
         self.stack.setCurrentIndex(2)
@@ -366,39 +374,39 @@ class UnifiedConfigDialog(QDialog):
 
         return True
 
-    def _complete_later(self):
+    def _complete_later(self) -> None:
         """Handle 'Complete Later' action in guided mode."""
         reply = QMessageBox.question(
             self,
             "Incomplete Configuration",
             "Some services are not configured. You can complete the setup later from the Settings menu.\n\n"
             "Continue without completing setup?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             self.accept()
 
-    def _on_wizard_complete(self):
+    def _on_wizard_complete(self) -> None:
         """Handle wizard completion."""
         self._save_configuration()
         self.accept()
 
-    def _on_wizard_page_changed(self, page_index: int):
+    def _on_wizard_page_changed(self, page_index: int) -> None:
         """Handle wizard page change."""
         # Update header based on wizard progress
-        if hasattr(self.wizard_widget, "get_page_info"):
+        if self.wizard_widget is not None and hasattr(self.wizard_widget, "get_page_info"):
             info = self.wizard_widget.get_page_info(page_index)
             if info:
                 self.mode_label.setText(info.get("description", "Configuration"))
 
-    def _on_guided_complete(self):
+    def _on_guided_complete(self) -> None:
         """Handle guided setup completion."""
         # Switch to direct mode
         self.set_mode(UIMode.DIRECT)
 
-    def _on_config_updated(self, service: str, config: Dict[str, Any]):
+    def _on_config_updated(self, service: str, config: Dict[str, Any]) -> None:
         """Handle configuration update from guided view."""
         self.dirty = True
 
@@ -412,11 +420,11 @@ class UnifiedConfigDialog(QDialog):
         else:
             raise ValueError(f"Unknown service type: {service}")
 
-    def _on_config_changed(self):
+    def _on_config_changed(self) -> None:
         """Handle configuration change in direct mode."""
         self.dirty = True
 
-    def _on_validation_changed(self, all_valid: bool):
+    def _on_validation_changed(self, all_valid: bool) -> None:
         """Handle validation state change."""
         # Enable/disable save button based on validation
         if self.current_mode == UIMode.DIRECT:
@@ -424,23 +432,23 @@ class UnifiedConfigDialog(QDialog):
             if save_btn:
                 save_btn.setEnabled(all_valid)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Handle dialog close event."""
         if self.dirty:
             reply = QMessageBox.question(
                 self,
                 "Unsaved Changes",
                 "You have unsaved changes. Do you want to save before closing?",
-                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                QMessageBox.Cancel,
+                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
             )
 
-            if reply == QMessageBox.Save:
+            if reply == QMessageBox.StandardButton.Save:
                 if self._save_configuration():
                     event.accept()
                 else:
                     event.ignore()
-            elif reply == QMessageBox.Discard:
+            elif reply == QMessageBox.StandardButton.Discard:
                 event.accept()
             else:
                 event.ignore()

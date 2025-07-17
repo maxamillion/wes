@@ -3,6 +3,7 @@
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QVBoxLayout, QWidget
 
 from wes.gui.unified_config.utils.styles import StyleManager
@@ -84,17 +85,18 @@ class ResponsiveConfigLayout(QObject):
         """Adjust spacing for a widget and its children."""
         try:
             # Store original spacing if not already stored
-            if widget not in self.original_spacing and widget.layout():
-                self.original_spacing[widget] = widget.layout().spacing()
+            layout = widget.layout()
+            if widget not in self.original_spacing and layout:
+                self.original_spacing[widget] = layout.spacing()
 
             # Adjust layout spacing
-            if widget.layout():
-                widget.layout().setSpacing(spacing)
+            if layout:
+                layout.setSpacing(spacing)
 
                 # Adjust margins for compact mode
                 if self.is_compact:
-                    margins = widget.layout().contentsMargins()
-                    widget.layout().setContentsMargins(
+                    margins = layout.contentsMargins()
+                    layout.setContentsMargins(
                         max(5, margins.left() // 2),
                         max(5, margins.top() // 2),
                         max(5, margins.right() // 2),
@@ -167,7 +169,7 @@ class ResponsiveConfigLayout(QObject):
         group.setStyleSheet(StyleManager.get_group_box_style(collapsible=True))
 
         # Update title with indicator
-        def update_title():
+        def update_title() -> None:
             prefix = "▼" if group.isChecked() else "▶"
             group.setTitle(f"{prefix} {title}")
 
@@ -216,7 +218,7 @@ class ResponsiveConfigLayout(QObject):
         # Override the resizeEvent of the config page
         original_resize_event = self.config_page.resizeEvent
 
-        def new_resize_event(event):
+        def new_resize_event(event: QResizeEvent) -> None:
             original_resize_event(event)
             self.adjust_for_size(event.size().width(), event.size().height())
 

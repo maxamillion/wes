@@ -34,7 +34,7 @@ from ..utils.logging_config import get_logger
 class ConfigDialog(QDialog):
     """Configuration dialog for application settings."""
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.config_manager = config_manager
@@ -43,7 +43,7 @@ class ConfigDialog(QDialog):
         self.init_ui()
         self.load_configuration()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """Initialize the user interface."""
         self.setWindowTitle("Configuration")
         self.setGeometry(200, 200, 600, 500)
@@ -84,7 +84,7 @@ class ConfigDialog(QDialog):
 
         layout.insertLayout(-1, test_layout)
 
-    def create_jira_tab(self):
+    def create_jira_tab(self) -> None:
         """Create Jira configuration tab."""
         jira_tab = QWidget()
         self.tab_widget.addTab(jira_tab, "Jira")
@@ -106,7 +106,7 @@ class ConfigDialog(QDialog):
         connection_layout.addRow(self.jira_username_label, self.jira_username_edit)
 
         self.jira_token_edit = QLineEdit()
-        self.jira_token_edit.setEchoMode(QLineEdit.Password)
+        self.jira_token_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.jira_token_edit.setPlaceholderText("Your Jira API token")
         connection_layout.addRow("API Token:", self.jira_token_edit)
 
@@ -149,7 +149,7 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-    def create_google_tab(self):
+    def create_google_tab(self) -> None:
         """Create Google services configuration tab."""
         google_tab = QWidget()
         self.tab_widget.addTab(google_tab, "Google")
@@ -195,7 +195,7 @@ class ConfigDialog(QDialog):
         oauth_layout.addRow("Client ID:", self.oauth_client_id_edit)
 
         self.oauth_client_secret_edit = QLineEdit()
-        self.oauth_client_secret_edit.setEchoMode(QLineEdit.Password)
+        self.oauth_client_secret_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.oauth_client_secret_edit.setPlaceholderText("Your OAuth client secret")
         oauth_layout.addRow("Client Secret:", self.oauth_client_secret_edit)
 
@@ -219,7 +219,7 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-    def create_ai_tab(self):
+    def create_ai_tab(self) -> None:
         """Create AI configuration tab."""
         ai_tab = QWidget()
         self.tab_widget.addTab(ai_tab, "AI")
@@ -231,7 +231,7 @@ class ConfigDialog(QDialog):
         api_layout = QFormLayout(api_group)
 
         self.gemini_api_key_edit = QLineEdit()
-        self.gemini_api_key_edit.setEchoMode(QLineEdit.Password)
+        self.gemini_api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.gemini_api_key_edit.setPlaceholderText("Your Google Gemini API key")
         api_layout.addRow("Gemini API Key:", self.gemini_api_key_edit)
 
@@ -278,7 +278,7 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-    def create_app_tab(self):
+    def create_app_tab(self) -> None:
         """Create application configuration tab."""
         app_tab = QWidget()
         self.tab_widget.addTab(app_tab, "Application")
@@ -337,7 +337,7 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-    def create_security_tab(self):
+    def create_security_tab(self) -> None:
         """Create security configuration tab."""
         security_tab = QWidget()
         self.tab_widget.addTab(security_tab, "Security")
@@ -392,7 +392,7 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-    def on_auth_method_changed(self, method: str):
+    def on_auth_method_changed(self, method: str) -> None:
         """Handle authentication method change."""
         if method == "Service Account":
             self.service_account_group.setVisible(True)
@@ -401,7 +401,7 @@ class ConfigDialog(QDialog):
             self.service_account_group.setVisible(False)
             self.oauth_group.setVisible(True)
 
-    def _on_jira_url_changed(self, text: str):
+    def _on_jira_url_changed(self, text: str) -> None:
         """Handle Jira URL change to update username guidance."""
         if not text:
             self._reset_jira_username_guidance()
@@ -438,13 +438,13 @@ class ConfigDialog(QDialog):
         except Exception:
             self._reset_jira_username_guidance()
 
-    def _reset_jira_username_guidance(self):
+    def _reset_jira_username_guidance(self) -> None:
         """Reset Jira username guidance to default."""
         self.jira_username_label.setText("Username:")
         self.jira_username_edit.setPlaceholderText("your.email@company.com")
         self.jira_username_edit.setToolTip("")
 
-    def browse_service_account_file(self):
+    def browse_service_account_file(self) -> None:
         """Browse for service account file."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -456,7 +456,7 @@ class ConfigDialog(QDialog):
         if file_path:
             self.service_account_path_edit.setText(file_path)
 
-    def load_configuration(self):
+    def load_configuration(self) -> None:
         """Load current configuration into UI."""
         try:
             config = self.config_manager.get_config()
@@ -540,7 +540,7 @@ class ConfigDialog(QDialog):
                 self, "Configuration Error", f"Failed to load configuration: {e}"
             )
 
-    def save_configuration(self):
+    def save_configuration(self) -> None:
         """Save configuration from UI."""
         try:
             # Update Jira configuration
@@ -594,14 +594,14 @@ class ConfigDialog(QDialog):
             self.logger.error(f"Failed to save configuration: {e}")
             raise ConfigurationError(f"Failed to save configuration: {e}")
 
-    def test_connections(self):
+    def test_connections(self) -> None:
         """Test all API connections."""
         # This would implement actual connection testing
         QMessageBox.information(
             self, "Connection Test", "Connection testing feature coming soon."
         )
 
-    def apply_configuration(self):
+    def apply_configuration(self) -> None:
         """Apply configuration without closing dialog."""
         try:
             self.save_configuration()
@@ -611,7 +611,7 @@ class ConfigDialog(QDialog):
         except Exception as e:
             QMessageBox.critical(self, "Configuration Error", str(e))
 
-    def accept_configuration(self):
+    def accept_configuration(self) -> None:
         """Accept and save configuration."""
         try:
             self.save_configuration()
@@ -661,14 +661,6 @@ class ConfigDialog(QDialog):
                                 self,
                                 "Validation Error",
                                 "Red Hat Jira username must be at least 3 characters.",
-                            )
-                            return False
-                        username_pattern = r"^[a-zA-Z0-9._-]+$"
-                        if not re.match(username_pattern, jira_username.strip()):
-                            QMessageBox.warning(
-                                self,
-                                "Validation Error",
-                                "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens.",
                             )
                             return False
                 except Exception:

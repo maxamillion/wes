@@ -32,9 +32,9 @@ class JiraValidator(BaseValidator):
         if not self._is_valid_url(url):
             return ValidationResult(
                 is_valid=False,
-                message="Invalid URL format. Must start with http:// or https://",
-                service=self.service_type,
-                details={"field": "url", "value": url},
+                message="Invalid URL format",
+                service=ServiceType.JIRA,
+                details={"field": "url", "value": url}
             )
 
         # Validate username format for cloud
@@ -43,17 +43,17 @@ class JiraValidator(BaseValidator):
             if "@" not in username:
                 return ValidationResult(
                     is_valid=False,
-                    message="Cloud Jira requires email address as username",
-                    service=self.service_type,
-                    details={"field": "username", "jira_type": "cloud"},
+                    message="Cloud Jira requires email address for username",
+                    service=ServiceType.JIRA,
+                    details={"field": "username", "value": username}
                 )
 
         # All validations passed
         return ValidationResult(
             is_valid=True,
             message="Jira configuration is valid",
-            service=self.service_type,
-            details={"jira_type": jira_type.value},
+            service=ServiceType.JIRA,
+            details={"validated_fields": ["url", "username", "api_token"]}
         )
 
     def validate_connection(self, config: Dict[str, Any]) -> Tuple[bool, str]:
@@ -174,8 +174,8 @@ class GeminiValidator(BaseValidator):
             return ValidationResult(
                 is_valid=False,
                 message=message,
-                service=self.service_type,
-                details={"field": "api_key"},
+                service=ServiceType.GEMINI,
+                details={"field": "api_key", "value": "***"}
             )
 
         # Validate model selection
@@ -184,8 +184,8 @@ class GeminiValidator(BaseValidator):
             return ValidationResult(
                 is_valid=False,
                 message="Model selection is required",
-                service=self.service_type,
-                details={"field": "model"},
+                service=ServiceType.GEMINI,
+                details={"field": "model", "value": model}
             )
 
         # Validate model name
@@ -193,9 +193,9 @@ class GeminiValidator(BaseValidator):
         if model not in valid_models:
             return ValidationResult(
                 is_valid=False,
-                message=f"Invalid model. Must be one of: {', '.join(valid_models)}",
-                service=self.service_type,
-                details={"field": "model", "value": model},
+                message=f"Invalid model: {model}. Must be one of {valid_models}",
+                service=ServiceType.GEMINI,
+                details={"field": "model", "value": model, "valid_models": valid_models}
             )
 
         # Validate temperature
@@ -204,15 +204,15 @@ class GeminiValidator(BaseValidator):
             return ValidationResult(
                 is_valid=False,
                 message="Temperature must be between 0 and 1",
-                service=self.service_type,
-                details={"field": "temperature", "value": temp},
+                service=ServiceType.GEMINI,
+                details={"field": "temperature", "value": temp}
             )
 
         return ValidationResult(
             is_valid=True,
             message="Gemini configuration is valid",
-            service=self.service_type,
-            details={"model": model},
+            service=ServiceType.GEMINI,
+            details={"validated_fields": ["api_key", "model", "temperature"]}
         )
 
     def validate_connection(self, config: Dict[str, Any]) -> Tuple[bool, str]:

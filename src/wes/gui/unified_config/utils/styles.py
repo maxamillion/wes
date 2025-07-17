@@ -62,57 +62,60 @@ class StyleManager:
         if variant == "primary":
             return f"""
                 QPushButton {{
-                    background-color: {cls.COLORS['primary']};
+                    background-color: {cls.COLORS["primary"]};
                     color: white;
-                    font-weight: bold;
-                    padding: 5px 15px;
-                    border-radius: 3px;
                     border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-weight: bold;
                 }}
                 QPushButton:hover {{
-                    background-color: {cls.COLORS['primary_hover']};
+                    background-color: {cls.COLORS["primary_hover"]};
                 }}
                 QPushButton:pressed {{
-                    background-color: {cls.COLORS['primary_pressed']};
-                }}
-                QPushButton:disabled {{
-                    background-color: {cls.COLORS['text_muted']};
-                    color: {cls.COLORS['background_secondary']};
+                    background-color: {cls.COLORS["primary_pressed"]};
                 }}
             """
         elif variant == "secondary":
             return f"""
                 QPushButton {{
-                    background-color: {cls.COLORS['background']};
-                    color: {cls.COLORS['text_primary']};
-                    padding: 5px 15px;
-                    border-radius: 3px;
-                    border: 1px solid {cls.COLORS['border']};
+                    background-color: {cls.COLORS["background_secondary"]};
+                    color: {cls.COLORS["text_primary"]};
+                    border: 1px solid {cls.COLORS["border"]};
+                    border-radius: 4px;
+                    padding: 8px 16px;
                 }}
                 QPushButton:hover {{
-                    background-color: {cls.COLORS['background_secondary']};
-                }}
-                QPushButton:pressed {{
-                    background-color: {cls.COLORS['border_light']};
+                    background-color: {cls.COLORS["border_light"]};
                 }}
             """
         elif variant == "danger":
             return f"""
                 QPushButton {{
-                    background-color: {cls.COLORS['danger']};
+                    background-color: {cls.COLORS["danger"]};
                     color: white;
-                    padding: 5px 15px;
-                    border-radius: 3px;
                     border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-weight: bold;
                 }}
                 QPushButton:hover {{
                     background-color: #c82333;
                 }}
-                QPushButton:pressed {{
-                    background-color: #bd2130;
+            """
+        else:
+            return """
+                QPushButton {{
+                    background-color: #f8f9fa;
+                    color: #495057;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                }}
+                QPushButton:hover {{
+                    background-color: #e9ecef;
                 }}
             """
-        return ""
 
     @classmethod
     def get_label_style(cls, variant: str = "default") -> str:
@@ -149,7 +152,7 @@ class StyleManager:
         base_style = f"""
             QGroupBox {{
                 font-weight: bold;
-                border: 1px solid {cls.COLORS['border']};
+                border: 1px solid {cls.COLORS["border"]};
                 border-radius: 4px;
                 margin-top: 12px;
                 padding-top: 16px;
@@ -180,34 +183,23 @@ class StyleManager:
         """
         return f"""
             QScrollArea {{
-                border: none;
-                background-color: transparent;
+                border: 1px solid {cls.COLORS["border"]};
+                border-radius: 4px;
+                background-color: {cls.COLORS["background"]};
             }}
             QScrollBar:vertical {{
+                background-color: {cls.COLORS["background_secondary"]};
                 width: 12px;
-                background: {cls.COLORS['background_secondary']};
+                border: none;
                 border-radius: 6px;
             }}
             QScrollBar::handle:vertical {{
-                background: {cls.COLORS['border']};
+                background-color: {cls.COLORS["border"]};
                 border-radius: 6px;
                 min-height: 20px;
             }}
             QScrollBar::handle:vertical:hover {{
-                background: {cls.COLORS['text_muted']};
-            }}
-            QScrollBar:horizontal {{
-                height: 12px;
-                background: {cls.COLORS['background_secondary']};
-                border-radius: 6px;
-            }}
-            QScrollBar::handle:horizontal {{
-                background: {cls.COLORS['border']};
-                border-radius: 6px;
-                min-width: 20px;
-            }}
-            QScrollBar::handle:horizontal:hover {{
-                background: {cls.COLORS['text_muted']};
+                background-color: {cls.COLORS["text_muted"]};
             }}
         """
 
@@ -219,32 +211,15 @@ class StyleManager:
             QString: CSS stylesheet for compact mode.
         """
         return f"""
-            QLabel {{ 
-                font-size: {cls.FONT_SIZES['small']}; 
-                padding: 1px;
-            }}
-            QLineEdit {{ 
-                padding: 2px;
-                font-size: {cls.FONT_SIZES['small']};
-            }}
-            QPushButton {{ 
-                padding: 4px 8px;
-                font-size: {cls.FONT_SIZES['small']};
+            QWidget {{
+                font-size: {cls.FONT_SIZES["small"]};
             }}
             QGroupBox {{
                 margin-top: 8px;
-                padding-top: 8px;
+                padding-top: 12px;
             }}
-            QGroupBox::title {{
-                font-size: {cls.FONT_SIZES['normal']};
-            }}
-            QCheckBox, QRadioButton {{
-                font-size: {cls.FONT_SIZES['small']};
-                spacing: 3px;
-            }}
-            QSpinBox, QComboBox {{
-                padding: 2px;
-                font-size: {cls.FONT_SIZES['small']};
+            QPushButton {{
+                padding: 6px 12px;
             }}
         """
 
@@ -257,16 +232,16 @@ class StyleManager:
         """
         return f"""
             #configHeader {{
-                background-color: {cls.COLORS['background_secondary']};
-                border-bottom: 1px solid {cls.COLORS['border']};
+                background-color: {cls.COLORS["background_secondary"]};
+                border-bottom: 1px solid {cls.COLORS["border"]};
             }}
             #modeLabel {{
-                font-size: {cls.FONT_SIZES['large']};
+                font-size: {cls.FONT_SIZES["large"]};
                 font-weight: bold;
             }}
             #buttonArea {{
-                background-color: {cls.COLORS['background_secondary']};
-                border-top: 1px solid {cls.COLORS['border']};
+                background-color: {cls.COLORS["background_secondary"]};
+                border-top: 1px solid {cls.COLORS["border"]};
             }}
         """
 

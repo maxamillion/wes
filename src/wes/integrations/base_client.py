@@ -21,7 +21,7 @@ from ..utils.logging_config import get_logger, get_security_logger
 class RateLimiter:
     """Rate limiter for API requests with backoff strategy."""
 
-    def __init__(self, max_requests: int = 100, time_window: int = 60):
+    def __init__(self, max_requests: int = 100, time_window: int = 60) -> None:
         self.max_requests = max_requests
         self.time_window = time_window
         self.requests = []
@@ -194,7 +194,7 @@ class BaseIntegrationClient(ABC):
     def _get_default_headers(self) -> Dict[str, str]:
         """Get default headers for requests."""
         return {
-            "User-Agent": "WES-ExecutiveSummaryTool/1.0",
+            "User-Agent": "WES/1.0",
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
@@ -254,7 +254,7 @@ class BaseIntegrationClient(ABC):
                     if response.status >= 400:
                         error_text = await response.text()
                         raise IntegrationError(
-                            f"Request failed with status {response.status}: {error_text}"
+                            f"HTTP {response.status}: {error_text}"
                         )
 
                     # Parse response
@@ -364,25 +364,23 @@ class BaseIntegrationClient(ABC):
 
             return {
                 "healthy": is_healthy,
+                "timestamp": datetime.utcnow().isoformat(),
                 "service": self.__class__.__name__,
-                "metrics": self.get_metrics(),
-                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
             return {
                 "healthy": False,
-                "service": self.__class__.__name__,
                 "error": str(e),
-                "metrics": self.get_metrics(),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.utcnow().isoformat(),
+                "service": self.__class__.__name__,
             }
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Context manager exit."""
         _ = exc_type, exc_val, exc_tb  # Unused but required by protocol
         asyncio.create_task(self.close())

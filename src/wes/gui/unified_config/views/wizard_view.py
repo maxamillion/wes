@@ -25,13 +25,13 @@ from wes.gui.unified_config.types import ServiceType
 class WizardPage(QWidget):
     """Base class for wizard pages."""
 
-    def __init__(self, title: str, description: str, parent=None):
+    def __init__(self, title: str, description: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.title = title
         self.description = description
         self._init_ui()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize base UI for wizard pages."""
         layout = QVBoxLayout(self)
 
@@ -55,7 +55,7 @@ class WizardPage(QWidget):
 
         layout.addStretch()
 
-    def _add_content(self, layout: QVBoxLayout):
+    def _add_content(self, layout: QVBoxLayout) -> None:
         """Add page-specific content. Override in subclasses."""
         pass
 
@@ -67,7 +67,7 @@ class WizardPage(QWidget):
 class WelcomePage(WizardPage):
     """Welcome page for the wizard."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget]=None) -> None:
         super().__init__(
             "Welcome to WES Setup",
             "Let's configure WES to create executive summaries from your Jira data. "
@@ -76,7 +76,7 @@ class WelcomePage(WizardPage):
             parent,
         )
 
-    def _add_content(self, layout: QVBoxLayout):
+    def _add_content(self, layout: QVBoxLayout) -> None:
         """Add welcome page content."""
         # Feature list
         features = QLabel(
@@ -95,7 +95,7 @@ class WelcomePage(WizardPage):
 class SummaryPage(WizardPage):
     """Summary page showing configuration status."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget]=None) -> None:
         super().__init__(
             "Setup Complete!",
             "Your configuration is ready. Here's what we've set up:",
@@ -103,7 +103,7 @@ class SummaryPage(WizardPage):
         )
         self.status_labels = {}
 
-    def _add_content(self, layout: QVBoxLayout):
+    def _add_content(self, layout: QVBoxLayout) -> None:
         """Add summary content."""
         # Status for each service
         services = [
@@ -139,7 +139,7 @@ class SummaryPage(WizardPage):
         next_steps.setStyleSheet("margin-top: 20px;")
         layout.addWidget(next_steps)
 
-    def update_status(self, jira: bool, gemini: bool):
+    def update_status(self, jira: bool, gemini: bool) -> None:
         """Update service status display."""
 
         def format_status(configured: bool):
@@ -158,17 +158,17 @@ class WizardView(QWidget):
     """
 
     # Signals
-    wizard_complete = Signal()
+    wizard_complete = Signal()  # type: ignore[misc]
     page_changed = Signal(int)  # page index
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
         self.pages = []
         self.current_page = 0
         self._init_ui()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         layout = QVBoxLayout(self)
 
@@ -211,7 +211,7 @@ class WizardView(QWidget):
         # Initialize first page
         self._update_navigation()
 
-    def _create_pages(self):
+    def _create_pages(self) -> None:
         """Create wizard pages."""
         # Welcome page
         welcome = WelcomePage()
@@ -236,7 +236,7 @@ class WizardView(QWidget):
         # Set progress bar range
         self.progress_bar.setRange(0, len(self.pages) - 1)
 
-    def _update_navigation(self):
+    def _update_navigation(self) -> None:
         """Update navigation buttons and progress."""
         # Update progress bar
         self.progress_bar.setValue(self.current_page)
@@ -261,13 +261,13 @@ class WizardView(QWidget):
         # Emit page changed signal
         self.page_changed.emit(self.current_page)
 
-    def _go_back(self):
+    def _go_back(self) -> None:
         """Go to previous page."""
         if self.current_page > 0:
             self.current_page -= 1
             self._update_navigation()
 
-    def _go_next(self):
+    def _go_next(self) -> None:
         """Go to next page or finish."""
         # Validate current page
         current_widget = self.pages[self.current_page]
@@ -290,7 +290,7 @@ class WizardView(QWidget):
             self.current_page += 1
             self._update_navigation()
 
-    def _update_summary(self):
+    def _update_summary(self) -> None:
         """Update the summary page with configuration status."""
         # Check each service configuration
         jira_valid = self.jira_page.validate()["is_valid"]
@@ -315,7 +315,8 @@ class WizardView(QWidget):
         if 0 <= page_index < len(self.pages):
             page = self.pages[page_index]
             return {
-                "title": getattr(page, "title", "Configuration"),
-                "description": getattr(page, "description", ""),
+                "title": page.page_title,
+                "description": page.page_description,
+                "icon": page.page_icon
             }
         return None

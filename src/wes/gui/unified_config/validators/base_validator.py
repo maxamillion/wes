@@ -9,7 +9,7 @@ from wes.gui.unified_config.types import ServiceType, ValidationResult
 class BaseValidator(ABC):
     """Abstract base class for service validators."""
 
-    service_type: ServiceType = None
+    service_type: Optional[ServiceType] = None
 
     @abstractmethod
     def validate_config(self, config: Dict[str, Any]) -> ValidationResult:
@@ -70,8 +70,8 @@ class BaseValidator(ABC):
             if field not in config or not config[field]:
                 return ValidationResult(
                     is_valid=False,
-                    message=f"{field} is required",
+                    message=f"Missing required field: {field}",
                     service=self.service_type,
-                    details={"field": field},
+                    details={"missing_field": field}
                 )
         return None

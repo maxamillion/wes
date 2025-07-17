@@ -1,6 +1,6 @@
 """Real-time validation indicator component."""
 
-from typing import Optional
+from typing import Callable, Optional, Tuple
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
@@ -22,14 +22,14 @@ class ValidationIndicator(QWidget):
 
     state_changed = Signal(str)  # Emits new state
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget]=None) -> None:
         super().__init__(parent)
         self.current_state = self.State.IDLE
         self._message = ""
         self._init_ui()
         self._setup_animations()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -50,13 +50,13 @@ class ValidationIndicator(QWidget):
         # Set initial state
         self._update_display()
 
-    def _setup_animations(self):
+    def _setup_animations(self) -> None:
         """Setup fade animations for smooth transitions."""
         self.fade_animation = QPropertyAnimation(self, b"windowOpacity")
         self.fade_animation.setDuration(200)
         self.fade_animation.setEasingCurve(QEasingCurve.InOutQuad)
 
-    def set_state(self, state: str, message: str = "", show_text: bool = False):
+    def set_state(self, state: str, message: str = "", show_text: bool = False) -> None:
         """
         Set the validation state.
 
@@ -82,7 +82,7 @@ class ValidationIndicator(QWidget):
         self._animate_transition()
         self.state_changed.emit(state)
 
-    def _update_display(self):
+    def _update_display(self) -> None:
         """Update the visual display based on current state."""
         styles = {
             self.State.IDLE: {"icon": "", "color": "transparent", "tooltip": ""},
@@ -123,7 +123,7 @@ class ValidationIndicator(QWidget):
         self.icon_label.setToolTip(tooltip)
         self.text_label.setToolTip(tooltip)
 
-    def _animate_transition(self):
+    def _animate_transition(self) -> None:
         """Animate the state transition."""
         # Quick fade effect
         self.fade_animation.setStartValue(0.7)
@@ -139,7 +139,7 @@ class ValidationIndicator(QWidget):
         else:
             self._stop_spinning()
 
-    def _start_spinning(self):
+    def _start_spinning(self) -> None:
         """Start spinning animation for validating state."""
         if not hasattr(self, "spin_timer"):
             self.spin_timer = QTimer()
@@ -148,35 +148,35 @@ class ValidationIndicator(QWidget):
         self.spin_angle = 0
         self.spin_timer.start(100)  # Update every 100ms
 
-    def _stop_spinning(self):
+    def _stop_spinning(self) -> None:
         """Stop spinning animation."""
         if hasattr(self, "spin_timer"):
             self.spin_timer.stop()
 
-    def _rotate_icon(self):
+    def _rotate_icon(self) -> None:
         """Rotate the validating icon."""
         # Simple rotation effect using Unicode characters
         spin_chars = ["⟳", "⟲", "⟳", "⟲"]
         self.spin_angle = (self.spin_angle + 1) % len(spin_chars)
         self.icon_label.setText(spin_chars[self.spin_angle])
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear the validation state."""
         self.set_state(self.State.IDLE)
 
-    def set_validating(self, message: str = "Validating..."):
+    def set_validating(self, message: str = "Validating...") -> None:
         """Set validating state."""
         self.set_state(self.State.VALIDATING, message)
 
-    def set_valid(self, message: str = "Valid"):
+    def set_valid(self, message: str = "Valid") -> None:
         """Set valid state."""
         self.set_state(self.State.VALID, message)
 
-    def set_invalid(self, message: str = "Invalid"):
+    def set_invalid(self, message: str = "Invalid") -> None:
         """Set invalid state."""
         self.set_state(self.State.INVALID, message)
 
-    def set_warning(self, message: str = "Warning"):
+    def set_warning(self, message: str = "Warning") -> None:
         """Set warning state."""
         self.set_state(self.State.WARNING, message)
 
@@ -186,17 +186,17 @@ class ValidatedLineEdit(QWidget):
     Line edit with integrated validation indicator.
     """
 
-    text_changed = Signal(str)
+    text_changed = Signal(str)  # type: ignore[misc]
     validation_changed = Signal(bool)  # valid/invalid
 
-    def __init__(self, placeholder: str = "", password: bool = False, parent=None):
+    def __init__(self, placeholder: str = "", password: bool = False, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.validator_func = None
+        self.validator_func: Optional[Callable[[str], Tuple[bool, str]]] = None
         self.validation_delay = 500  # ms
         self._init_ui(placeholder, password)
         self._setup_validation()
 
-    def _init_ui(self, placeholder: str, password: bool):
+    def _init_ui(self, placeholder: str, password: bool) -> None:
         """Initialize the UI."""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -208,7 +208,7 @@ class ValidatedLineEdit(QWidget):
         self.line_edit = QLineEdit()
         self.line_edit.setPlaceholderText(placeholder)
         if password:
-            self.line_edit.setEchoMode(QLineEdit.Password)
+            self.line_edit.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.line_edit)
 
         # Validation indicator
@@ -218,13 +218,13 @@ class ValidatedLineEdit(QWidget):
         # Connect signals
         self.line_edit.textChanged.connect(self._on_text_changed)
 
-    def _setup_validation(self):
+    def _setup_validation(self) -> None:
         """Setup validation timer."""
         self.validation_timer = QTimer()
         self.validation_timer.setSingleShot(True)
         self.validation_timer.timeout.connect(self._perform_validation)
 
-    def _on_text_changed(self, text: str):
+    def _on_text_changed(self, text: str) -> None:
         """Handle text change."""
         self.text_changed.emit(text)
 
@@ -240,7 +240,7 @@ class ValidatedLineEdit(QWidget):
             # Clear validation if no text
             self.indicator.clear()
 
-    def _perform_validation(self):
+    def _perform_validation(self) -> None:
         """Perform the validation."""
         if not self.validator_func:
             return
@@ -265,7 +265,7 @@ class ValidatedLineEdit(QWidget):
             self.indicator.set_invalid(f"Validation error: {str(e)}")
             self.validation_changed.emit(False)
 
-    def set_validator(self, validator_func):
+    def set_validator(self, validator_func: Callable[[str], Tuple[bool, str]]) -> None:
         """
         Set the validation function.
 
@@ -282,15 +282,15 @@ class ValidatedLineEdit(QWidget):
         """Get the current text."""
         return self.line_edit.text()
 
-    def setText(self, text: str):
+    def setText(self, text: str) -> None:
         """Set the text."""
         self.line_edit.setText(text)
 
-    def setPlaceholderText(self, text: str):
+    def setPlaceholderText(self, text: str) -> None:
         """Set placeholder text."""
         self.line_edit.setPlaceholderText(text)
 
-    def setFocus(self):
+    def setFocus(self) -> None:
         """Set focus to the line edit."""
         self.line_edit.setFocus()
 

@@ -40,7 +40,7 @@ class WorkflowResult:
     activity_count: int = 0
     execution_time: float = 0.0
     error_message: Optional[str] = None
-    stages_completed: List[str] = None
+    stages_completed: Optional[List[str]] = None
 
     def __post_init__(self):
         if self.stages_completed is None:
@@ -76,7 +76,7 @@ class WorkflowOrchestrator:
         ```
     """
 
-    def __init__(self, config_manager: ConfigManager):
+    def __init__(self, config_manager: ConfigManager) -> None:
         self.config_manager = config_manager
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
@@ -85,11 +85,11 @@ class WorkflowOrchestrator:
         self.service_factory = ServiceFactory(config_manager)
 
         # Clients (will be created by factory)
-        self.jira_client = None
-        self.gemini_client = None
+        self.jira_client: Optional[Any] = None
+        self.gemini_client: Optional[Any] = None
 
         # Workflow state
-        self.is_cancelled = False
+        self.is_cancelled: bool = False
         self.progress_callback: Optional[Callable[[str, int], None]] = None
 
         # Workflow stages
@@ -102,7 +102,7 @@ class WorkflowOrchestrator:
         ]
         self.current_stage = 0
 
-    def set_progress_callback(self, callback: Callable[[str, int], None]):
+    def set_progress_callback(self, callback: Callable[[str, int], None]) -> None:
         """Set callback for progress updates.
 
         The callback will be called with progress messages and percentage.
@@ -112,7 +112,7 @@ class WorkflowOrchestrator:
         """
         self.progress_callback = callback
 
-    def _update_progress(self, message: str, percentage: int = None):
+    def _update_progress(self, message: str, percentage: Optional[int] = None) -> None:
         """Update progress if callback is set.
 
         Args:
@@ -124,10 +124,14 @@ class WorkflowOrchestrator:
                 percentage = int((self.current_stage / len(self.stages)) * 100)
             self.progress_callback(message, percentage)
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the workflow execution."""
         self.is_cancelled = True
         self.logger.info("Workflow cancellation requested")
+    
+    def _check_cancelled(self) -> bool:
+        """Check if the workflow has been cancelled."""
+        return self.is_cancelled
 
     async def execute_manager_team_workflow(
         self,
@@ -151,7 +155,7 @@ class WorkflowOrchestrator:
             WorkflowResult containing status, summary data, and execution details
         """
         return await self.execute_workflow(
-            users=[manager_identifier],  # Fallback in case LDAP is not available
+            users=[],  # Will be populated by LDAP
             start_date=start_date,
             end_date=end_date,
             custom_prompt=custom_prompt,
@@ -200,12 +204,12 @@ class WorkflowOrchestrator:
 
             # Stage 1: Validate configuration
             await self._execute_stage("validate_configuration", result)
-            if self.is_cancelled:
+            if self._check_cancelled():
                 return self._handle_cancellation(result)
 
             # Stage 2: Initialize clients
             await self._execute_stage("initialize_clients", result)
-            if self.is_cancelled:
+            if self._check_cancelled():
                 return self._handle_cancellation(result)
 
             # Stage 3: Fetch Jira data
@@ -223,7 +227,7 @@ class WorkflowOrchestrator:
                 activity_data = await self._execute_stage(
                     "fetch_jira_data", result, users, start_date, end_date
                 )
-            if self.is_cancelled:
+            if self._check_cancelled():
                 return self._handle_cancellation(result)
 
             result.activity_count = len(activity_data)
@@ -232,7 +236,7 @@ class WorkflowOrchestrator:
             summary = await self._execute_stage(
                 "generate_summary", result, activity_data, custom_prompt
             )
-            if self.is_cancelled:
+            if self._check_cancelled():
                 return self._handle_cancellation(result)
 
             result.summary_content = summary.get("content", "")
@@ -307,7 +311,8 @@ class WorkflowOrchestrator:
             method = getattr(self, f"_stage_{stage_name}")
             stage_result = await method(*args, **kwargs)
 
-            result.stages_completed.append(stage_name)
+            if result.stages_completed is not None:
+                result.stages_completed.append(stage_name)
             self.logger.info(f"Stage {stage_number} completed: {stage_name}")
 
             return stage_result
@@ -434,7 +439,9 @@ class WorkflowOrchestrator:
                 )
                 # Fall back to using manager identifier as single user
                 return await self._stage_fetch_jira_data(
-                    [manager_identifier], start_date, end_date
+                    users=[manager_identifier],
+                    start_date=start_date,
+                    end_date=end_date
                 )
 
             # Use LDAP to get full team
@@ -478,25 +485,11 @@ class WorkflowOrchestrator:
                 self.logger.error(
                     "No valid activities to summarize - all had processing errors"
                 )
-                return {
-                    "content": (
-                        "# Executive Summary\n\n"
-                        "## Data Processing Error\n\n"
-                        "Unfortunately, we were unable to retrieve valid Jira data for the specified period. "
-                        "All issues encountered processing errors.\n\n"
-                        "### Recommended Actions:\n"
-                        "1. Verify Jira credentials and permissions\n"
-                        "2. Check that the specified users have accessible issues\n"
-                        "3. Ensure the date range contains valid data\n"
-                        "4. Review the application logs for specific error details\n\n"
-                        "Please contact your system administrator if this issue persists."
-                    ),
-                    "model": "error_handler",
-                    "usage": {},
-                    "generated_at": datetime.now().timestamp(),
-                    "safety_ratings": [],
-                    "error": "No valid Jira data available",
-                }
+                return WorkflowResult(
+                    status=WorkflowStatus.FAILED,
+                    summary_data=None,
+                    summary_content=None
+                )
 
             ai_config = self.config_manager.get_ai_config()
 
@@ -531,7 +524,7 @@ class WorkflowOrchestrator:
         self.security_logger.log_security_event(
             "workflow_cancelled",
             stage=self.current_stage,
-            stages_completed=len(result.stages_completed),
+            stages_completed=len(result.stages_completed) if result.stages_completed else 0,
         )
 
         return result

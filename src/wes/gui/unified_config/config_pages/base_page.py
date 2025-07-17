@@ -31,18 +31,18 @@ class ConfigPageBase(QWidget):
     """Base class for configuration pages with common functionality."""
 
     # Signals
-    config_changed = Signal(dict)
-    validation_complete = Signal(ValidationResult)
-    test_connection_requested = Signal()
+    config_changed = Signal(dict)  # type: ignore[misc]
+    validation_complete = Signal(ValidationResult)  # type: ignore[misc]
+    test_connection_requested = Signal()  # type: ignore[misc]
     page_complete = Signal(bool)  # Emitted when page validation state changes
 
     # Class attributes to be defined by subclasses
-    service_type: ServiceType = None
+    service_type: Optional[ServiceType] = None
     page_title: str = ""
     page_icon: str = ""
     page_description: str = ""
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
         self._is_dirty = False
@@ -65,7 +65,7 @@ class ConfigPageBase(QWidget):
         # Make the page responsive
         self.responsive_layout.make_responsive()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the base UI structure."""
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
@@ -76,9 +76,10 @@ class ConfigPageBase(QWidget):
         # Icon
         if self.page_icon:
             icon_label = QLabel()
-            icon = self.style().standardIcon(
-                getattr(QStyle, self.page_icon, QStyle.SP_ComputerIcon)
-            )
+            icon_type = getattr(QStyle, self.page_icon, None)
+            if icon_type is None:
+                icon_type = QStyle.SP_ComputerIcon
+            icon = self.style().standardIcon(icon_type)
             icon_label.setPixmap(icon.pixmap(32, 32))
             header_layout.addWidget(icon_label)
 
@@ -111,11 +112,11 @@ class ConfigPageBase(QWidget):
         # layout.addStretch()  # Removed to allow proper scrolling
 
     @abstractmethod
-    def _setup_page_ui(self, parent_layout: QVBoxLayout):
+    def _setup_page_ui(self, parent_layout: QVBoxLayout) -> None:
         """Setup page-specific UI. Must be implemented by subclasses."""
         pass
 
-    def _load_current_config(self):
+    def _load_current_config(self) -> None:
         """Load current configuration into UI."""
         config = self.config_manager.config
         self.load_config(config)
@@ -148,12 +149,15 @@ class ConfigPageBase(QWidget):
         # Show connection test dialog
         self._show_connection_test_dialog()
 
-    def _show_connection_test_dialog(self):
+    def _show_connection_test_dialog(self) -> None:
         """Show unified connection test dialog."""
         from wes.gui.unified_config.components.connection_tester import (
             ConnectionTestDialog,
         )
 
+        if self.service_type is None:
+            return
+            
         config = self.save_config()
         dialog = ConnectionTestDialog(
             self.service_type, config.get(self.service_type.value, {}), self
@@ -161,7 +165,7 @@ class ConfigPageBase(QWidget):
         dialog.test_complete.connect(self._handle_test_result)
         dialog.exec()
 
-    def _handle_test_result(self, result: Dict[str, Any]):
+    def _handle_test_result(self, result: Dict[str, Any]) -> None:
         """Handle connection test result."""
         validation_result = ValidationResult(
             is_valid=result["success"],
@@ -175,7 +179,7 @@ class ConfigPageBase(QWidget):
         if hasattr(self, "connection_status_label"):
             self._update_connection_status(result["success"], result["message"])
 
-    def _update_connection_status(self, success: bool, message: str):
+    def _update_connection_status(self, success: bool, message: str) -> None:
         """Update connection status display."""
         if success:
             self.connection_status_label.setText("✓ Connected")
@@ -203,7 +207,7 @@ class ConfigPageBase(QWidget):
         """Check if configuration has unsaved changes."""
         return self._is_dirty
 
-    def mark_dirty(self):
+    def mark_dirty(self) -> None:
         """Mark configuration as having unsaved changes."""
         if not self._is_dirty:
             self._is_dirty = True
@@ -216,16 +220,16 @@ class ConfigPageBase(QWidget):
                 ConfigConstants.VALIDATION_DELAY_MS
             )  # Validate after delay
 
-    def mark_clean(self):
+    def mark_clean(self) -> None:
         """Mark configuration as saved."""
         self._is_dirty = False
 
-    def _connect_change_tracking(self):
+    def _connect_change_tracking(self) -> None:
         """Connect change tracking to form fields."""
         # This should be called by subclasses after creating their widgets
         pass
 
-    def _perform_validation(self):
+    def _perform_validation(self) -> None:
         """Perform validation and emit result."""
         result = self.validate()
         self.page_complete.emit(result["is_valid"])
@@ -240,7 +244,7 @@ class ConfigPageBase(QWidget):
         input_widget = QLineEdit()
 
         if password:
-            input_widget.setEchoMode(QLineEdit.Password)
+            input_widget.setEchoMode(QLineEdit.EchoMode.Password)
 
         # Connect change tracking
         input_widget.textChanged.connect(self.mark_dirty)

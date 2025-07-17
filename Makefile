@@ -2,7 +2,7 @@
 # Cross-platform build automation using UV and PyInstaller
 
 .PHONY: help install install-dev clean test test-unit test-integration test-security test-e2e
-.PHONY: lint format typecheck security-scan coverage build build-all build-linux build-windows build-macos
+.PHONY: lint format typecheck mypy security-scan coverage build build-all build-linux build-windows build-macos
 .PHONY: dev run debug release clean-build clean-dist clean-cache docker-build docker-run
 .PHONY: docs docs-serve pre-commit setup-hooks validate-env
 
@@ -152,6 +152,8 @@ format: ## Format code
 typecheck: ## Run type checking
 	@echo "Running type checking..."
 	$(UV) run mypy $(SRC_DIR)/wes $(VERBOSE_FLAG)
+
+mypy: typecheck ## Alias for typecheck - run mypy type checking
 
 # Security targets
 security-scan: ## Run security scans

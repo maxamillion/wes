@@ -38,7 +38,7 @@ class OperationMetrics:
     memory_used: Optional[float] = None
     cpu_percent: Optional[float] = None
 
-    def complete(self, success: bool = True, error: Optional[str] = None):
+    def complete(self, success: bool = True, error: Optional[str] = None) -> None:
         """Mark operation as complete."""
         self.end_time = time.time()
         self.duration = self.end_time - self.start_time
@@ -54,7 +54,7 @@ class OperationMetrics:
 class PerformanceMonitor:
     """Monitor and track application performance metrics."""
 
-    def __init__(self, history_size: int = 1000):
+    def __init__(self, history_size: int = 1000) -> None:
         self.logger = get_logger(__name__)
         self.history_size = history_size
 
@@ -81,7 +81,7 @@ class PerformanceMonitor:
         # Callbacks for alerts
         self._alert_callbacks: List[Callable] = []
 
-    def start_resource_monitoring(self, interval: float = 5.0):
+    def start_resource_monitoring(self, interval: float = 5.0) -> None:
         """Start background resource monitoring."""
         if self._resource_monitor_active:
             return
@@ -93,14 +93,14 @@ class PerformanceMonitor:
         self._monitor_thread.start()
         self.logger.info(f"Started resource monitoring (interval: {interval}s)")
 
-    def stop_resource_monitoring(self):
+    def stop_resource_monitoring(self) -> None:
         """Stop background resource monitoring."""
         self._resource_monitor_active = False
         if self._monitor_thread:
             self._monitor_thread.join(timeout=5)
         self.logger.info("Stopped resource monitoring")
 
-    def _monitor_resources(self, interval: float):
+    def _monitor_resources(self, interval: float) -> None:
         """Background thread for resource monitoring."""
         process = psutil.Process()
 
@@ -138,7 +138,7 @@ class PerformanceMonitor:
         metric = OperationMetrics(operation_name=operation_name, start_time=time.time())
         return metric
 
-    def complete_operation(self, metric: OperationMetrics):
+    def complete_operation(self, metric: OperationMetrics) -> None:
         """Complete tracking an operation."""
         metric.complete()
         self._operations.append(metric)
@@ -171,11 +171,11 @@ class PerformanceMonitor:
         metric = PerformanceMetric(name=name, value=value, unit=unit, tags=tags or {})
         self._metrics.append(metric)
 
-    def add_alert_callback(self, callback: Callable[[str, str], None]):
+    def add_alert_callback(self, callback: Callable[[str, str], None]) -> None:
         """Add callback for performance alerts."""
         self._alert_callbacks.append(callback)
 
-    def _trigger_alert(self, alert_type: str, message: str):
+    def _trigger_alert(self, alert_type: str, message: str) -> None:
         """Trigger a performance alert."""
         self.logger.warning(f"Performance alert [{alert_type}]: {message}")
 
@@ -192,15 +192,7 @@ class PerformanceMonitor:
         if operation_name:
             stats = self._operation_stats.get(operation_name, {})
             if stats and stats["count"] > 0:
-                return {
-                    "operation": operation_name,
-                    "count": stats["count"],
-                    "average_duration": stats["total_duration"] / stats["count"],
-                    "total_duration": stats["total_duration"],
-                    "error_count": stats["errors"],
-                    "error_rate": stats["errors"] / stats["count"],
-                }
-            return {}
+                return {}
 
         # Return all stats
         all_stats = {}
@@ -229,20 +221,10 @@ class PerformanceMonitor:
         latest = self._resource_history[-1]
 
         return {
-            "current": {
-                "memory_mb": latest["memory_mb"],
-                "cpu_percent": latest["cpu_percent"],
-                "num_threads": latest["num_threads"],
-                "open_files": latest["open_files"],
-            },
-            "average": {
-                "memory_mb": total_memory / count,
-                "cpu_percent": total_cpu / count,
-            },
-            "peak": {
-                "memory_mb": max(r["memory_mb"] for r in self._resource_history),
-                "cpu_percent": max(r["cpu_percent"] for r in self._resource_history),
-            },
+            "cpu_percent": latest["cpu_percent"],
+            "memory_percent": latest["memory_percent"],
+            "disk_io": latest["disk_io"],
+            "network_io": latest["network_io"]
         }
 
     def get_slow_operations(
@@ -251,10 +233,11 @@ class PerformanceMonitor:
         """Get operations that exceeded duration threshold."""
         threshold = threshold or self.thresholds["operation_duration"]
         return [
-            op for op in self._operations if op.duration and op.duration > threshold
+            metric for metric in self._metrics 
+            if metric.duration > threshold
         ]
 
-    def clear_history(self):
+    def clear_history(self) -> None:
         """Clear all collected metrics."""
         self._metrics.clear()
         self._operations.clear()
@@ -275,7 +258,7 @@ def get_performance_monitor() -> PerformanceMonitor:
     return _performance_monitor
 
 
-def track_performance(operation_name: str):
+def track_performance(operation_name: str) -> None:
     """Decorator to track function performance."""
 
     def decorator(func):
@@ -319,7 +302,7 @@ def track_performance(operation_name: str):
 class ResourceCache:
     """Simple LRU cache for expensive operations."""
 
-    def __init__(self, max_size: int = 100, ttl: int = 300):
+    def __init__(self, max_size: int = 100, ttl: int = 300) -> None:
         self.max_size = max_size
         self.ttl = ttl
         self._cache: Dict[str, tuple[Any, datetime]] = {}
@@ -346,7 +329,7 @@ class ResourceCache:
 
             return None
 
-    def set(self, key: str, value: Any):
+    def set(self, key: str, value: Any) -> None:
         """Set value in cache."""
         with self._lock:
             # Remove oldest if at capacity
@@ -362,7 +345,7 @@ class ResourceCache:
                 self._access_order.remove(key)
             self._access_order.append(key)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear the cache."""
         with self._lock:
             self._cache.clear()

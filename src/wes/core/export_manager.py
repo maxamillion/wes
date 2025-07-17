@@ -28,7 +28,7 @@ class ExportManager:
     - Clipboard
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the export manager."""
         self.logger = get_logger(__name__)
 
@@ -52,12 +52,20 @@ class ExportManager:
             format = format.lower()
 
             if format == "markdown":
+                if filepath is None:
+                    raise ExportError("Filepath required for markdown export")
                 return self.export_markdown(summary, filepath)
             elif format == "html":
+                if filepath is None:
+                    raise ExportError("Filepath required for HTML export")
                 return self.export_html(summary, filepath)
             elif format == "pdf":
+                if filepath is None:
+                    raise ExportError("Filepath required for PDF export")
                 return self.export_pdf(summary, filepath)
             elif format == "text":
+                if filepath is None:
+                    raise ExportError("Filepath required for text export")
                 return self.export_text(summary, filepath)
             elif format == "clipboard":
                 return self.copy_to_clipboard(summary)

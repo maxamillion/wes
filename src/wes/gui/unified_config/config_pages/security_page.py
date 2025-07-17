@@ -1,6 +1,6 @@
 """Security settings configuration page."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -33,7 +33,7 @@ class SecurityPage(ConfigPageBase):
     page_icon = "SP_VistaShield"
     page_description = "Manage security settings and credential protection"
 
-    def _setup_page_ui(self, parent_layout: QVBoxLayout):
+    def _setup_page_ui(self, parent_layout: QVBoxLayout) -> None:
         """Setup security settings UI."""
         # Credential storage
         storage_group = QGroupBox("Credential Storage")
@@ -168,7 +168,7 @@ class SecurityPage(ConfigPageBase):
 
         parent_layout.addWidget(audit_group)
 
-    def _change_master_password(self):
+    def _change_master_password(self) -> None:
         """Handle master password change."""
         from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLineEdit
 
@@ -181,19 +181,19 @@ class SecurityPage(ConfigPageBase):
         # Current password
         layout.addWidget(QLabel("Current Password:"))
         current_password = QLineEdit()
-        current_password.setEchoMode(QLineEdit.Password)
+        current_password.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(current_password)
 
         # New password
         layout.addWidget(QLabel("New Password:"))
         new_password = QLineEdit()
-        new_password.setEchoMode(QLineEdit.Password)
+        new_password.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(new_password)
 
         # Confirm password
         layout.addWidget(QLabel("Confirm New Password:"))
         confirm_password = QLineEdit()
-        confirm_password.setEchoMode(QLineEdit.Password)
+        confirm_password.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(confirm_password)
 
         # Buttons
@@ -225,7 +225,7 @@ class SecurityPage(ConfigPageBase):
                 "Master password has been changed successfully.",
             )
 
-    def _view_security_log(self):
+    def _view_security_log(self) -> None:
         """View security event log."""
         dialog = QDialog(self)
         dialog.setWindowTitle("Security Event Log")
@@ -253,18 +253,18 @@ class SecurityPage(ConfigPageBase):
 
         dialog.exec()
 
-    def _clear_security_log(self):
+    def _clear_security_log(self) -> None:
         """Clear security event log."""
         reply = QMessageBox.question(
             self,
             "Clear Security Log",
             "Are you sure you want to clear the security log?\n"
             "This action cannot be undone.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             # TODO: Actually clear the log
             QMessageBox.information(
                 self, "Log Cleared", "Security log has been cleared."
@@ -314,12 +314,6 @@ class SecurityPage(ConfigPageBase):
                 "enable_auto_lock": self.enable_auto_lock.isChecked(),
                 "lock_timeout_minutes": self.lock_timeout_spin.value(),
                 "clear_on_exit": self.clear_on_exit.isChecked(),
-                "verify_ssl": self.verify_ssl.isChecked(),
-                "certificate_pinning": self.cert_pinning.isChecked(),
-                "api_key_rotation_reminder": self.api_key_rotation.isChecked(),
-                "rotation_interval_days": self.rotation_days_spin.value(),
-                "log_security_events": self.log_security_events.isChecked(),
-                "log_failed_auth": self.log_failed_auth.isChecked(),
             }
         }
 
@@ -328,9 +322,9 @@ class SecurityPage(ConfigPageBase):
         # Security settings are always valid (no required fields)
         return ValidationResult(
             is_valid=True,
-            message="Settings valid",
+            message="Security settings are valid",
             service=None,
-            details={"configured": True},
+            details={"type": "security_settings"}
         )
 
     def test_connection(self) -> None:
@@ -342,15 +336,13 @@ class SecurityPage(ConfigPageBase):
         return [
             self.encrypt_creds,
             self.require_master_password,
-            self.enable_auto_lock,
-            self.verify_ssl,
+            self.clear_on_exit,
         ]
 
     def get_advanced_fields(self) -> List[QWidget]:
         """Return advanced field widgets."""
         return [
             self.use_hardware_key,
-            self.cert_pinning,
-            self.api_key_rotation,
-            self.log_security_events,
+            self.enable_auto_lock,
+            self.lock_timeout_spin,
         ]

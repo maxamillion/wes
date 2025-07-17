@@ -1,5 +1,7 @@
 """LDAP configuration dialog for Red Hat integration."""
 
+from typing import Optional
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -15,6 +17,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
 
 from ..core.config_manager import ConfigManager
@@ -27,7 +30,7 @@ class LDAPConfigDialog(QDialog):
 
     config_saved = Signal()
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
         self.logger = get_logger(__name__)
@@ -40,7 +43,7 @@ class LDAPConfigDialog(QDialog):
         self._setup_ui()
         self._load_config()
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         """Set up the user interface."""
         layout = QVBoxLayout()
 
@@ -124,7 +127,7 @@ class LDAPConfigDialog(QDialog):
 
         self.setLayout(layout)
 
-    def _load_config(self):
+    def _load_config(self) -> None:
         """Load current configuration into UI."""
         self.enable_checkbox.setChecked(self.ldap_config.enabled)
         self.server_url_edit.setText(self.ldap_config.server_url)
@@ -137,14 +140,14 @@ class LDAPConfigDialog(QDialog):
 
         self._on_enable_changed()
 
-    def _on_enable_changed(self):
+    def _on_enable_changed(self) -> None:
         """Handle enable/disable checkbox state change."""
         enabled = self.enable_checkbox.isChecked()
         self.connection_group.setEnabled(enabled)
         self.query_group.setEnabled(enabled)
         self.test_button.setEnabled(enabled)
 
-    def _test_connection(self):
+    def _test_connection(self) -> None:
         """Test LDAP connection with current settings."""
         import asyncio
 
@@ -223,7 +226,7 @@ class LDAPConfigDialog(QDialog):
         finally:
             self.test_button.setEnabled(True)
 
-    def _save_config(self):
+    def _save_config(self) -> None:
         """Save LDAP configuration."""
         try:
             # Validate inputs

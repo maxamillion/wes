@@ -2,12 +2,14 @@
 
 import argparse
 import asyncio
+import logging
 import os
 import sys
+import types
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Type
 
-from PySide6.QtCore import QDir, QtMsgType, qInstallMessageHandler
+from PySide6.QtCore import QDir, QMessageLogContext, QtMsgType, qInstallMessageHandler
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 
@@ -23,7 +25,7 @@ except ImportError:
     from wes.utils.logging_config import get_logger, setup_logging
 
 
-def qt_message_handler(mode: QtMsgType, context, message: str):
+def qt_message_handler(mode: QtMsgType, context: QMessageLogContext, message: str) -> None:
     """Custom Qt message handler for logging."""
     _ = context  # Unused but required by Qt message handler protocol
     logger = get_logger("qt")
@@ -38,7 +40,7 @@ def qt_message_handler(mode: QtMsgType, context, message: str):
         logger.critical(f"Qt Fatal: {message}")
 
 
-def setup_application_paths():
+def setup_application_paths() -> Path:
     """Setup application directories and paths."""
     # Ensure application directory exists
     app_dir = Path.home() / ".wes"
@@ -52,7 +54,7 @@ def setup_application_paths():
     return app_dir
 
 
-def setup_environment():
+def setup_environment() -> Path:
     """Setup application environment."""
     # Set application properties
     QApplication.setApplicationName("Wes")
@@ -67,7 +69,7 @@ def setup_environment():
     return app_dir
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Wes - Automated executive summary generation"
@@ -105,7 +107,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def initialize_logging(args, app_dir: Path):
+def initialize_logging(args: argparse.Namespace, app_dir: Path) -> logging.Logger:
     """Initialize logging system."""
     if args.debug:
         log_level = "DEBUG"
@@ -136,7 +138,7 @@ def initialize_logging(args, app_dir: Path):
     return logger
 
 
-def setup_application_style(app: QApplication):
+def setup_application_style(app: QApplication) -> None:
     """Setup application styling and theme."""
     # Set application icon
     icon_path = Path(__file__).parent / "gui" / "resources" / "icon.png"
@@ -220,7 +222,7 @@ async def test_connections_cli(config_manager: ConfigManager) -> bool:
         return False
 
 
-def handle_exception(exc_type, exc_value, exc_traceback):
+def handle_exception(exc_type: Type[BaseException], exc_value: BaseException, exc_traceback: Optional[types.TracebackType]) -> None:
     """Global exception handler."""
     logger = get_logger(__name__)
 
@@ -242,7 +244,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
 
-def main():
+def main() -> int:
     """Main application entry point."""
     # Parse arguments
     args = parse_arguments()
@@ -310,13 +312,13 @@ def main():
         return 1
 
 
-def gui_main():
+def gui_main() -> None:
     """Entry point for GUI-only execution."""
     # Filter out CLI-specific arguments for GUI mode
     filtered_args = [arg for arg in sys.argv if not arg.startswith("--no-gui")]
     sys.argv = filtered_args
 
-    return main()
+    main()
 
 
 if __name__ == "__main__":

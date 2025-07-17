@@ -31,7 +31,7 @@ class JiraConfigPage(ConfigPageBase):
     page_icon = "SP_DialogYesButton"
     page_description = "Connect to your Jira instance to fetch activity data"
 
-    def _setup_page_ui(self, parent_layout: QVBoxLayout):
+    def _setup_page_ui(self, parent_layout: QVBoxLayout) -> None:
         """Setup Jira-specific UI."""
         # Service type selector
         self.service_selector = ServiceSelector()
@@ -122,7 +122,7 @@ class JiraConfigPage(ConfigPageBase):
 
         return group
 
-    def _on_service_type_changed(self, jira_type: JiraType):
+    def _on_service_type_changed(self, jira_type: JiraType) -> None:
         """Handle Jira type change."""
         # Update UI based on type
         if jira_type == JiraType.REDHAT:
@@ -182,14 +182,10 @@ class JiraConfigPage(ConfigPageBase):
         """Extract Jira configuration from UI."""
         return {
             "jira": {
-                "type": self.service_selector.get_service_type().value,
+                "type": self.service_selector.get_selected_service(),
                 "url": self.url_input.text().strip(),
                 "username": self.username_input.text().strip(),
                 "api_token": self.api_token_input.text().strip(),
-                "verify_ssl": self.verify_ssl.isChecked(),
-                "timeout": self.timeout_input.value(),
-                "max_results": self.max_results_input.value(),
-                "custom_fields": self.custom_fields_input.text().strip(),
             }
         }
 
@@ -203,16 +199,16 @@ class JiraConfigPage(ConfigPageBase):
             return ValidationResult(
                 is_valid=False,
                 message="Jira URL is required",
-                service=self.service_type,
-                details={"field": "url"},
+                service=ServiceType.JIRA,
+                details={"field": "url", "validation_type": "required"}
             )
 
         if not config["username"]:
             return ValidationResult(
                 is_valid=False,
                 message="Username is required",
-                service=self.service_type,
-                details={"field": "username"},
+                service=ServiceType.JIRA,
+                details={"field": "username", "validation_type": "required"}
             )
 
         # API token required for all Jira instances
@@ -223,8 +219,8 @@ class JiraConfigPage(ConfigPageBase):
             return ValidationResult(
                 is_valid=False,
                 message=f"{token_name} is required",
-                service=self.service_type,
-                details={"field": "api_token"},
+                service=ServiceType.JIRA,
+                details={"field": "api_token", "validation_type": "required", "jira_type": jira_type.value}
             )
 
         # Validate URL format
@@ -232,39 +228,34 @@ class JiraConfigPage(ConfigPageBase):
         if not url.startswith(("http://", "https://")):
             return ValidationResult(
                 is_valid=False,
-                message="URL must start with http:// or https://",
-                service=self.service_type,
-                details={"field": "url", "current_value": url},
+                message="Jira URL must start with http:// or https://",
+                service=ServiceType.JIRA,
+                details={"field": "url", "validation_type": "format", "value": url}
             )
 
         # All validations passed
         return ValidationResult(
             is_valid=True,
-            message="Configuration valid",
-            service=self.service_type,
-            details={"configured": True},
+            message="Jira configuration is valid",
+            service=ServiceType.JIRA,
+            details={"validated_fields": ["url", "username", "api_token"], "jira_type": jira_type.value}
         )
 
     def get_basic_fields(self) -> List[QWidget]:
         """Return basic field widgets."""
         return [
-            self.service_selector,
             self.url_input,
             self.username_input,
             self.api_token_input,
-            self.test_button,
         ]
 
     def get_advanced_fields(self) -> List[QWidget]:
         """Return advanced field widgets."""
         return [
-            self.verify_ssl,
-            self.timeout_input,
-            self.max_results_input,
-            self.custom_fields_input,
+            self.service_selector,
         ]
 
-    def _connect_change_tracking(self):
+    def _connect_change_tracking(self) -> None:
         """Connect change tracking to form fields."""
         # Already connected in widget creation
         # Additional connections for complex widgets

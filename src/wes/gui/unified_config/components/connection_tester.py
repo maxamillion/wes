@@ -17,25 +17,26 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QCloseEvent
 
 from wes.gui.credential_validators import CredentialValidator
 from wes.gui.unified_config.types import ConnectionTestResult, ServiceType
 
 
-class ConnectionTestWorker(QThread):
+class ConnectionTestWorker(QThread):  # type: ignore[misc]  # type: ignore[misc]
     """Extended validation worker that provides detailed progress updates."""
 
     progress_update = Signal(str, str)  # step_name, status
     result = Signal(bool, str, dict)  # success, message, details
 
-    def __init__(self, validator, service_type: str, config: dict):
+    def __init__(self, validator: CredentialValidator, service_type: str, config: dict) -> None:
         super().__init__()
         self.validator = validator
         self.service_type = service_type
         self.config = config
         self.steps = []
 
-    def run(self):
+    def run(self) -> None:
         """Run validation with detailed progress reporting."""
         try:
             # Define test steps based on service type
@@ -92,9 +93,6 @@ class ConnectionTestWorker(QThread):
             url = self.config.get("url", "")
             if not url:
                 return False, "URL is required"
-            if not url.startswith(("http://", "https://")):
-                return False, "URL must start with http:// or https://"
-        return True, "URL format valid"
 
     def _test_connectivity(self) -> tuple[bool, str]:
         """Test network connectivity to service."""
@@ -146,9 +144,6 @@ class ConnectionTestWorker(QThread):
         api_key = self.config.get("api_key", "")
         if not api_key:
             return False, "API key is required"
-        if len(api_key) < 20:
-            return False, "API key appears to be invalid"
-        return True, "API key format valid"
 
     def _test_api_connection(self) -> tuple[bool, str]:
         """Test API connection."""
@@ -165,9 +160,9 @@ class ConnectionTestDialog(QDialog):
     and detailed feedback.
     """
 
-    test_complete = Signal(ConnectionTestResult)
+    test_complete = Signal(ConnectionTestResult)  # type: ignore[misc]
 
-    def __init__(self, service_type: ServiceType, config: Dict[str, Any], parent=None):
+    def __init__(self, service_type: ServiceType, config: Dict[str, Any], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.service_type = service_type
         self.config = config
@@ -182,7 +177,7 @@ class ConnectionTestDialog(QDialog):
         # Auto-start test
         QTimer.singleShot(100, self._start_test)
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         self.setWindowTitle(f"Testing {self.service_type.value.title()} Connection")
         self.setMinimumWidth(500)
@@ -248,7 +243,7 @@ class ConnectionTestDialog(QDialog):
 
         layout.addWidget(self.button_box)
 
-    def _start_test(self):
+    def _start_test(self) -> None:
         """Start the connection test."""
         self.start_time = time.time()
         self.status_label.setText("Running connection tests...")
@@ -282,7 +277,7 @@ class ConnectionTestDialog(QDialog):
 
         self.thread.start()
 
-    def _clear_steps(self):
+    def _clear_steps(self) -> None:
         """Clear all step indicators."""
         while self.steps_layout.count():
             item = self.steps_layout.takeAt(0)
@@ -290,7 +285,7 @@ class ConnectionTestDialog(QDialog):
                 item.widget().deleteLater()
         self.test_steps.clear()
 
-    def _add_step(self, step_name: str):
+    def _add_step(self, step_name: str) -> None:
         """Add a step indicator."""
         step_layout = QHBoxLayout()
 
@@ -320,7 +315,7 @@ class ConnectionTestDialog(QDialog):
             "status_text": status_text,
         }
 
-    def _on_progress_update(self, step_name: str, status: str):
+    def _on_progress_update(self, step_name: str, status: str) -> None:
         """Handle progress update from worker."""
         # Add step if not exists
         if step_name not in self.test_steps:
@@ -351,7 +346,7 @@ class ConnectionTestDialog(QDialog):
             self.progress_bar.setRange(0, total_steps)
             self.progress_bar.setValue(completed)
 
-    def _on_test_complete(self, success: bool, message: str, details: Dict[str, Any]):
+    def _on_test_complete(self, success: bool, message: str, details: Dict[str, Any]) -> None:
         """Handle test completion."""
         elapsed = time.time() - self.start_time
 
@@ -382,7 +377,7 @@ class ConnectionTestDialog(QDialog):
         )
         self.test_complete.emit(result)
 
-    def _add_error_details(self, message: str, details: Dict[str, Any]):
+    def _add_error_details(self, message: str, details: Dict[str, Any]) -> None:
         """Add error details to the details area."""
         self.details_text.append(f"Error: {message}\n")
 
@@ -423,7 +418,7 @@ class ConnectionTestDialog(QDialog):
 
         return tips
 
-    def _cancel_test(self):
+    def _cancel_test(self) -> None:
         """Cancel the running test."""
         if self.thread and self.thread.isRunning():
             self.thread.quit()
@@ -431,11 +426,11 @@ class ConnectionTestDialog(QDialog):
 
         self.reject()
 
-    def _retry_test(self):
+    def _retry_test(self) -> None:
         """Retry the connection test."""
         self._start_test()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Ensure thread is stopped when closing."""
         if self.thread and self.thread.isRunning():
             self.thread.quit()

@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QCloseEvent
 
 from ..core.config_manager import ConfigManager
 from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
@@ -60,13 +61,13 @@ class ValidationWorker(QThread):
 
     validation_complete = Signal(str, bool, str)  # service, success, message
 
-    def __init__(self, service: str, credentials: Dict[str, str], parent=None):
+    def __init__(self, service: str, credentials: Dict[str, str], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.service = service
         self.credentials = credentials
         self.validator = CredentialValidator()
 
-    def run(self):
+    def run(self) -> None:
         """Validate credentials in background thread."""
         try:
             if self.service == "jira":
@@ -103,7 +104,7 @@ class ViewState(Enum):
 class SingleWindowMainWindow(QMainWindow):
     """Main application window with integrated views."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.logger = get_logger(__name__)
@@ -127,7 +128,7 @@ class SingleWindowMainWindow(QMainWindow):
         self.previous_view = ViewState.WELCOME  # Track previous view for navigation
         self.setup_completed = False
         self.current_activity_data = []
-        self.current_summary = None
+        self.current_summary: Optional[Dict[str, Any]] = None
         self.validation_threads = []
 
         # Initialize UI
@@ -136,7 +137,7 @@ class SingleWindowMainWindow(QMainWindow):
         # Check initial configuration
         self.check_initial_setup()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """Initialize the user interface."""
         self.setWindowTitle("Executive Summary Tool")
         self.setGeometry(100, 100, 1200, 800)
@@ -175,7 +176,7 @@ class SingleWindowMainWindow(QMainWindow):
         # Apply styling
         self.apply_styling()
 
-    def create_menu_bar(self):
+    def create_menu_bar(self) -> None:
         """Create the menu bar."""
         menubar = self.menuBar()
 
@@ -221,7 +222,7 @@ class SingleWindowMainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
-    def create_navigation_bar(self):
+    def create_navigation_bar(self) -> None:
         """Create navigation bar for switching between views."""
         self.nav_bar = QWidget()
         self.nav_bar.setObjectName("navBar")
@@ -252,18 +253,18 @@ class SingleWindowMainWindow(QMainWindow):
         # Hide navigation initially
         self.nav_bar.setVisible(False)
 
-    def create_welcome_view(self):
+    def create_welcome_view(self) -> None:
         """Create welcome/landing view."""
         welcome_widget = QWidget()
         layout = QVBoxLayout(welcome_widget)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Logo/Icon placeholder
         icon_label = QLabel()
         icon_label.setPixmap(
             QPixmap(":/icons/app_icon.png").scaled(128, 128, Qt.KeepAspectRatio)
         )
-        icon_label.setAlignment(Qt.AlignCenter)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(icon_label)
 
         # Title
@@ -272,7 +273,7 @@ class SingleWindowMainWindow(QMainWindow):
         title_font.setPointSize(24)
         title_font.setBold(True)
         title_label.setFont(title_font)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
 
         # Subtitle
@@ -280,14 +281,14 @@ class SingleWindowMainWindow(QMainWindow):
         subtitle_font = QFont()
         subtitle_font.setPointSize(14)
         subtitle_label.setFont(subtitle_font)
-        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle_label)
 
         layout.addSpacing(40)
 
         # Action buttons
         button_layout = QHBoxLayout()
-        button_layout.setAlignment(Qt.AlignCenter)
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.get_started_btn = QPushButton("Get Started")
         self.get_started_btn.setMinimumSize(150, 40)
@@ -303,7 +304,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.stacked_widget.addWidget(welcome_widget)
 
-    def create_setup_view(self):
+    def create_setup_view(self) -> None:
         """Create integrated setup view."""
         setup_widget = QWidget()
         main_layout = QVBoxLayout(setup_widget)
@@ -352,11 +353,11 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.stacked_widget.addWidget(setup_widget)
 
-    def create_setup_steps_indicator(self):
+    def create_setup_steps_indicator(self) -> None:
         """Create steps indicator for setup process."""
         widget = QWidget()
         layout = QHBoxLayout(widget)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.setup_steps = [
             "Service Selection",
@@ -378,18 +379,18 @@ class SingleWindowMainWindow(QMainWindow):
             # Step indicator
             step_widget = QWidget()
             step_layout = QVBoxLayout(step_widget)
-            step_layout.setAlignment(Qt.AlignCenter)
+            step_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             # Circle with number
             circle_label = QLabel(str(i + 1))
             circle_label.setFixedSize(30, 30)
-            circle_label.setAlignment(Qt.AlignCenter)
+            circle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             circle_label.setObjectName(f"stepCircle_{i}")
             step_layout.addWidget(circle_label)
 
             # Step name
             name_label = QLabel(step)
-            name_label.setAlignment(Qt.AlignCenter)
+            name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             step_layout.addWidget(name_label)
 
             self.step_labels.append((circle_label, name_label))
@@ -397,7 +398,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         return widget
 
-    def create_service_selection_page(self):
+    def create_service_selection_page(self) -> None:
         """Create service selection page for setup."""
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -448,7 +449,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(page)
 
-    def create_jira_setup_page(self):
+    def create_jira_setup_page(self) -> None:
         """Create Jira setup page."""
         page = QWidget()
         scroll = QScrollArea()
@@ -477,7 +478,7 @@ class SingleWindowMainWindow(QMainWindow):
         form_layout.addRow("Username:", self.jira_username_input)
 
         self.jira_token_input = QLineEdit()
-        self.jira_token_input.setEchoMode(QLineEdit.Password)
+        self.jira_token_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.jira_token_input.setPlaceholderText("Your Jira API token")
         form_layout.addRow("API Token:", self.jira_token_input)
 
@@ -499,7 +500,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(scroll)
 
-    def create_google_setup_page(self):
+    def create_google_setup_page(self) -> None:
         """Create Google setup page."""
         page = QWidget()
         scroll = QScrollArea()
@@ -555,7 +556,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(scroll)
 
-    def create_gemini_setup_page(self):
+    def create_gemini_setup_page(self) -> None:
         """Create Gemini setup page."""
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -572,7 +573,7 @@ class SingleWindowMainWindow(QMainWindow):
         form_layout = QFormLayout()
 
         self.gemini_key_input = QLineEdit()
-        self.gemini_key_input.setEchoMode(QLineEdit.Password)
+        self.gemini_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.gemini_key_input.setPlaceholderText("Your Gemini API key")
         form_layout.addRow("API Key:", self.gemini_key_input)
 
@@ -594,7 +595,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(page)
 
-    def create_setup_summary_page(self):
+    def create_setup_summary_page(self) -> None:
         """Create setup summary page."""
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -614,7 +615,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(page)
 
-    def create_main_view(self):
+    def create_main_view(self) -> None:
         """Create main application view with tabs."""
         main_widget = QWidget()
         layout = QVBoxLayout(main_widget)
@@ -630,7 +631,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.stacked_widget.addWidget(main_widget)
 
-    def create_data_tab(self):
+    def create_data_tab(self) -> None:
         """Create the data configuration tab."""
         data_tab = QWidget()
         self.tab_widget.addTab(data_tab, "Data Configuration")
@@ -692,7 +693,7 @@ class SingleWindowMainWindow(QMainWindow):
         fetch_layout.addStretch()
         layout.addLayout(fetch_layout)
 
-    def create_summary_tab(self):
+    def create_summary_tab(self) -> None:
         """Create the summary generation tab."""
         summary_tab = QWidget()
         self.tab_widget.addTab(summary_tab, "Summary Generation")
@@ -743,7 +744,7 @@ class SingleWindowMainWindow(QMainWindow):
         generate_layout.addStretch()
         layout.addLayout(generate_layout)
 
-    def create_output_tab(self):
+    def create_output_tab(self) -> None:
         """Create the output and document tab."""
         output_tab = QWidget()
         self.tab_widget.addTab(output_tab, "Document Output")
@@ -799,7 +800,7 @@ class SingleWindowMainWindow(QMainWindow):
         self.document_url_label.setOpenExternalLinks(True)
         layout.addWidget(self.document_url_label)
 
-    def create_config_view(self):
+    def create_config_view(self) -> None:
         """Create advanced configuration view."""
         config_widget = QWidget()
         layout = QVBoxLayout(config_widget)
@@ -840,7 +841,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.stacked_widget.addWidget(config_widget)
 
-    def create_jira_config_tab(self, parent_tabs):
+    def create_jira_config_tab(self, parent: Optional[QWidget]) -> None:
         """Create Jira configuration tab."""
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -855,7 +856,7 @@ class SingleWindowMainWindow(QMainWindow):
         form_layout.addRow("Username:", self.config_jira_username)
 
         self.config_jira_token = QLineEdit()
-        self.config_jira_token.setEchoMode(QLineEdit.Password)
+        self.config_jira_token.setEchoMode(QLineEdit.EchoMode.Password)
         form_layout.addRow("API Token:", self.config_jira_token)
 
         layout.addLayout(form_layout)
@@ -863,7 +864,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         parent_tabs.addTab(tab, "Jira")
 
-    def create_google_config_tab(self, parent_tabs):
+    def create_google_config_tab(self, parent: Optional[QWidget]) -> None:
         """Create Google configuration tab."""
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -884,7 +885,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         parent_tabs.addTab(tab, "Google")
 
-    def create_ai_config_tab(self, parent_tabs):
+    def create_ai_config_tab(self, parent: Optional[QWidget]) -> None:
         """Create AI configuration tab."""
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -892,7 +893,7 @@ class SingleWindowMainWindow(QMainWindow):
         form_layout = QFormLayout()
 
         self.config_gemini_key = QLineEdit()
-        self.config_gemini_key.setEchoMode(QLineEdit.Password)
+        self.config_gemini_key.setEchoMode(QLineEdit.EchoMode.Password)
         form_layout.addRow("Gemini API Key:", self.config_gemini_key)
 
         self.config_ai_model = QComboBox()
@@ -915,7 +916,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         parent_tabs.addTab(tab, "AI")
 
-    def create_app_config_tab(self, parent_tabs):
+    def create_app_config_tab(self, parent: Optional[QWidget]) -> None:
         """Create application configuration tab."""
         tab = QWidget()
         layout = QVBoxLayout(tab)
@@ -935,11 +936,11 @@ class SingleWindowMainWindow(QMainWindow):
 
         parent_tabs.addTab(tab, "Application")
 
-    def create_progress_view(self):
+    def create_progress_view(self) -> None:
         """Create embedded progress view."""
         progress_widget = QWidget()
         layout = QVBoxLayout(progress_widget)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Progress content container
         content_widget = QWidget()
@@ -948,7 +949,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         # Main message
         self.progress_main_label = QLabel("Processing...")
-        self.progress_main_label.setAlignment(Qt.AlignCenter)
+        self.progress_main_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         font = QFont()
         font.setPointSize(14)
         font.setBold(True)
@@ -957,7 +958,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         # Detail message
         self.progress_detail_label = QLabel("")
-        self.progress_detail_label.setAlignment(Qt.AlignCenter)
+        self.progress_detail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.progress_detail_label.setWordWrap(True)
         content_layout.addWidget(self.progress_detail_label)
 
@@ -977,7 +978,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         # Cancel button
         cancel_layout = QHBoxLayout()
-        cancel_layout.setAlignment(Qt.AlignCenter)
+        cancel_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.progress_cancel_btn = QPushButton("Cancel")
         self.progress_cancel_btn.clicked.connect(self.cancel_operation)
         cancel_layout.addWidget(self.progress_cancel_btn)
@@ -987,7 +988,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.stacked_widget.addWidget(progress_widget)
 
-    def create_status_bar(self):
+    def create_status_bar(self) -> None:
         """Create the status bar."""
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -996,7 +997,7 @@ class SingleWindowMainWindow(QMainWindow):
         self.status_label = QLabel("Ready")
         self.status_bar.addWidget(self.status_label)
 
-    def apply_styling(self):
+    def apply_styling(self) -> None:
         """Apply custom styling to the application."""
         style = """
         QMainWindow {
@@ -1107,7 +1108,7 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setStyleSheet(style)
 
-    def check_initial_setup(self):
+    def check_initial_setup(self) -> None:
         """Check if initial setup is required."""
         # Use the new config detector to check state
         config_state = self.config_detector.detect_state(self.config_manager.config)
@@ -1128,7 +1129,7 @@ class SingleWindowMainWindow(QMainWindow):
                     "Configuration incomplete. Click Settings to complete setup.", 5000
                 )
 
-    def switch_view(self, view_state: ViewState):
+    def switch_view(self, view_state: ViewState) -> None:
         """Switch to a different view."""
         # Don't track progress view as previous view
         if self.current_view != ViewState.PROGRESS:
@@ -1148,12 +1149,12 @@ class SingleWindowMainWindow(QMainWindow):
         elif view_state == ViewState.PROGRESS:
             self.stacked_widget.setCurrentIndex(2)
 
-    def start_setup(self):
+    def start_setup(self) -> None:
         """Start the setup process."""
         # Open unified settings dialog
         self.show_unified_settings()
 
-    def skip_setup(self):
+    def skip_setup(self) -> None:
         """Skip setup and go to main view."""
         self.switch_view(ViewState.MAIN)
         self.nav_bar.setVisible(True)
@@ -1161,7 +1162,7 @@ class SingleWindowMainWindow(QMainWindow):
             "Setup skipped. You can configure services later in Settings.", 5000
         )
 
-    def show_unified_settings(self):
+    def show_unified_settings(self) -> None:
         """Show the unified settings dialog."""
         dialog = UnifiedConfigDialog(self.config_manager, self)
 
@@ -1186,12 +1187,12 @@ class SingleWindowMainWindow(QMainWindow):
                     self.switch_view(ViewState.MAIN)
                     self.nav_bar.setVisible(True)
 
-    def on_configuration_updated(self, config: Dict[str, Any]):
+    def on_configuration_updated(self, config: Dict[str, Any]) -> None:
         """Handle configuration updates from the unified dialog."""
         # Update any UI elements that depend on configuration
         self.update_config_status()
 
-    def update_config_status(self):
+    def update_config_status(self) -> None:
         """Update configuration status display."""
         # This updates any status indicators in the UI
         pass
@@ -1243,7 +1244,7 @@ class SingleWindowMainWindow(QMainWindow):
     #         return True
     #     return True
     #
-    # def update_setup_navigation(self):
+    # def update_setup_navigation(self) -> None:
     #     """Update setup navigation buttons and indicators."""
     #     current = self.setup_stack.currentIndex()
     #     total = self.setup_stack.count()
@@ -1266,7 +1267,7 @@ class SingleWindowMainWindow(QMainWindow):
     #     if current == total - 1:
     #         self.update_setup_summary()
     #
-    # def update_setup_summary(self):
+    # def update_setup_summary(self) -> None:
     #     """Update setup summary page."""
     #     summary_lines = ["Setup Summary\n" + "=" * 40 + "\n"]
     #
@@ -1369,7 +1370,7 @@ class SingleWindowMainWindow(QMainWindow):
     #     worker.start()
     #     self.validation_threads.append(worker)
 
-    def configure_oauth(self):
+    def configure_oauth(self) -> None:
         """Configure OAuth credentials."""
         try:
             # Show OAuth configuration dialog
@@ -1378,7 +1379,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"OAuth configuration failed: {e}")
             self.show_error("OAuth Error", str(e))
 
-    def show_oauth_config_dialog(self):
+    def show_oauth_config_dialog(self) -> None:
         """Show OAuth configuration dialog."""
         from PySide6.QtWidgets import (
             QDialog,
@@ -1428,7 +1429,7 @@ class SingleWindowMainWindow(QMainWindow):
         form_layout.addRow("Client ID:", client_id_edit)
 
         client_secret_edit = QLineEdit()
-        client_secret_edit.setEchoMode(QLineEdit.Password)
+        client_secret_edit.setEchoMode(QLineEdit.EchoMode.Password)
         client_secret_edit.setPlaceholderText("Your OAuth Client Secret")
         form_layout.addRow("Client Secret:", client_secret_edit)
 
@@ -1478,13 +1479,13 @@ class SingleWindowMainWindow(QMainWindow):
 
         dialog.exec()
 
-    def open_google_console(self):
+    def open_google_console(self) -> None:
         """Open Google Cloud Console in browser."""
         import webbrowser
 
         webbrowser.open("https://console.cloud.google.com/apis/credentials")
 
-    def save_oauth_config(self, dialog, client_id, client_secret):
+    def save_oauth_config(self, dialog, client_id, client_secret) -> None:
         """Save OAuth configuration."""
         if not client_id or not client_secret:
             QMessageBox.warning(
@@ -1496,8 +1497,9 @@ class SingleWindowMainWindow(QMainWindow):
 
         try:
             # Update OAuth handler configuration
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
+            if self.oauth_handler:
+                self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
+                self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
 
             # Save to config manager
             self.config_manager.update_google_config(oauth_client_id=client_id)
@@ -1535,15 +1537,15 @@ class SingleWindowMainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(dialog, "Error", f"Failed to save credentials: {e}")
 
-    def start_oauth_flow(self):
+    def start_oauth_flow(self) -> None:
         """Start the OAuth authentication flow."""
         try:
             # Connect signals
-            self.oauth_handler.auth_complete.connect(self.on_oauth_complete)
-            self.oauth_handler.auth_error.connect(self.on_oauth_error)
-
-            # Start flow
-            self.oauth_handler.start_flow(port=8080)
+            if self.oauth_handler:
+                self.oauth_handler.auth_complete.connect(self.on_oauth_complete)
+                self.oauth_handler.auth_error.connect(self.on_oauth_error)
+                # Start flow
+                self.oauth_handler.start_flow(port=8080)
 
             self.show_info(
                 "Authorization Required",
@@ -1554,7 +1556,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"Failed to start OAuth flow: {e}")
             self.show_error("OAuth Error", str(e))
 
-    def on_oauth_complete(self, cred_data):
+    def on_oauth_complete(self, cred_data) -> None:
         """Handle successful OAuth completion."""
         try:
             # Save credentials
@@ -1576,11 +1578,11 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"Failed to save OAuth credentials: {e}")
             self.show_error("Save Error", str(e))
 
-    def on_oauth_error(self, error_msg):
+    def on_oauth_error(self, error_msg) -> None:
         """Handle OAuth error."""
         self.show_error("Authorization Failed", error_msg)
 
-    def load_configuration(self):
+    def load_configuration(self) -> None:
         """Load configuration into UI elements."""
         try:
             # Load Jira config
@@ -1610,7 +1612,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"Failed to load configuration: {e}")
 
     # OLD CONFIG VIEW METHODS - Replaced by UnifiedConfigDialog
-    # def load_config_view(self):
+    # def load_config_view(self) -> None:
     #     """Load configuration into config view."""
     #     try:
     #         # Load Jira config
@@ -1631,7 +1633,7 @@ class SingleWindowMainWindow(QMainWindow):
     #     except Exception as e:
     #         self.logger.error(f"Failed to load config view: {e}")
     #
-    # def save_all_configuration(self):
+    # def save_all_configuration(self) -> None:
     #     """Save all configuration from config view."""
     #     try:
     #         # Save Jira config
@@ -1664,7 +1666,7 @@ class SingleWindowMainWindow(QMainWindow):
     #         self.logger.error(f"Failed to save configuration: {e}")
     #         self.show_error("Save Error", str(e))
 
-    def show_progress_message(self, message: str, detail: str = ""):
+    def show_progress_message(self, message: str, detail: str = "") -> None:
         """Show progress view with message."""
         self.progress_main_label.setText(message)
         self.progress_detail_label.setText(detail)
@@ -1672,13 +1674,13 @@ class SingleWindowMainWindow(QMainWindow):
         self.progress_log.clear()
         self.switch_view(ViewState.PROGRESS)
 
-    def hide_progress_message(self):
+    def hide_progress_message(self) -> None:
         """Hide progress and return to previous view."""
         if self.current_view == ViewState.PROGRESS:
             # Return to the previous view instead of always going to MAIN
             self.switch_view(self.previous_view)
 
-    def update_progress(self, value: int, message: str = ""):
+    def update_progress(self, value: int, message: str = "") -> None:
         """Update progress bar and message."""
         if self.current_view == ViewState.PROGRESS:
             self.progress_bar.setRange(0, 100)
@@ -1686,30 +1688,30 @@ class SingleWindowMainWindow(QMainWindow):
             if message:
                 self.progress_detail_label.setText(message)
 
-    def add_progress_log(self, text: str):
+    def add_progress_log(self, text: str) -> None:
         """Add text to progress log."""
         if self.current_view == ViewState.PROGRESS:
             self.progress_log.append(text)
 
-    def cancel_operation(self):
+    def cancel_operation(self) -> None:
         """Cancel current operation."""
         # This would be connected to actual cancellation logic
         self.hide_progress_message()
 
-    def add_user(self):
+    def add_user(self) -> None:
         """Add user to the list."""
         user = self.user_input.text().strip()
         if user:
             self.users_list.addItem(user)
             self.user_input.clear()
 
-    def remove_user(self):
+    def remove_user(self) -> None:
         """Remove selected user from the list."""
         current_row = self.users_list.currentRow()
         if current_row >= 0:
             self.users_list.takeItem(current_row)
 
-    def fetch_jira_data(self):
+    def fetch_jira_data(self) -> None:
         """Fetch data from Jira."""
         try:
             # Show progress
@@ -1741,7 +1743,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"Failed to fetch Jira data: {e}")
             self.show_error("Data Fetch Error", str(e))
 
-    def generate_summary(self):
+    def generate_summary(self) -> None:
         """Generate AI summary."""
         try:
             if not self.current_activity_data:
@@ -1783,7 +1785,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"Failed to generate summary: {e}")
             self.show_error("Summary Generation Error", str(e))
 
-    def preview_document(self):
+    def preview_document(self) -> None:
         """Preview the document."""
         if self.current_summary:
             title = self.document_title_edit.text() or "Executive Summary"
@@ -1791,7 +1793,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.preview_text.setPlainText(content)
             self.tab_widget.setCurrentIndex(2)  # Switch to output tab
 
-    def create_google_doc(self):
+    def create_google_doc(self) -> None:
         """Create Google Doc."""
         try:
             if not self.current_summary:
@@ -1823,7 +1825,7 @@ class SingleWindowMainWindow(QMainWindow):
             self.logger.error(f"Failed to create Google Doc: {e}")
             self.show_error("Document Creation Error", str(e))
 
-    def new_summary(self):
+    def new_summary(self) -> None:
         """Start a new summary."""
         self.current_activity_data = []
         self.current_summary = None
@@ -1844,12 +1846,12 @@ class SingleWindowMainWindow(QMainWindow):
         self.status_label.setText("Ready for new summary")
         self.switch_view(ViewState.MAIN)
 
-    def save_configuration(self):
+    def save_configuration(self) -> None:
         """Save current configuration."""
         # Open the unified settings dialog - it handles saving internally
         self.show_unified_settings()
 
-    def show_about(self):
+    def show_about(self) -> None:
         """Show about dialog."""
         about_text = """
         <h2>Executive Summary Tool</h2>
@@ -1867,19 +1869,19 @@ class SingleWindowMainWindow(QMainWindow):
 
         QMessageBox.about(self, "About", about_text)
 
-    def show_error(self, title: str, message: str):
+    def show_error(self, title: str, message: str) -> None:
         """Show error message."""
         QMessageBox.critical(self, title, message)
 
-    def show_info(self, title: str, message: str):
+    def show_info(self, title: str, message: str) -> None:
         """Show information message."""
         QMessageBox.information(self, title, message)
 
-    def show_warning(self, title: str, message: str):
+    def show_warning(self, title: str, message: str) -> None:
         """Show warning message."""
         QMessageBox.warning(self, title, message)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Handle application close event."""
         try:
             # Stop credential monitoring

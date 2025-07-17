@@ -14,7 +14,7 @@ from .redhat_ldap_client import LDAPIntegrationError, RedHatLDAPClient
 class RedHatJiraLDAPIntegration:
     """Integrates Red Hat Jira with LDAP for organizational queries."""
 
-    def __init__(self, config_manager: ConfigManager):
+    def __init__(self, config_manager: ConfigManager) -> None:
         """Initialize integration with configuration.
 
         Args:
@@ -133,6 +133,9 @@ class RedHatJiraLDAPIntegration:
 
             # Get activities for all team members
             if users:
+                if self.jira_client is None:
+                    raise JiraIntegrationError("Jira client not initialized")
+                    
                 activities = await self.jira_client.get_user_activities(
                     users=users,
                     start_date=start_date,
@@ -169,6 +172,9 @@ class RedHatJiraLDAPIntegration:
         """
         try:
             # Get team members and hierarchy from LDAP
+            if self.ldap_client is None:
+                raise LDAPIntegrationError("LDAP client not initialized")
+                
             users, hierarchy = await self.ldap_client.get_team_members_for_manager(
                 manager_identifier, max_depth
             )
@@ -307,6 +313,9 @@ class RedHatJiraLDAPIntegration:
                 users = mapped_users
 
             # Get activities from Jira
+            if self.jira_client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             activities = await self.jira_client.get_user_activities(
                 users=users,
                 start_date=start_date,

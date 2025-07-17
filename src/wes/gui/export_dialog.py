@@ -38,7 +38,7 @@ class ExportDialog(QDialog):
     # Signals
     export_complete = Signal(str, str)  # format, filepath
 
-    def __init__(self, summary: Dict[str, Any], parent: Optional[QWidget] = None):
+    def __init__(self, summary: Dict[str, Any], parent: Optional[QWidget] = None) -> None:
         """Initialize export dialog.
 
         Args:
@@ -57,7 +57,7 @@ class ExportDialog(QDialog):
 
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """Initialize the user interface."""
         layout = QVBoxLayout(self)
 
@@ -160,9 +160,8 @@ class ExportDialog(QDialog):
         checked_button = self.format_group.checkedButton()
         if checked_button:
             return checked_button.property("format")
-        return "markdown"
 
-    def export_summary(self):
+    def export_summary(self) -> None:
         """Export the summary in the selected format."""
         format = self.get_selected_format()
 
@@ -195,13 +194,13 @@ class ExportDialog(QDialog):
                 date_str = datetime.now().strftime("%Y-%m-%d")
                 suggested_name = f"executive_summary_{date_str}{extension}"
 
-                filepath, _ = QFileDialog.getSaveFileName(
+                filepath_str, _ = QFileDialog.getSaveFileName(
                     self, "Save Executive Summary", suggested_name, filter_text
                 )
 
-                if filepath:
+                if filepath_str:
                     # Ensure correct extension
-                    filepath = Path(filepath)
+                    filepath = Path(filepath_str)
                     if not filepath.suffix:
                         filepath = filepath.with_suffix(extension)
 
@@ -237,7 +236,7 @@ class QuickExportWidget(QWidget):
     # Signals
     export_requested = Signal(str)  # format
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize quick export widget.
 
         Args:
@@ -247,7 +246,7 @@ class QuickExportWidget(QWidget):
 
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """Initialize the user interface."""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QCloseEvent
 
 from ..core.config_manager import ConfigManager
 from ..integrations.redhat_jira_client import is_redhat_jira
@@ -43,13 +44,13 @@ class ValidationWorker(QObject):
 
     validation_complete = Signal(str, bool, str)  # service, success, message
 
-    def __init__(self, service: str, credentials: Dict[str, str]):
+    def __init__(self, service: str, credentials: Dict[str, str]) -> None:
         super().__init__()
         self.service = service
         self.credentials = credentials
         self.validator = CredentialValidator()
 
-    def validate(self):
+    def validate(self) -> Dict[str, Any]:
         """Validate credentials in background thread."""
         try:
             if self.service == "jira":
@@ -78,13 +79,13 @@ class ValidationWorker(QObject):
 class WizardPage(QWidget):
     """Base class for wizard pages."""
 
-    def __init__(self, title: str, subtitle: str = ""):
+    def __init__(self, title: str, subtitle: str = "") -> None:
         super().__init__()
         self.title = title
         self.subtitle = subtitle
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the page UI."""
         layout = QVBoxLayout(self)
         layout.setSpacing(20)
@@ -127,7 +128,7 @@ class WizardPage(QWidget):
         """Get the page data."""
         return {}
 
-    def set_data(self, data: Dict[str, Any]):
+    def set_data(self, data: Dict[str, Any]) -> None:
         """Set the page data."""
         pass
 
@@ -135,7 +136,7 @@ class WizardPage(QWidget):
 class WelcomePage(WizardPage):
     """Welcome page explaining the setup process."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "Welcome to Executive Summary Tool",
             "Let's get you set up with the integrations you need.",
@@ -179,7 +180,7 @@ class WelcomePage(WizardPage):
 class ServiceSelectionPage(WizardPage):
     """Page for selecting which services to configure."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "Select Services",
             "Choose which integrations you'd like to set up. You can always add more later.",
@@ -229,7 +230,7 @@ class ServiceSelectionPage(WizardPage):
 class JiraSetupPage(WizardPage):
     """Jira configuration page with guided setup."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "Connect to Jira",
             "We'll help you connect to your Jira instance and generate an API token.",
@@ -262,7 +263,7 @@ class JiraSetupPage(WizardPage):
         # API Token with help
         token_layout = QHBoxLayout()
         self.token_edit = QLineEdit()
-        self.token_edit.setEchoMode(QLineEdit.Password)
+        self.token_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.token_edit.setPlaceholderText("Your Jira API token")
         token_layout.addWidget(self.token_edit)
 
@@ -288,7 +289,7 @@ class JiraSetupPage(WizardPage):
         # Trigger URL validation for default value
         self.on_url_changed(self.url_edit.text())
 
-    def on_url_changed(self, text: str):
+    def on_url_changed(self, text: str) -> None:
         """Handle URL change to validate format and update username guidance."""
         if not text:
             self.url_status.setText("")
@@ -319,7 +320,7 @@ class JiraSetupPage(WizardPage):
             self.url_status.setStyleSheet("color: red;")
             self._reset_username_guidance()
 
-    def _set_cloud_username_guidance(self):
+    def _set_cloud_username_guidance(self) -> None:
         """Set username guidance for Jira Cloud."""
         self.username_label.setText("Email Address:")
         self.username_edit.setPlaceholderText("your.email@company.com")
@@ -327,7 +328,7 @@ class JiraSetupPage(WizardPage):
             "Jira Cloud requires your email address as the username"
         )
 
-    def _set_onpremise_username_guidance(self):
+    def _set_onpremise_username_guidance(self) -> None:
         """Set username guidance for on-premise Jira."""
         self.username_label.setText("Username:")
         self.username_edit.setPlaceholderText("username or email@company.com")
@@ -335,7 +336,7 @@ class JiraSetupPage(WizardPage):
             "Enter your Jira username (may be email or username depending on your configuration)"
         )
 
-    def _set_redhat_username_guidance(self):
+    def _set_redhat_username_guidance(self) -> None:
         """Set username guidance for Red Hat Jira."""
         self.username_label.setText("Red Hat Username:")
         self.username_edit.setPlaceholderText("your-redhat-username")
@@ -343,13 +344,13 @@ class JiraSetupPage(WizardPage):
             "Enter your Red Hat Jira username (typically your Red Hat employee ID or LDAP username)"
         )
 
-    def _reset_username_guidance(self):
+    def _reset_username_guidance(self) -> None:
         """Reset username guidance to default."""
         self.username_label.setText("Email/Username:")
         self.username_edit.setPlaceholderText("your.email@company.com")
         self.username_edit.setToolTip("")
 
-    def open_api_token_help(self):
+    def open_api_token_help(self) -> None:
         """Open help for API token generation."""
         url = self.url_edit.text().strip()
         if url:
@@ -370,7 +371,7 @@ class JiraSetupPage(WizardPage):
         )
 
         open_btn = msg.addButton("Open Token Page", QMessageBox.ActionRole)
-        msg.addButton(QMessageBox.Ok)
+        msg.addButton(QMessageBox.StandardButton.Ok)
 
         result = msg.exec()
         if msg.clickedButton() == open_btn:
@@ -378,7 +379,7 @@ class JiraSetupPage(WizardPage):
 
             webbrowser.open(token_url)
 
-    def test_connection(self):
+    def test_connection(self) -> None:
         """Test Jira connection."""
         self.test_btn.setEnabled(False)
         self.test_result.setText("Testing connection...")
@@ -406,7 +407,7 @@ class JiraSetupPage(WizardPage):
             self.window().raise_()
             self.window().activateWindow()
 
-    def on_validation_complete(self, service: str, success: bool, message: str):
+    def on_validation_complete(self, service: str, success: bool, message: str) -> None:
         """Handle validation completion."""
         self.test_btn.setEnabled(True)
         self.thread.quit()
@@ -449,10 +450,7 @@ class JiraSetupPage(WizardPage):
 
                 email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                 if not re.match(email_pattern, username):
-                    return (
-                        False,
-                        "Jira Cloud requires a valid email address as username",
-                    )
+                    return False, "Atlassian Cloud requires email address for username"
             elif is_redhat_jira(url):
                 # Red Hat Jira has specific username requirements
                 if len(username.strip()) < 3:
@@ -462,10 +460,7 @@ class JiraSetupPage(WizardPage):
 
                 username_pattern = r"^[a-zA-Z0-9._-]+$"
                 if not re.match(username_pattern, username.strip()):
-                    return (
-                        False,
-                        "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens",
-                    )
+                    return False, "Red Hat Jira username can only contain letters, numbers, dots, underscores, and hyphens"
         except Exception:
             pass  # Continue with basic validation
 
@@ -486,7 +481,7 @@ class JiraSetupPage(WizardPage):
 class GoogleSetupPage(WizardPage):
     """Google services setup page with OAuth flow."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "Connect to Google Services",
             "We'll set up Google Drive access for document creation and storage.",
@@ -537,11 +532,11 @@ class GoogleSetupPage(WizardPage):
         self.content_layout.addWidget(folder_group)
 
         # OAuth handler will be initialized when needed
-        self.oauth_handler = None
+        self.oauth_handler: Optional[GoogleOAuthHandler] = None
         self.credentials = None
         self.config_manager = None
 
-    def start_oauth_flow(self):
+    def start_oauth_flow(self) -> None:
         """Start Google OAuth flow."""
         # Initialize OAuth handler if not already done
         if not self.oauth_handler:
@@ -578,7 +573,7 @@ class GoogleSetupPage(WizardPage):
             self.window().raise_()
             self.window().activateWindow()
 
-    def on_oauth_complete(self, credentials: Dict[str, str]):
+    def on_oauth_complete(self, credentials: Dict[str, str]) -> None:
         """Handle OAuth completion."""
         self.credentials = credentials
         self.oauth_btn.setEnabled(True)
@@ -593,7 +588,7 @@ class GoogleSetupPage(WizardPage):
             wizard.raise_()
             wizard.activateWindow()
 
-    def on_oauth_error(self, error: str):
+    def on_oauth_error(self, error: str) -> None:
         """Handle OAuth error."""
         self.oauth_btn.setEnabled(True)
         self.oauth_status.setText(f"❌ Authentication failed: {error}")
@@ -606,7 +601,7 @@ class GoogleSetupPage(WizardPage):
             wizard.raise_()
             wizard.activateWindow()
 
-    def show_oauth_config_dialog(self):
+    def show_oauth_config_dialog(self) -> None:
         """Show dialog to configure OAuth client credentials."""
         dialog = QDialog(self)
         dialog.setWindowTitle("Configure Google OAuth")
@@ -731,7 +726,7 @@ class GoogleSetupPage(WizardPage):
         form_layout.addRow("Client ID:", self.client_id_edit)
 
         self.client_secret_edit = QLineEdit()
-        self.client_secret_edit.setEchoMode(QLineEdit.Password)
+        self.client_secret_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.client_secret_edit.setPlaceholderText("Your OAuth Client Secret")
         form_layout.addRow("Client Secret:", self.client_secret_edit)
 
@@ -781,13 +776,13 @@ class GoogleSetupPage(WizardPage):
 
         dialog.exec()
 
-    def _open_google_console(self):
+    def _open_google_console(self) -> None:
         """Open Google Cloud Console in browser."""
         import webbrowser
 
         webbrowser.open("https://console.cloud.google.com/apis/credentials")
 
-    def _save_oauth_config(self, dialog, client_id, client_secret):
+    def _save_oauth_config(self, dialog: QDialog, client_id: str, client_secret: str) -> None:
         """Save OAuth configuration."""
         if not client_id or not client_secret:
             QMessageBox.warning(
@@ -799,8 +794,9 @@ class GoogleSetupPage(WizardPage):
 
         try:
             # Update OAuth handler configuration
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
+            if self.oauth_handler:
+                self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
+                self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
 
             # Save to config manager if available
             wizard = self.window()
@@ -832,7 +828,6 @@ class GoogleSetupPage(WizardPage):
         """Validate Google setup."""
         if not self.credentials:
             return False, "Google authentication is required"
-        return True, ""
 
     def get_data(self) -> Dict[str, Any]:
         """Get Google configuration data."""
@@ -844,7 +839,7 @@ class GoogleSetupPage(WizardPage):
 class GeminiSetupPage(WizardPage):
     """Google Gemini API setup page."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "Connect to Google Gemini",
             "Set up AI-powered summary generation with Google Gemini.",
@@ -857,7 +852,7 @@ class GeminiSetupPage(WizardPage):
         # API Key with help
         key_layout = QHBoxLayout()
         self.api_key_edit = QLineEdit()
-        self.api_key_edit.setEchoMode(QLineEdit.Password)
+        self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.api_key_edit.setPlaceholderText("Your Google Gemini API key")
         key_layout.addWidget(self.api_key_edit)
 
@@ -891,7 +886,7 @@ class GeminiSetupPage(WizardPage):
 
         self.content_layout.addLayout(test_layout)
 
-    def open_api_key_help(self):
+    def open_api_key_help(self) -> None:
         """Open help for API key generation."""
         msg = QMessageBox()
         msg.setWindowTitle("Get Gemini API Key")
@@ -906,7 +901,7 @@ class GeminiSetupPage(WizardPage):
         )
 
         open_btn = msg.addButton("Open AI Studio", QMessageBox.ActionRole)
-        msg.addButton(QMessageBox.Ok)
+        msg.addButton(QMessageBox.StandardButton.Ok)
 
         result = msg.exec()
         if msg.clickedButton() == open_btn:
@@ -914,7 +909,7 @@ class GeminiSetupPage(WizardPage):
 
             webbrowser.open("https://aistudio.google.com/app/apikey")
 
-    def test_api_key(self):
+    def test_api_key(self) -> None:
         """Test Gemini API key."""
         self.test_btn.setEnabled(False)
         self.test_result.setText("Testing API key...")
@@ -936,7 +931,7 @@ class GeminiSetupPage(WizardPage):
             self.window().raise_()
             self.window().activateWindow()
 
-    def on_validation_complete(self, service: str, success: bool, message: str):
+    def on_validation_complete(self, service: str, success: bool, message: str) -> None:
         """Handle validation completion."""
         self.test_btn.setEnabled(True)
         self.thread.quit()
@@ -966,14 +961,13 @@ class GeminiSetupPage(WizardPage):
         """Get Gemini configuration data."""
         return {
             "api_key": self.api_key_edit.text().strip(),
-            "model_name": self.model_combo.currentText(),
         }
 
 
 class SummaryPage(WizardPage):
     """Summary page showing configuration status."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "Setup Complete!",
             "Your Executive Summary Tool is now configured and ready to use.",
@@ -1052,7 +1046,7 @@ class SummaryPage(WizardPage):
 class SetupWizard(QDialog):
     """Main setup wizard dialog."""
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.config_manager = config_manager
@@ -1072,7 +1066,7 @@ class SetupWizard(QDialog):
         # Prevent dialog from closing unintentionally
         self.setAttribute(Qt.WA_DeleteOnClose, False)
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the wizard UI."""
         layout = QVBoxLayout(self)
 
@@ -1105,7 +1099,7 @@ class SetupWizard(QDialog):
 
         layout.addLayout(nav_layout)
 
-    def create_pages(self):
+    def create_pages(self) -> None:
         """Create wizard pages."""
         # Welcome page
         self.pages.append(WelcomePage())
@@ -1133,7 +1127,7 @@ class SetupWizard(QDialog):
 
         self.update_navigation()
 
-    def go_next(self):
+    def go_next(self) -> None:
         """Go to next page."""
         current_page = self.pages[self.current_page]
 
@@ -1158,14 +1152,14 @@ class SetupWizard(QDialog):
 
         self.update_navigation()
 
-    def go_back(self):
+    def go_back(self) -> None:
         """Go to previous page."""
         if self.current_page > 0:
             self.current_page -= 1
             self.stacked_widget.setCurrentIndex(self.current_page)
             self.update_navigation()
 
-    def update_navigation(self):
+    def update_navigation(self) -> None:
         """Update navigation button states."""
         self.back_btn.setEnabled(self.current_page > 0)
 
@@ -1174,7 +1168,7 @@ class SetupWizard(QDialog):
         else:
             self.next_btn.setText("Next ▶")
 
-    def update_summary(self):
+    def update_summary(self) -> None:
         """Update the summary page with configuration status."""
         # Get service selection
         service_selection = self.pages[1].get_data()
@@ -1190,7 +1184,7 @@ class SetupWizard(QDialog):
 
         self.summary_page.update_status(service_selection, service_data)
 
-    def finish_setup(self):
+    def finish_setup(self) -> None:
         """Complete the setup process."""
         try:
             self.progress_bar.setVisible(True)
@@ -1248,7 +1242,7 @@ class SetupWizard(QDialog):
             self.logger.error(f"Setup failed: {e}")
             QMessageBox.critical(self, "Setup Error", f"Failed to complete setup: {e}")
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Handle close event to prevent accidental closing."""
         # If we're in the middle of validation, don't close
         if hasattr(self, "thread") and self.thread and self.thread.isRunning():

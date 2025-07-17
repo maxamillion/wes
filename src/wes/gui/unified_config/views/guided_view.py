@@ -28,15 +28,15 @@ from wes.gui.unified_config.utils.config_detector import ConfigDetector
 class ServiceCard(QFrame):
     """Card widget for displaying service configuration status."""
 
-    configure_clicked = Signal()
+    configure_clicked = Signal()  # type: ignore[misc]
 
-    def __init__(self, service_type: ServiceType, parent=None):
+    def __init__(self, service_type: ServiceType, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.service_type = service_type
         self.is_configured = False
         self._init_ui()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         self.setFrameStyle(QFrame.Box)
         self.setStyleSheet(
@@ -112,7 +112,7 @@ class ServiceCard(QFrame):
         )
         layout.addWidget(self.configure_button)
 
-    def update_status(self, validation_result: ValidationResult):
+    def update_status(self, validation_result: ValidationResult) -> None:
         """Update the card based on validation result."""
         self.is_configured = validation_result["is_valid"]
 
@@ -165,9 +165,9 @@ class GuidedView(QWidget):
 
     # Signals
     configuration_updated = Signal(str, dict)  # service, config
-    setup_complete = Signal()
+    setup_complete = Signal()  # type: ignore[misc]
 
-    def __init__(self, config_manager: ConfigManager, parent=None):
+    def __init__(self, config_manager: ConfigManager, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.config_manager = config_manager
         self.config_detector = ConfigDetector()
@@ -176,7 +176,7 @@ class GuidedView(QWidget):
         self._init_ui()
         self.refresh_status()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """Initialize the UI."""
         layout = QVBoxLayout(self)
 
@@ -226,7 +226,7 @@ class GuidedView(QWidget):
 
         layout.addLayout(button_layout)
 
-    def refresh_status(self):
+    def refresh_status(self) -> None:
         """Refresh the configuration status for all services."""
         # Get current configuration status
         service_status = self.config_detector.get_service_status(
@@ -261,7 +261,7 @@ class GuidedView(QWidget):
             """
             )
 
-    def _configure_service(self, service_type: ServiceType):
+    def _configure_service(self, service_type: ServiceType) -> None:
         """Open configuration dialog for a specific service."""
         # Create dialog if not exists
         if service_type not in self.config_dialogs:
@@ -302,7 +302,7 @@ class GuidedView(QWidget):
         dialog, page = self.config_dialogs[service_type]
         dialog.exec()
 
-    def _save_service_config(self, service_type: ServiceType, page, dialog):
+    def _save_service_config(self, service_type: ServiceType, page, dialog) -> None:
         """Save configuration for a service."""
         # Validate first
         validation_result = page.validate()
@@ -334,7 +334,7 @@ class GuidedView(QWidget):
         # Refresh status
         self.refresh_status()
 
-    def _check_and_continue(self):
+    def _check_and_continue(self) -> None:
         """Check if all services are configured and continue."""
         # Double-check configuration
         service_status = self.config_detector.get_service_status(

@@ -30,7 +30,7 @@ class ConfigPageFactory(Protocol):
 class DefaultConfigPageFactory:
     """Default factory for creating configuration pages."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the factory with page mappings."""
         self._page_registry: Dict[ServiceType, Type[ConfigPageBase]] = {}
         self._initialize_defaults()
@@ -100,7 +100,7 @@ class DefaultConfigPageFactory:
 class TestConfigPageFactory:
     """Test factory for creating mock configuration pages."""
 
-    def __init__(self, mock_pages: Optional[Dict[ServiceType, ConfigPageBase]] = None):
+    def __init__(self, mock_pages: Optional[Dict[ServiceType, ConfigPageBase]] = None) -> None:
         """Initialize with optional mock pages.
 
         Args:

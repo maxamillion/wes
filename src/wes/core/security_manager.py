@@ -18,7 +18,7 @@ from ..utils.logging_config import get_security_logger
 class SecurityManager:
     """Manages secure credential storage and encryption operations."""
 
-    def __init__(self, master_password: Optional[str] = None):
+    def __init__(self, master_password: Optional[str] = None) -> None:
         self.security_logger = get_security_logger()
         self._master_password = master_password
         self._cipher_suite: Optional[Fernet] = None

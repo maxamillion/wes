@@ -8,7 +8,7 @@ from wes.gui.unified_config.types import ConfigState, ServiceType, ValidationRes
 class ConfigDetector:
     """Analyzes configuration state and completeness."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.required_fields = {
             ServiceType.JIRA: ["url", "username", "api_token"],
             ServiceType.GEMINI: ["api_key"],
@@ -81,7 +81,7 @@ class ConfigDetector:
 
         required = self.required_fields.get(service_type, [])
         return all(
-            field in service_config and service_config[field] for field in required
+            service_config.get(field) for field in required
         )
 
     def get_missing_services(self, config: Dict[str, Any]) -> list[ServiceType]:
@@ -153,13 +153,10 @@ class ConfigDetector:
 
             if not has_api_key:
                 return ["API key"]
-            return []
 
         required = self.required_fields.get(service_type, [])
         return [
-            field
-            for field in required
-            if field not in service_config or not service_config[field]
+            field for field in required if not service_config.get(field)
         ]
 
     def suggest_next_action(

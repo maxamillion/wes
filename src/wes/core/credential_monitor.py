@@ -82,7 +82,7 @@ class CredentialMonitor(QObject):
             "gemini": self._refresh_gemini_credentials,
         }
 
-    def start_monitoring(self):
+    def start_monitoring(self) -> None:
         """Start credential monitoring."""
         if self.monitoring_active:
             return
@@ -106,7 +106,7 @@ class CredentialMonitor(QObject):
             interval_minutes=self.monitoring_config.check_interval_minutes,
         )
 
-    def stop_monitoring(self):
+    def stop_monitoring(self) -> None:
         """Stop credential monitoring."""
         if not self.monitoring_active:
             return
@@ -119,7 +119,7 @@ class CredentialMonitor(QObject):
 
         self.logger.info("Credential monitoring stopped")
 
-    def _on_timer_check(self):
+    def _on_timer_check(self) -> None:
         """Handle QTimer timeout for credential checks."""
         try:
             self.check_all_credentials()
@@ -130,7 +130,7 @@ class CredentialMonitor(QObject):
             "credential_monitoring_stopped", severity="INFO"
         )
 
-    def check_all_credentials(self):
+    def check_all_credentials(self) -> None:
         """Check all configured credentials."""
         if not self.monitoring_active:
             return
@@ -146,7 +146,7 @@ class CredentialMonitor(QObject):
         # Save status after checks
         self._save_status_to_disk()
 
-    def _check_credential(self, service: str, credential_type: str):
+    def _check_credential(self, service: str, credential_type: str) -> None:
         """Check a specific credential."""
         status_key = f"{service}:{credential_type}"
 
@@ -265,7 +265,7 @@ class CredentialMonitor(QObject):
         except Exception as e:
             return {"healthy": False, "error": f"Health check failed: {e}"}
 
-    def _attempt_auto_refresh(self, service: str, credential_type: str):
+    def _attempt_auto_refresh(self, service: str, credential_type: str) -> None:
         """Attempt to automatically refresh credentials."""
         if service in self.refresh_handlers:
             try:
@@ -327,7 +327,7 @@ class CredentialMonitor(QObject):
                     return {
                         "url": config.url,
                         "username": config.username,
-                        "api_token": api_token,
+                        "api_token": api_token
                     }
 
             elif service == "gemini":
@@ -343,7 +343,7 @@ class CredentialMonitor(QObject):
             self.logger.error(f"Failed to get credentials for {service}: {e}")
             return None
 
-    def _load_status_from_disk(self):
+    def _load_status_from_disk(self) -> None:
         """Load credential status from disk."""
         try:
             status_file = self.config_manager.config_dir / "credential_status.json"
@@ -365,8 +365,7 @@ class CredentialMonitor(QObject):
                                 status_data[date_field] = datetime.fromisoformat(
                                     status_data[date_field]
                                 )
-                            except Exception:
-                                status_data[date_field] = None
+                            except Exception: Optional[status_data[date_field]] = None
 
                     self.credential_statuses[status_key] = CredentialStatus(
                         **status_data
@@ -379,7 +378,7 @@ class CredentialMonitor(QObject):
         except Exception as e:
             self.logger.error(f"Failed to load credential status: {e}")
 
-    def _save_status_to_disk(self):
+    def _save_status_to_disk(self) -> None:
         """Save credential status to disk."""
         try:
             status_file = self.config_manager.config_dir / "credential_status.json"
@@ -414,7 +413,7 @@ class CredentialMonitor(QObject):
 class CredentialNotificationManager:
     """Manage notifications for credential events."""
 
-    def __init__(self, monitor: CredentialMonitor):
+    def __init__(self, monitor: CredentialMonitor) -> None:
         self.monitor = monitor
         self.logger = get_logger(__name__)
 
@@ -427,16 +426,16 @@ class CredentialNotificationManager:
         # Notification callbacks
         self.notification_callbacks: List[Callable] = []
 
-    def add_notification_callback(self, callback: Callable):
+    def add_notification_callback(self, callback: Callable) -> None:
         """Add a notification callback function."""
         self.notification_callbacks.append(callback)
 
-    def remove_notification_callback(self, callback: Callable):
+    def remove_notification_callback(self, callback: Callable) -> None:
         """Remove a notification callback function."""
         if callback in self.notification_callbacks:
             self.notification_callbacks.remove(callback)
 
-    def on_status_changed(self, service: str, credential_type: str, healthy: bool):
+    def on_status_changed(self, service: str, credential_type: str, healthy: bool) -> None:
         """Handle credential status change."""
         message = f"Credential {service}:{credential_type} is now {'healthy' if healthy else 'unhealthy'}"
         severity = "info" if healthy else "warning"
@@ -468,7 +467,7 @@ class CredentialNotificationManager:
             },
         )
 
-    def on_credential_failed(self, service: str, credential_type: str, error: str):
+    def on_credential_failed(self, service: str, credential_type: str, error: str) -> None:
         """Handle credential failure."""
         message = f"Credential {service}:{credential_type} has failed: {error}"
 
@@ -478,7 +477,7 @@ class CredentialNotificationManager:
             {"service": service, "credential_type": credential_type, "error": error},
         )
 
-    def on_credentials_refreshed(self, service: str, credential_type: str):
+    def on_credentials_refreshed(self, service: str, credential_type: str) -> None:
         """Handle successful credential refresh."""
         message = (
             f"Credential {service}:{credential_type} has been automatically refreshed"
@@ -488,7 +487,7 @@ class CredentialNotificationManager:
             message, "info", {"service": service, "credential_type": credential_type}
         )
 
-    def _send_notification(self, message: str, severity: str, data: Dict[str, Any]):
+    def _send_notification(self, message: str, severity: str, data: Dict[str, Any]) -> None:
         """Send notification to all registered callbacks."""
         for callback in self.notification_callbacks:
             try:

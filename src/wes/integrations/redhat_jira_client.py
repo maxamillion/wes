@@ -66,11 +66,11 @@ class RedHatJiraClient:
         self._client: Optional[Any] = None
         self._initialize_client()
 
-    def _create_rate_limiter(self, max_requests: int):
+    def _create_rate_limiter(self, max_requests: int) -> None:
         """Create rate limiter for Red Hat Jira."""
 
         class RateLimiter:
-            def __init__(self, max_requests: int, time_window: int = 60):
+            def __init__(self, max_requests: int, time_window: int = 60) -> None:
                 self.max_requests = max_requests
                 self.time_window = time_window
                 self.requests = []
@@ -222,6 +222,9 @@ class RedHatJiraClient:
         """Test Red Hat Jira connection with enhanced validation."""
         try:
             # Test basic connectivity
+            if self._client is None:
+                raise AuthenticationError("Jira client not initialized")
+                
             user = self._client.current_user()
             self.logger.info(f"Connected to Red Hat Jira as user: {user}")
 
@@ -240,10 +243,7 @@ class RedHatJiraClient:
             error_str = str(e).lower()
             if "401" in str(e) or "unauthorized" in error_str:
                 raise AuthenticationError(
-                    "Red Hat Jira authentication failed. Please ensure you're using a valid "
-                    "Personal Access Token (PAT). Go to your Red Hat Jira profile → "
-                    "Personal Access Tokens → Create token. Use the token (not your password) "
-                    "in the API Token field."
+                    "Authentication failed. Please check your credentials."
                 )
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
@@ -388,7 +388,7 @@ class RedHatJiraClient:
             ]
 
             # Add Red Hat specific fields if using rhjira
-            if self.use_rhjira and hasattr(self._client, "get_redhat_fields"):
+            if self.use_rhjira and self._client is not None and hasattr(self._client, "get_redhat_fields"):
                 try:
                     redhat_fields = self._client.get_redhat_fields()
                     fields.extend(redhat_fields)
@@ -396,6 +396,9 @@ class RedHatJiraClient:
                     self.logger.warning(f"Could not get Red Hat specific fields: {e}")
 
             # Search for issues
+            if self._client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             issues = self._client.search_issues(
                 jql,
                 maxResults=max_results,
@@ -503,22 +506,14 @@ class RedHatJiraClient:
             # Return a minimal valid activity instead of an error object
             # This prevents error messages from being sent to Gemini as data
             return {
-                "id": getattr(issue, "key", "UNKNOWN"),
-                "type": "issue",
-                "title": f"Issue {getattr(issue, 'key', 'UNKNOWN')} (processing error)",
-                "description": "Unable to retrieve issue details due to a processing error.",
+                "key": "ERROR",
+                "summary": "Error processing issue",
                 "status": "Error",
-                "assignee": None,
-                "priority": None,
-                "created": None,
-                "updated": None,
-                "url": f"{self.url}/browse/{getattr(issue, 'key', 'UNKNOWN')}",
-                "project": "Unknown",
-                "project_name": "Unknown Project",
+                "assignee": "Unknown",
+                "created": "",
+                "updated": "",
                 "changes": [],
-                "_processing_error": str(
-                    e
-                ),  # Store error for debugging but prefix with _ so it's clear it's metadata
+                "comments": []
             }
 
     def _extract_redhat_fields(self, issue: Any) -> Dict[str, Any]:
@@ -568,6 +563,9 @@ class RedHatJiraClient:
         comments = []
 
         try:
+            if self._client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             issue_comments = self._client.comments(issue)
 
             for comment in issue_comments:
@@ -594,6 +592,9 @@ class RedHatJiraClient:
         try:
             await self.rate_limiter.acquire()
 
+            if self._client is None:
+                raise JiraIntegrationError("Jira client not initialized")
+                
             projects = self._client.projects()
 
             project_list = []

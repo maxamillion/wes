@@ -1,5 +1,6 @@
 """Service locator for dependency injection and improved testability.
 
+from typing import Any
 This module provides a simple service locator pattern to manage dependencies
 across the application, making it easier to test and maintain.
 """
@@ -22,7 +23,7 @@ class ServiceNotFoundError(Exception):
 class ServiceLocator:
     """Service locator for managing application dependencies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the service locator."""
         self._services: Dict[Type, Any] = {}
         self._factories: Dict[Type, Callable[[], Any]] = {}
@@ -72,8 +73,7 @@ class ServiceLocator:
             return instance
 
         raise ServiceNotFoundError(
-            f"Service not found: {service_type.__name__}. "
-            f"Available services: {list(self._services.keys())}"
+            f"Service {service_type.__name__} is not registered"
         )
 
     def get_optional(
@@ -177,18 +177,18 @@ def inject(service_type: Type[T]) -> Callable:
 class ServiceScope:
     """Context manager for temporary service registration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the service scope."""
         self._original_services: Dict[Type, Any] = {}
         self._original_factories: Dict[Type, Callable[[], Any]] = {}
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enter the scope, saving current services."""
         self._original_services = _service_locator._services.copy()
         self._original_factories = _service_locator._factories.copy()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the scope, restoring original services."""
         _ = exc_type, exc_val, exc_tb  # Unused but required by protocol
         _service_locator._services = self._original_services
@@ -204,7 +204,7 @@ class ServiceScope:
 
 
 # Initialize default services
-def initialize_default_services():
+def initialize_default_services() -> None:
     """Initialize default services for the application."""
     # Register ConfigManager factory
     register_service_factory(ConfigManager, lambda: ConfigManager())

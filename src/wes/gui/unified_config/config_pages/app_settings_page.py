@@ -1,6 +1,6 @@
 """Application settings configuration page."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -32,7 +32,7 @@ class AppSettingsPage(ConfigPageBase):
     page_icon = "SP_ComputerIcon"
     page_description = "Configure general application behavior and preferences"
 
-    def _setup_page_ui(self, parent_layout: QVBoxLayout):
+    def _setup_page_ui(self, parent_layout: QVBoxLayout) -> None:
         """Setup application settings UI."""
         # General settings
         general_group = QGroupBox("General Settings")
@@ -170,7 +170,7 @@ class AppSettingsPage(ConfigPageBase):
 
         return group
 
-    def _browse_output_dir(self):
+    def _browse_output_dir(self) -> None:
         """Browse for output directory."""
         current_dir = self.output_dir_input.text() or ""
 
@@ -181,7 +181,7 @@ class AppSettingsPage(ConfigPageBase):
         if directory:
             self.output_dir_input.setText(directory)
 
-    def _clear_cache(self):
+    def _clear_cache(self) -> None:
         """Clear application cache."""
         # TODO: Implement actual cache clearing
         from PySide6.QtWidgets import QMessageBox
@@ -191,11 +191,11 @@ class AppSettingsPage(ConfigPageBase):
             "Clear Cache",
             "Are you sure you want to clear the application cache?\n"
             "This will remove cached Jira data and may slow down the next summary generation.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             # Clear cache
             # self.config_manager.clear_cache()
             self.cache_size_label.setText("Cache size: 0 MB")
@@ -270,9 +270,9 @@ class AppSettingsPage(ConfigPageBase):
         # Application settings are always valid (no required fields)
         return ValidationResult(
             is_valid=True,
-            message="Settings valid",
+            message="Application settings are valid",
             service=None,
-            details={"configured": True},
+            details={"type": "application_settings"}
         )
 
     def test_connection(self) -> None:
@@ -284,16 +284,14 @@ class AppSettingsPage(ConfigPageBase):
         return [
             self.theme_combo,
             self.auto_save_check,
-            self.save_interval_spin,
+            self.include_comments,
             self.date_range_spin,
-            self.output_dir_input,
         ]
 
     def get_advanced_fields(self) -> List[QWidget]:
         """Return advanced field widgets."""
         return [
             self.enable_debug_log,
-            self.cache_duration_spin,
             self.use_proxy,
-            self.proxy_input,
+            self.cache_duration_spin,
         ]
