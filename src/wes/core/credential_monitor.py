@@ -438,8 +438,10 @@ class CredentialNotificationManager:
 
     def on_status_changed(self, service: str, credential_type: str, healthy: bool):
         """Handle credential status change."""
-        message = f"Credential {service}:{credential_type} is now " \
-                  f"{'healthy' if healthy else 'unhealthy'}"
+        message = (
+            f"Credential {service}:{credential_type} is now "
+            f"{'healthy' if healthy else 'unhealthy'}"
+        )
         severity = "info" if healthy else "warning"
 
         self._send_notification(

@@ -337,7 +337,7 @@ class RedHatJiraClient:
             # Build project clause
             project_clause = ""
             if projects:
-                project_list = ','.join([f'"{proj}"' for proj in projects])
+                project_list = ",".join([f'"{proj}"' for proj in projects])
                 project_clause = f" AND project in ({project_list})"
 
             # Add Red Hat specific filters if available
