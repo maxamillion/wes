@@ -667,8 +667,9 @@ class ConfigDialog(QDialog):
                                 "numbers, dots, underscores, and hyphens.",
                             )
                             return False
-                except Exception:
-                    pass  # Continue with basic validation
+                except Exception as e:
+                    logger.debug(f"Exception during validation: {e}")
+                    # Continue with basic validation
 
             if (
                 not self.jira_token_edit.text()

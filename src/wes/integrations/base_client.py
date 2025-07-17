@@ -93,7 +93,9 @@ class RetryStrategy:
             # Add random jitter to prevent thundering herd
             import random
 
-            delay = delay * (0.5 + random.random() * 0.5)
+            delay = delay * (
+                0.5 + random.random() * 0.5
+            )  # nosec B311 - Random used for timing jitter, not cryptography
 
         return delay
 
