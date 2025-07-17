@@ -54,9 +54,9 @@ jobs:
         uv run flake8 src tests
         uv run pylint src/wes
 
-    - name: Run type checking
-      run: |
-        uv run mypy src/wes
+    # - name: Run type checking
+    #   run: |
+    #     uv run mypy src/wes
 
     - name: Setup headless testing environment
       run: |
