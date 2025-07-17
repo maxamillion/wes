@@ -26,14 +26,31 @@ jobs:
       run: |
         uv sync --extra dev
 
+    - name: Install system dependencies for Qt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgl1-mesa-glx \
+          libgl1-mesa-dri \
+          libegl1-mesa \
+          libxcb-cursor0 \
+          libxcb-icccm4 \
+          libxcb-image0 \
+          libxcb-keysyms1 \
+          libxcb-randr0 \
+          libxcb-render-util0 \
+          libxcb-xinerama0 \
+          libxcb-xfixes0 \
+          xvfb
+
     - name: Check code formatting
       run: |
-        uv run black --check src tests
-        uv run isort --check-only src tests
+        uv run --extra dev black --check src tests
+        uv run --extra dev isort --check-only src tests
 
     - name: Run linting (fast)
       run: |
-        uv run flake8 src tests --select=E9,F63,F7,F82 --show-source --statistics
+        uv run --extra dev flake8 src tests --select=E9,F63,F7,F82 --show-source --statistics
 
     # - name: Run type checking
     #   run: |
@@ -41,14 +58,14 @@ jobs:
 
     - name: Run quick unit tests
       run: |
-        uv run pytest tests/unit/ -x --tb=short -q
+        uv run --extra dev pytest tests/unit/ -x --tb=short -q
       env:
         QT_QPA_PLATFORM: "offscreen"
         QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
 
     - name: Check security (basic)
       run: |
-        uv run bandit -r src/ --severity-level medium --confidence-level medium --quiet
+        uv run --extra dev bandit -r src/ --severity-level medium --confidence-level medium --quiet
 
     - name: Validate project structure
       run: |
@@ -80,5 +97,5 @@ jobs:
 
     - name: Run pre-commit hooks
       run: |
-        uv run pre-commit run --all-files
+        uv run --extra dev pre-commit run --all-files
       continue-on-error: true

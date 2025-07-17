@@ -41,6 +41,9 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
+          libgl1-mesa-glx \
+          libgl1-mesa-dri \
+          libegl1-mesa \
           libxcb-cursor0 \
           libxcb-icccm4 \
           libxcb-image0 \
@@ -163,6 +166,9 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
+          libgl1-mesa-glx \
+          libgl1-mesa-dri \
+          libegl1-mesa \
           libxcb-cursor0 \
           libxcb-icccm4 \
           libxcb-image0 \
