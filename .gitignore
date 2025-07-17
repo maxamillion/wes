@@ -210,3 +210,4 @@ __marimo__/
 test-results-unit.xml
 security-test-results.xml
 test-results-integration.xml
+security-*.json
