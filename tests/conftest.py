@@ -17,16 +17,16 @@ from src.wes.core.security_manager import SecurityManager
 def setup_headless_environment():
     """Setup headless environment for GUI tests."""
     # Configure Qt for headless testing
-    if not os.environ.get('QT_QPA_PLATFORM'):
-        os.environ['QT_QPA_PLATFORM'] = 'offscreen'
-    
+    if not os.environ.get("QT_QPA_PLATFORM"):
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
     # Disable QML2 debugging to avoid warnings
-    os.environ['QT_LOGGING_RULES'] = '*.debug=false;qt.qpa.xcb=false'
-    
+    os.environ["QT_LOGGING_RULES"] = "*.debug=false;qt.qpa.xcb=false"
+
     # Set up virtual display environment variables
-    if not os.environ.get('DISPLAY'):
-        os.environ['DISPLAY'] = ':99'
-    
+    if not os.environ.get("DISPLAY"):
+        os.environ["DISPLAY"] = ":99"
+
     yield
 
 
@@ -42,9 +42,9 @@ def event_loop():
 def qapp():
     """QApplication fixture for GUI tests."""
     # Set up headless mode for GUI tests
-    if not os.environ.get('QT_QPA_PLATFORM'):
-        os.environ['QT_QPA_PLATFORM'] = 'offscreen'
-    
+    if not os.environ.get("QT_QPA_PLATFORM"):
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
