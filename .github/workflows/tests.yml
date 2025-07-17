@@ -47,8 +47,7 @@ jobs:
           libxcb-randr0 \
           libxcb-render-util0 \
           libxcb-xinerama0 \
-          libxcb-xfixes0 \
-          xvfb
+          libxcb-xfixes0
 
     - name: Run linting
       run: |
@@ -59,12 +58,12 @@ jobs:
       run: |
         uv run mypy src/wes
 
-    - name: Start virtual display (Linux)
-      if: runner.os == 'Linux'
+    - name: Setup headless testing environment
       run: |
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-        sleep 3
+        # Use Qt's offscreen platform instead of Xvfb for better performance
+        echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+        echo "QT_LOGGING_RULES=*.debug=false;qt.qpa.xcb=false" >> $GITHUB_ENV
+        echo "DISPLAY=:99" >> $GITHUB_ENV
 
     - name: Run unit tests
       run: |
@@ -75,8 +74,8 @@ jobs:
           --cov-fail-under=50 \
           --junitxml=test-results-unit.xml
       env:
-        DISPLAY: ":99"
-        QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'offscreen' }}
+        QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run integration tests  
@@ -84,8 +83,8 @@ jobs:
         uv run pytest tests/integration/ \
           --junitxml=test-results-integration.xml
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run security tests
@@ -97,8 +96,8 @@ jobs:
           echo "No security tests found, skipping"
         fi
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run Red Hat Jira tests
@@ -107,8 +106,8 @@ jobs:
           -m "not integration" \
           --junitxml=test-results-redhat.xml
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
       continue-on-error: true
 

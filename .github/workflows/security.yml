@@ -87,6 +87,7 @@ jobs:
         fi
       env:
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
 
     - name: Generate security report
       if: always()

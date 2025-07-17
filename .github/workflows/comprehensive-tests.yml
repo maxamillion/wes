@@ -50,14 +50,14 @@ jobs:
           libxcb-randr0 \
           libxcb-render-util0 \
           libxcb-xinerama0 \
-          libxcb-xfixes0 \
-          xvfb
+          libxcb-xfixes0
 
-    - name: Start virtual display
+    - name: Setup headless testing environment
       run: |
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-        sleep 3
+        # Use Qt's offscreen platform instead of Xvfb for better performance
+        echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+        echo "QT_LOGGING_RULES=*.debug=false;qt.qpa.xcb=false" >> $GITHUB_ENV
+        echo "DISPLAY=:99" >> $GITHUB_ENV
 
     - name: Run all tests with coverage
       run: |
@@ -69,8 +69,8 @@ jobs:
           --cov-fail-under=50 \
           --junitxml=test-results-all.xml
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run end-to-end tests
@@ -83,8 +83,8 @@ jobs:
           echo "No e2e tests found, skipping"
         fi
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run comprehensive Red Hat Jira tests
@@ -94,8 +94,8 @@ jobs:
           --junitxml=test-results-redhat-comprehensive.xml \
           -v
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
         RHJIRA_COMPREHENSIVE_TEST: "true"
       continue-on-error: true
@@ -254,6 +254,7 @@ jobs:
         esac
       env:
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
