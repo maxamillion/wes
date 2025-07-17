@@ -329,7 +329,8 @@ class RedHatJiraClient:
             end_str = end_date.strftime("%Y-%m-%d")
 
             # Build user clause with Red Hat username handling
-            user_clause = f"assignee in ({','.join([f'\"{user}\"' for user in users])})"
+            quoted_users = ",".join([f'"{user}"' for user in users])
+            user_clause = f"assignee in ({quoted_users})"
 
             # Build date clause
             date_clause = f"updated >= '{start_str}' AND updated <= '{end_str}'"

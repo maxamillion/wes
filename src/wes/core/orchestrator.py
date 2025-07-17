@@ -450,8 +450,8 @@ class WorkflowOrchestrator:
             )
 
             self.logger.info(
-                f"Fetched {
-                    len(activity_data)} activities for manager {manager_identifier}'s team"
+                f"Fetched {len(activity_data)} activities for manager "
+                f"{manager_identifier}'s team"
             )
 
             # Store hierarchy info in result for reference
