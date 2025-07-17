@@ -106,6 +106,7 @@ test: test-unit test-integration ## Run all tests
 
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
+	QT_QPA_PLATFORM=offscreen QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false" \
 	$(UV) run pytest $(TESTS_DIR)/unit/ $(VERBOSE_FLAG) \
 		--cov=$(SRC_DIR)/wes \
 		--cov-report=html:htmlcov \
@@ -125,11 +126,24 @@ test-security: ## Run security tests
 
 test-e2e: ## Run end-to-end tests
 	@echo "Running end-to-end tests..."
+	QT_QPA_PLATFORM=offscreen QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false" \
 	$(UV) run pytest $(TESTS_DIR)/e2e/ $(VERBOSE_FLAG) \
 		--junitxml=test-results-e2e.xml
 
+test-headless: ## Run all tests in headless mode
+	@echo "Running all tests in headless mode..."
+	@if command -v xvfb-run >/dev/null 2>&1; then \
+		echo "Using xvfb-run for virtual display"; \
+		xvfb-run -a -s "-screen 0 1024x768x24" $(MAKE) test; \
+	else \
+		echo "Using Qt offscreen platform"; \
+		QT_QPA_PLATFORM=offscreen QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false" \
+		$(MAKE) test; \
+	fi
+
 coverage: ## Generate test coverage report
 	@echo "Generating coverage report..."
+	QT_QPA_PLATFORM=offscreen QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false" \
 	$(UV) run pytest $(TESTS_DIR)/ \
 		--cov=$(SRC_DIR)/wes \
 		--cov-report=html:htmlcov \
