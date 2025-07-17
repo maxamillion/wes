@@ -408,11 +408,8 @@ class WorkflowOrchestrator:
                     first_activity.pop("description", None)
                     first_activity.pop("comments", None)
                     self.logger.debug(
-                        f"Sample activity structure: {
-                            json.dumps(
-                                first_activity,
-                                indent=2,
-                                default=str)}"
+                        f"Sample activity structure: "
+                        f"{json.dumps(first_activity, indent=2, default=str)}"
                     )
 
             return activity_data
