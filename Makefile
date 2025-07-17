@@ -172,7 +172,7 @@ typecheck: ## Run type checking
 security-scan: ## Run security scans
 	@echo "Running security scans..."
 	@$(UV) run --extra dev bandit -r $(SRC_DIR) -f json -o security-report.json $(VERBOSE_FLAG) || true
-	@$(UV) run --extra dev safety check --json --output security-deps.json || true
+	@$(UV) run --extra dev safety check --output json > security-deps.json 2>/dev/null || true
 	@$(UV) run --extra dev semgrep --config=auto $(SRC_DIR) --json --output=security-semgrep.json || true
 	@echo "Security scan results saved to security-*.json files"
 

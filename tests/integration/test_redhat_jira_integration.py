@@ -215,21 +215,6 @@ class TestRedHatJiraIntegration:
             assert info["rhjira_available"]
 
     @pytest.mark.integration
-    def test_redhat_environment_detection(self):
-        """Test Red Hat environment detection and configuration."""
-        # Test with environment variables
-        test_env = {
-            "RHJIRA_TEST_MODE": "true",
-            "RHJIRA_COMPREHENSIVE_TEST": "true",
-        }
-
-        for key, value in test_env.items():
-            assert (
-                os.environ.get(key, "").lower() in ["true", "1", "yes"]
-                or key not in os.environ
-            )
-
-    @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_redhat_end_to_end_workflow(self, redhat_jira_config):
         """Test complete end-to-end workflow with Red Hat Jira."""

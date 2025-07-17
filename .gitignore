@@ -208,6 +208,7 @@ __marimo__/
 
 # SuperClaude does this a lot
 test-results-unit.xml
-security-test-results.xml
 test-results-integration.xml
+test-results-security.xml
+security-test-results.xml
 security-*.json
