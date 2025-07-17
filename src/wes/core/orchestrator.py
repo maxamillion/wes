@@ -390,7 +390,8 @@ class WorkflowOrchestrator:
                 self.logger.info(
                     f"Valid activities: {
                         len(valid_activities)}, Error activities: {
-                        len(error_activities)}")
+                        len(error_activities)}"
+                )
 
                 if error_activities:
                     self.logger.warning(
@@ -412,7 +413,8 @@ class WorkflowOrchestrator:
                             json.dumps(
                                 first_activity,
                                 indent=2,
-                                default=str)}")
+                                default=str)}"
+                    )
 
             return activity_data
 
@@ -453,7 +455,8 @@ class WorkflowOrchestrator:
 
             self.logger.info(
                 f"Fetched {
-                    len(activity_data)} activities for manager {manager_identifier}'s team")
+                    len(activity_data)} activities for manager {manager_identifier}'s team"
+            )
 
             # Store hierarchy info in result for reference
             if hasattr(self, "result"):
@@ -492,7 +495,8 @@ class WorkflowOrchestrator:
                         "2. Check that the specified users have accessible issues\n"
                         "3. Ensure the date range contains valid data\n"
                         "4. Review the application logs for specific error details\n\n"
-                        "Please contact your system administrator if this issue persists."),
+                        "Please contact your system administrator if this issue persists."
+                    ),
                     "model": "error_handler",
                     "usage": {},
                     "generated_at": datetime.now().timestamp(),

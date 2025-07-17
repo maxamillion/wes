@@ -1,6 +1,5 @@
 """Configuration dialog for the Executive Summary Tool."""
 
-
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,

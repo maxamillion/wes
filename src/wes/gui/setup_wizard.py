@@ -494,7 +494,8 @@ class GoogleSetupPage(WizardPage):
 
         oauth_info = QLabel(
             "We'll use Google OAuth to securely connect to your Google account. "
-            "This will give the application permission to create and manage documents in Google Drive.")
+            "This will give the application permission to create and manage documents in Google Drive."
+        )
         oauth_info.setWordWrap(True)
         oauth_layout.addWidget(oauth_info)
 
@@ -627,7 +628,8 @@ class GoogleSetupPage(WizardPage):
         # Main instructions
         intro = QLabel(
             "Google OAuth client credentials are required to authenticate with Google services. "
-            "Follow the steps below to obtain these credentials.")
+            "Follow the steps below to obtain these credentials."
+        )
         intro.setWordWrap(True)
         scroll_layout.addWidget(intro)
 
@@ -734,7 +736,8 @@ class GoogleSetupPage(WizardPage):
         # Important note
         note_label = QLabel(
             "<b>Note:</b> The application will use <code>http://localhost:8080/callback</code> "
-            "as the redirect URI. This is automatically configured for Desktop applications.")
+            "as the redirect URI. This is automatically configured for Desktop applications."
+        )
         note_label.setWordWrap(True)
         note_label.setStyleSheet(
             "background-color: #f0f0f0; padding: 10px; border-radius: 5px;"

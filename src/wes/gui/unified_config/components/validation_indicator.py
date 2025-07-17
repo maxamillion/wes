@@ -1,6 +1,5 @@
 """Real-time validation indicator component."""
 
-
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QTimer, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 

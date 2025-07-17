@@ -1405,7 +1405,8 @@ class SingleWindowMainWindow(QMainWindow):
             "<li>Create OAuth 2.0 credentials (Desktop application type)</li>"
             "<li>Add <code>http://localhost:8080/callback</code> as a redirect URI</li>"
             "<li>Copy your Client ID and Client Secret below</li>"
-            "</ol>")
+            "</ol>"
+        )
         instructions.setWordWrap(True)
         instructions.setOpenExternalLinks(True)
         scroll_layout.addWidget(instructions)
@@ -1428,7 +1429,8 @@ class SingleWindowMainWindow(QMainWindow):
         # Important note
         note_label = QLabel(
             "<b>Note:</b> The application will use <code>http://localhost:8080/callback</code> "
-            "as the redirect URI. This is automatically configured for Desktop applications.")
+            "as the redirect URI. This is automatically configured for Desktop applications."
+        )
         note_label.setWordWrap(True)
         note_label.setStyleSheet(
             "background-color: #f0f0f0; padding: 10px; border-radius: 5px;"

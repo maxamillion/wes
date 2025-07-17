@@ -253,7 +253,8 @@ class BaseIntegrationClient(ABC):
                         error_text = await response.text()
                         raise IntegrationError(
                             f"Request failed with status {
-                                response.status}: {error_text}")
+                                response.status}: {error_text}"
+                        )
 
                     # Parse response
                     if response.content_type == "application/json":

@@ -184,7 +184,8 @@ class GuidedView(QWidget):
         header_label = QLabel(
             "<h2>Complete Your Setup</h2>"
             "<p>Some services need to be configured before you can start creating summaries. "
-            "Click on any service below to set it up.</p>")
+            "Click on any service below to set it up.</p>"
+        )
         header_label.setWordWrap(True)
         layout.addWidget(header_label)
 

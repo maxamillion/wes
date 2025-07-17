@@ -114,7 +114,8 @@ class RedHatJiraClient:
 
             self.logger.info(
                 f"Red Hat Jira client initialized successfully using {
-                    'rhjira' if self.use_rhjira else 'jira'}")
+                    'rhjira' if self.use_rhjira else 'jira'}"
+            )
 
         except Exception as e:
             self.security_logger.log_authentication_attempt(
@@ -242,7 +243,8 @@ class RedHatJiraClient:
                     "Red Hat Jira authentication failed. Please ensure you're using a valid "
                     "Personal Access Token (PAT). Go to your Red Hat Jira profile → "
                     "Personal Access Tokens → Create token. Use the token (not your password) "
-                    "in the API Token field.")
+                    "in the API Token field."
+                )
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
 
