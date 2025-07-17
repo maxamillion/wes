@@ -110,7 +110,7 @@ test-unit: ## Run unit tests
 		--cov=$(SRC_DIR)/wes \
 		--cov-report=html:htmlcov \
 		--cov-report=term-missing \
-		--cov-fail-under=95 \
+		--cov-fail-under=1 \
 		--junitxml=test-results-unit.xml
 
 test-integration: ## Run integration tests

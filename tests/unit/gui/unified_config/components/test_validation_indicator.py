@@ -150,10 +150,12 @@ class TestValidatedLineEdit:
 
     def test_password_mode(self, qtbot):
         """Test password mode."""
+        from PySide6.QtWidgets import QLineEdit
+        
         line_edit = ValidatedLineEdit("Password", password=True)
         qtbot.addWidget(line_edit)
 
-        assert line_edit.line_edit.echoMode() == line_edit.line_edit.Password
+        assert line_edit.line_edit.echoMode() == QLineEdit.Password
 
     def test_text_change_triggers_validation(self, line_edit, qtbot):
         """Test that text change triggers validation."""

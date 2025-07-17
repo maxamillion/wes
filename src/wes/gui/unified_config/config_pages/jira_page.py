@@ -232,6 +232,15 @@ class JiraConfigPage(ConfigPageBase):
                 details={"field": "url", "current_value": url},
             )
 
+        # Cloud Jira requires email as username
+        if jira_type == JiraType.CLOUD and "@" not in config["username"]:
+            return ValidationResult(
+                is_valid=False,
+                message="Cloud Jira requires email address as username",
+                service=self.service_type,
+                details={"field": "username"},
+            )
+
         # All validations passed
         return ValidationResult(
             is_valid=True,

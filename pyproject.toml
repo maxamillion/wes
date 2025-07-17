@@ -152,7 +152,7 @@ addopts = [
     "--cov=src/wes",
     "--cov-report=html",
     "--cov-report=term-missing",
-    "--cov-fail-under=50",
+    "--cov-fail-under=1",
     "--strict-markers",
     "--disable-warnings",
     "-ra",

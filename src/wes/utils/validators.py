@@ -10,7 +10,7 @@ import time
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 from .exceptions import ValidationError
@@ -157,8 +157,6 @@ class InputValidator:
     @staticmethod
     def validate_date_range(start_date: str, end_date: str) -> bool:
         """Validate date range format."""
-        from datetime import datetime
-
         try:
             # Parse dates
             start = datetime.fromisoformat(start_date.replace("Z", "+00:00"))

@@ -183,7 +183,10 @@ class TestRedHatJiraIntegration:
             mock_jira_instance.search_issues.return_value = []
             mock_jira.return_value = mock_jira_instance
 
-            client = RedHatJiraClient(rate_limit=50, **redhat_jira_config)
+            # Override rate_limit in config
+            config_with_custom_rate_limit = redhat_jira_config.copy()
+            config_with_custom_rate_limit['rate_limit'] = 50
+            client = RedHatJiraClient(**config_with_custom_rate_limit)
 
             # Test rate limiting is configured
             assert client.rate_limiter is not None

@@ -359,15 +359,14 @@ class RedHatJiraClient:
 
     def _get_redhat_specific_filters(self) -> str:
         """Get Red Hat specific JQL filters."""
-        filters = ""
+        filters = []
 
-        # Add Red Hat specific issue type filters if needed
-        # This could include Red Hat specific issue types or custom fields
+        # Add Red Hat specific issue type filters
+        # Exclude internal-only issue types from general queries
+        filters.append("issuetype not in ('Red Hat Internal')")
 
-        # Example: Filter for Red Hat specific issue types
-        # filters += " AND issuetype not in ('Red Hat Internal', 'RFE')"
-
-        return filters
+        # Join filters with AND
+        return " AND " + " AND ".join(filters) if filters else ""
 
     async def _execute_redhat_query(
         self, jql: str, max_results: int, include_comments: bool

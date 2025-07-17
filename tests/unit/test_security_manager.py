@@ -8,24 +8,26 @@ from wes.core.security_manager import SecurityManager
 from wes.utils.exceptions import SecurityError
 
 
+@pytest.fixture
+def mock_keyring():
+    """Mock keyring module."""
+    with patch("wes.core.security_manager.keyring") as mock:
+        mock.get_password.return_value = None
+        mock.set_password.return_value = None
+        mock.delete_password.return_value = None
+        yield mock
+
+
+@pytest.fixture
+def mock_home_path(tmp_path):
+    """Mock Path.home() to return temporary directory."""
+    with patch("pathlib.Path.home") as mock:
+        mock.return_value = tmp_path
+        yield tmp_path
+
+
 class TestSecurityManager:
     """Test cases for SecurityManager class."""
-
-    @pytest.fixture
-    def mock_keyring(self):
-        """Mock keyring module."""
-        with patch("wes.core.security_manager.keyring") as mock:
-            mock.get_password.return_value = None
-            mock.set_password.return_value = None
-            mock.delete_password.return_value = None
-            yield mock
-
-    @pytest.fixture
-    def mock_home_path(self, tmp_path):
-        """Mock Path.home() to return temporary directory."""
-        with patch("pathlib.Path.home") as mock:
-            mock.return_value = tmp_path
-            yield tmp_path
 
     def test_security_manager_initialization(self, mock_keyring, mock_home_path):
         """Test SecurityManager initialization."""
@@ -60,8 +62,12 @@ class TestSecurityManager:
         # Test store credential
         manager.store_credential(service, username, credential)
 
-        # Verify keyring was called
-        mock_keyring.set_password.assert_called_once()
+        # Verify keyring was called (once for master key, once for credential)
+        assert mock_keyring.set_password.call_count == 2
+        # Check the credential was stored with correct key
+        calls = mock_keyring.set_password.call_args_list
+        assert calls[1][0][0] == "wes"  # service name
+        assert calls[1][0][1] == f"{service}:{username}"  # key format
 
         # Mock keyring to return encrypted credential
         encrypted_cred = manager.encrypt_credential(credential)
@@ -121,7 +127,7 @@ class TestSecurityManager:
     @patch("wes.core.security_manager.secrets.token_bytes")
     def test_salt_creation(self, mock_token_bytes, mock_keyring, mock_home_path):
         """Test salt file creation."""
-        mock_token_bytes.return_value = b"test_salt_32_bytes_long_exactly"
+        mock_token_bytes.return_value = b"test_salt_32_bytes_long_exactly!"
 
         SecurityManager()
         salt_path = mock_home_path / ".wes" / "salt"

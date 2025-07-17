@@ -15,6 +15,7 @@ from ..utils.exceptions import (
     AuthenticationError,
 )
 from ..utils.logging_config import get_logger, get_security_logger
+from ..utils.validators import ValidationResult
 
 
 class CredentialValidator:
@@ -249,10 +250,8 @@ class CredentialValidator:
         pattern = r"^[A-Za-z0-9\-_]+$"
         return re.match(pattern, token) is not None
 
-    def validate_jira_token(self, token: str) -> "ValidationResult":
+    def validate_jira_token(self, token: str) -> ValidationResult:
         """Validate JIRA API token format."""
-        from ..utils.validators import ValidationResult
-
         if not token:
             return ValidationResult(False, "Token cannot be empty")
 
@@ -266,10 +265,8 @@ class CredentialValidator:
 
         return ValidationResult(True)
 
-    def validate_gemini_api_key(self, api_key: str) -> "ValidationResult":
+    def validate_gemini_api_key(self, api_key: str) -> ValidationResult:
         """Validate Gemini API key format."""
-        from ..utils.validators import ValidationResult
-
         if not api_key:
             return ValidationResult(False, "API key cannot be empty")
 
@@ -287,10 +284,8 @@ class CredentialValidator:
 
         return ValidationResult(True)
 
-    def validate_username(self, username: str) -> "ValidationResult":
+    def validate_username(self, username: str) -> ValidationResult:
         """Validate username for security."""
-        from ..utils.validators import ValidationResult
-
         if not username or not username.strip():
             return ValidationResult(False, "Username cannot be empty")
 
@@ -317,10 +312,8 @@ class CredentialValidator:
 
         return ValidationResult(False, "Invalid username format")
 
-    def validate_url(self, url: str) -> "ValidationResult":
+    def validate_url(self, url: str) -> ValidationResult:
         """Validate URL for security."""
-        from ..utils.validators import ValidationResult
-
         if not url:
             return ValidationResult(False, "URL cannot be empty")
 
@@ -405,8 +398,8 @@ class CredentialValidator:
             return f"Gemini API error: {error}"
 
 
-class CredentialHealthMonitor:
-    """Monitor credential health and expiration."""
+class CredentialHealthChecker:
+    """Check and monitor credential health status."""
 
     def __init__(self):
         self.logger = get_logger(__name__)
@@ -540,7 +533,7 @@ class CredentialHealthMonitor:
                 if time.time() - start_time > timeout:
                     return HealthCheckResult(False, "Health check timeout")
 
-                result = service.test_connection()
+                service.test_connection()
                 return HealthCheckResult(True)
 
             return HealthCheckResult(False, "Service does not support health check")

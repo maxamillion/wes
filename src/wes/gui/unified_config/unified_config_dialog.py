@@ -331,8 +331,6 @@ class UnifiedConfigDialog(QDialog):
                 for service, service_config in config.items():
                     if service == "jira":
                         self.config_manager.update_jira_config(**service_config)
-                    elif service == "google":
-                        self.config_manager.update_google_config(**service_config)
                     elif service == "gemini":
                         self.config_manager.update_ai_config(**service_config)
 
@@ -405,8 +403,6 @@ class UnifiedConfigDialog(QDialog):
         # Call the appropriate service-specific update method
         if service == "jira":
             self.config_manager.update_jira_config(**config)
-        elif service == "google":
-            self.config_manager.update_google_config(**config)
         elif service == "gemini" or service == "ai":
             self.config_manager.update_ai_config(**config)
         else:

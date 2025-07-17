@@ -166,6 +166,9 @@ class TestSecurityManagerMinimal:
         # Create manager - should reuse salt
         manager = SecurityManager()
         assert salt_file.read_bytes() == original_salt
+        assert (
+            manager._cipher_suite is not None
+        )  # Verify manager was created successfully
 
     def test_master_key_handling(self, mock_environment):
         """Test master key handling."""
@@ -177,6 +180,9 @@ class TestSecurityManagerMinimal:
 
         manager = SecurityManager()
         mock_keyring.get_password.assert_called_with("wes", "master_key")
+        assert (
+            manager._cipher_suite is not None
+        )  # Verify manager initialized with existing key
 
 
 class TestInputValidatorMinimal:
