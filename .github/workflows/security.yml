@@ -29,6 +29,29 @@ jobs:
     - name: Set up Python 3.12
       run: uv python install 3.12
 
+    - name: Install system dependencies for GUI testing
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgl1-mesa-glx \
+          libglib2.0-0 \
+          libsm6 \
+          libxext6 \
+          libxrender1 \
+          libgomp1 \
+          libglib2.0-0 \
+          libegl1 \
+          libxkbcommon-x11-0 \
+          libxcb-icccm4 \
+          libxcb-image0 \
+          libxcb-keysyms1 \
+          libxcb-randr0 \
+          libxcb-render-util0 \
+          libxcb-xinerama0 \
+          libxcb-shape0 \
+          libxcb-cursor0 \
+          xvfb
+
     - name: Install dependencies
       run: |
         make install-dev
@@ -80,7 +103,11 @@ jobs:
     - name: Run security tests
       run: |
         if [ -d "tests/security" ] && [ "$(ls -A tests/security/*.py 2>/dev/null)" ]; then
-          make test-security VERBOSE=true
+          # Set Qt to use offscreen platform for headless testing
+          export QT_QPA_PLATFORM=offscreen
+          export QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false"
+          # Run with virtual display
+          xvfb-run -a -s "-screen 0 1024x768x24" make test-security VERBOSE=true
         else
           echo "No security tests found, skipping"
         fi
