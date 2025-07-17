@@ -141,13 +141,17 @@ class TestUnifiedConfigDialog:
         result = dialog._save_configuration()
         assert result is False
 
-    def test_dirty_state_tracking(self, dialog, qtbot):
+    def test_dirty_state_tracking(self, dialog, qtbot, monkeypatch):
         """Test that dirty state is tracked."""
         assert dialog.dirty is False
 
         # Simulate configuration change
         dialog._on_config_changed()
         assert dialog.dirty is True
+
+        # Mock QMessageBox.information to prevent hanging
+        mock_info = Mock()
+        monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.information", mock_info)
 
         # Save should clear dirty state
         dialog._save_configuration = Mock(return_value=True)
