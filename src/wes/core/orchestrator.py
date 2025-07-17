@@ -388,9 +388,8 @@ class WorkflowOrchestrator:
                 ]
 
                 self.logger.info(
-                    f"Valid activities: {
-                        len(valid_activities)}, Error activities: {
-                        len(error_activities)}"
+                    f"Valid activities: {len(valid_activities)}, "
+                    f"Error activities: {len(error_activities)}"
                 )
 
                 if error_activities:

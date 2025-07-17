@@ -96,8 +96,8 @@ class CredentialMonitor(QObject):
         self.check_all_credentials()
 
         self.logger.info(
-            f"Credential monitoring started (interval: {
-                self.monitoring_config.check_interval_minutes}m)"
+            f"Credential monitoring started (interval: "
+            f"{self.monitoring_config.check_interval_minutes}m)"
         )
 
         self.security_logger.log_security_event(

@@ -252,8 +252,8 @@ class BaseIntegrationClient(ABC):
                     if response.status >= 400:
                         error_text = await response.text()
                         raise IntegrationError(
-                            f"Request failed with status {
-                                response.status}: {error_text}"
+                            f"Request failed with status "
+                            f"{response.status}: {error_text}"
                         )
 
                     # Parse response

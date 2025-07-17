@@ -113,8 +113,8 @@ class RedHatJiraClient:
             )
 
             self.logger.info(
-                f"Red Hat Jira client initialized successfully using {
-                    'rhjira' if self.use_rhjira else 'jira'}"
+                f"Red Hat Jira client initialized successfully using "
+                f"{'rhjira' if self.use_rhjira else 'jira'}"
             )
 
         except Exception as e:

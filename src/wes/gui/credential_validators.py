@@ -167,8 +167,8 @@ class CredentialValidator:
                             else:
                                 return (
                                     False,
-                                    f"API response blocked: finish_reason={
-                                        candidate.finish_reason}",
+                                    f"API response blocked: finish_reason="
+                                    f"{candidate.finish_reason}",
                                 )
                     elif response:
                         # We got a response object, so connection is valid

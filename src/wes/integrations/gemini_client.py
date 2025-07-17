@@ -165,8 +165,8 @@ class GeminiClient:
                         return
                     else:
                         raise Exception(
-                            f"Response blocked with finish_reason: {
-                                candidate.finish_reason}"
+                            f"Response blocked with finish_reason: "
+                            f"{candidate.finish_reason}"
                         )
 
             # If we have a response object but no text, connection is still valid
