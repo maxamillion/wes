@@ -7,21 +7,20 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 # Try to import rhjira if available, fallback to standard jira
 # To install rhjira: pip install git+https://gitlab.com/prarit/rhjira-python.git
 # Note: rhjira is an optional dependency for Red Hat Jira optimization
+from jira import JIRA
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 try:
     import rhjira
 
     RHJIRA_AVAILABLE = True
 except ImportError:
     RHJIRA_AVAILABLE = False
-    # Fallback to standard jira library
-    from jira import JIRA
-    import jira as rhjira
 
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
@@ -113,8 +112,8 @@ class RedHatJiraClient:
             )
 
             self.logger.info(
-                f"Red Hat Jira client initialized successfully using {
-                    'rhjira' if self.use_rhjira else 'jira'}"
+                f"Red Hat Jira client initialized successfully using "
+                f"{'rhjira' if self.use_rhjira else 'jira'}"
             )
 
         except Exception as e:
@@ -138,16 +137,32 @@ class RedHatJiraClient:
             }
 
             # Add Red Hat specific configurations
-            if hasattr(rhjira, "RHJIRA"):
-                # Use Red Hat specific client if available with Bearer token
-                self._client = rhjira.RHJIRA(
-                    server=self.url,
-                    token_auth=self.api_token,  # Use Bearer token instead of basic auth
-                    options=options,
-                )
+            if RHJIRA_AVAILABLE:
+                # Check if rhjira has RHJIRA class, otherwise use JIRA
+                if hasattr(rhjira, "RHJIRA"):
+                    # Use Red Hat specific client if available with Bearer token
+                    self._client = rhjira.RHJIRA(
+                        server=self.url,
+                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
+                        options=options,
+                    )
+                elif hasattr(rhjira, "JIRA"):
+                    # Some versions of rhjira might provide JIRA instead of RHJIRA
+                    self._client = rhjira.JIRA(
+                        server=self.url,
+                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
+                        options=options,
+                    )
+                else:
+                    # Fallback to standard JIRA
+                    self._client = JIRA(
+                        server=self.url,
+                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
+                        options=options,
+                    )
             else:
                 # Fallback to standard JIRA with Red Hat Bearer token
-                self._client = rhjira.JIRA(
+                self._client = JIRA(
                     server=self.url,
                     token_auth=self.api_token,  # Use Bearer token instead of basic auth
                     options=options,
@@ -182,7 +197,6 @@ class RedHatJiraClient:
             )
 
             adapter = HTTPAdapter(max_retries=retry_strategy)
-            session.mount("http://", adapter)
             session.mount("https://", adapter)
 
             # Handle SSL verification for Red Hat environments
@@ -241,9 +255,7 @@ class RedHatJiraClient:
             if "401" in str(e) or "unauthorized" in error_str:
                 raise AuthenticationError(
                     "Red Hat Jira authentication failed. Please ensure you're using a valid "
-                    "Personal Access Token (PAT). Go to your Red Hat Jira profile → "
-                    "Personal Access Tokens → Create token. Use the token (not your password) "
-                    "in the API Token field."
+                    "Personal Access Token (PAT)."
                 )
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
@@ -329,7 +341,8 @@ class RedHatJiraClient:
             end_str = end_date.strftime("%Y-%m-%d")
 
             # Build user clause with Red Hat username handling
-            user_clause = f"assignee in ({','.join([f'\"{user}\"' for user in users])})"
+            quoted_users = ",".join([f'"{user}"' for user in users])
+            user_clause = f"assignee in ({quoted_users})"
 
             # Build date clause
             date_clause = f"updated >= '{start_str}' AND updated <= '{end_str}'"
@@ -337,10 +350,8 @@ class RedHatJiraClient:
             # Build project clause
             project_clause = ""
             if projects:
-                project_clause = f" AND project in ({
-                    ','.join(
-                        [
-                            f'\"{proj}\"' for proj in projects])})"
+                project_list = ",".join([f'"{proj}"' for proj in projects])
+                project_clause = f" AND project in ({project_list})"
 
             # Add Red Hat specific filters if available
             redhat_filters = self._get_redhat_specific_filters()
@@ -359,15 +370,14 @@ class RedHatJiraClient:
 
     def _get_redhat_specific_filters(self) -> str:
         """Get Red Hat specific JQL filters."""
-        filters = ""
+        filters = []
 
-        # Add Red Hat specific issue type filters if needed
-        # This could include Red Hat specific issue types or custom fields
+        # Add Red Hat specific issue type filters
+        # Exclude internal-only issue types from general queries
+        filters.append("issuetype not in ('Red Hat Internal')")
 
-        # Example: Filter for Red Hat specific issue types
-        # filters += " AND issuetype not in ('Red Hat Internal', 'RFE')"
-
-        return filters
+        # Join filters with AND
+        return " AND " + " AND ".join(filters) if filters else ""
 
     async def _execute_redhat_query(
         self, jql: str, max_results: int, include_comments: bool

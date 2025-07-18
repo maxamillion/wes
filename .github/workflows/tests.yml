@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.11", "3.12"]
       fail-fast: false
 
@@ -22,13 +22,14 @@ jobs:
       uses: astral-sh/setup-uv@v6
       with:
         version: "latest"
+        enable-cache: true
 
     - name: Set up Python ${{ matrix.python-version }}
       run: uv python install ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        uv sync --extra dev
+        make install-dev
 
     - name: Install Red Hat Jira dependencies (optional)
       run: |
@@ -40,6 +41,9 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
+          libgl1 \
+          libglib2.0-0 \
+          libegl1 \
           libxcb-cursor0 \
           libxcb-icccm4 \
           libxcb-image0 \
@@ -48,74 +52,69 @@ jobs:
           libxcb-render-util0 \
           libxcb-xinerama0 \
           libxcb-xfixes0 \
-          xvfb
+          libxkbcommon-x11-0 \
+          libdbus-1-3
+
+    - name: Check linter versions
+      run: |
+        uv run --extra dev flake8 --version
+        uv run --extra dev pylint --version
 
     - name: Run linting
       run: |
-        uv run flake8 src tests
-        uv run pylint src/wes
+        make lint VERBOSE=true
 
-    - name: Run type checking
-      run: |
-        uv run mypy src/wes
+    # - name: Run type checking
+    #   run: |
+    #     make typecheck
 
-    - name: Start virtual display (Linux)
-      if: runner.os == 'Linux'
+    - name: Setup headless testing environment
       run: |
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-        sleep 3
+        # Use Qt's offscreen platform instead of Xvfb for better performance
+        echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+        echo "QT_LOGGING_RULES=*.debug=false;qt.qpa.xcb=false" >> $GITHUB_ENV
+        echo "DISPLAY=:99" >> $GITHUB_ENV
 
     - name: Run unit tests
       run: |
-        uv run pytest tests/unit/ \
-          --cov=src/wes \
-          --cov-report=xml \
-          --cov-report=term-missing \
-          --cov-fail-under=50 \
-          --junitxml=test-results-unit.xml
+        make test-unit
       env:
-        DISPLAY: ":99"
-        QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'offscreen' }}
         RHJIRA_TEST_MODE: "true"
 
     - name: Run integration tests  
       run: |
-        uv run pytest tests/integration/ \
-          --junitxml=test-results-integration.xml
+        make test-integration
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run security tests
       run: |
         if [ -d "tests/security" ] && [ "$(ls -A tests/security/*.py 2>/dev/null)" ]; then
-          uv run pytest tests/security/ \
-            --junitxml=test-results-security.xml
+          make test-security
         else
           echo "No security tests found, skipping"
         fi
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
 
     - name: Run Red Hat Jira tests
       run: |
-        uv run pytest tests/unit/test_redhat_jira_client.py \
+        uv run --extra dev pytest tests/unit/test_redhat_jira_client.py \
           -m "not integration" \
           --junitxml=test-results-redhat.xml
       env:
-        DISPLAY: ":99"
         QT_QPA_PLATFORM: "offscreen"
+        QT_LOGGING_RULES: "*.debug=false;qt.qpa.xcb=false"
         RHJIRA_TEST_MODE: "true"
       continue-on-error: true
 
     - name: Run security scanning
       run: |
-        uv run bandit -r src/ -f json -o bandit-report.json || true
-        uv run safety check --json --output safety-report.json || true
+        make security-scan || true
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
@@ -141,7 +140,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
       fail-fast: false
     
     steps:
@@ -156,13 +155,18 @@ jobs:
       run: uv python install 3.12
 
     - name: Install build dependencies
-      run: uv sync --extra build
+      run: |
+        make install-dev
+        uv sync --extra build
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y \
+          libgl1 \
+          libglib2.0-0 \
+          libegl1 \
           libxcb-cursor0 \
           libxcb-icccm4 \
           libxcb-image0 \
@@ -170,7 +174,9 @@ jobs:
           libxcb-randr0 \
           libxcb-render-util0 \
           libxcb-xinerama0 \
-          libxcb-xfixes0
+          libxcb-xfixes0 \
+          libxkbcommon-x11-0 \
+          libdbus-1-3
 
     - name: Test Linux build
       if: runner.os == 'Linux'

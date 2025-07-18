@@ -93,7 +93,9 @@ class RetryStrategy:
             # Add random jitter to prevent thundering herd
             import random
 
-            delay = delay * (0.5 + random.random() * 0.5)
+            delay = delay * (
+                0.5 + random.random() * 0.5
+            )  # nosec B311 - Random used for timing jitter, not cryptography
 
         return delay
 
@@ -252,8 +254,8 @@ class BaseIntegrationClient(ABC):
                     if response.status >= 400:
                         error_text = await response.text()
                         raise IntegrationError(
-                            f"Request failed with status {
-                                response.status}: {error_text}"
+                            f"Request failed with status "
+                            f"{response.status}: {error_text}"
                         )
 
                     # Parse response

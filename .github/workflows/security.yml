@@ -17,6 +17,8 @@ jobs:
       security-events: write
       actions: read
       contents: read
+      issues: write
+      pull-requests: write
 
     steps:
     - uses: actions/checkout@v4
@@ -29,8 +31,28 @@ jobs:
     - name: Set up Python 3.12
       run: uv python install 3.12
 
+    - name: Install system dependencies for GUI testing
+      run: |
+        sudo apt-get update
+        # Install minimal Qt dependencies for headless testing
+        sudo apt-get install -y \
+          xvfb \
+          libgl1 \
+          libegl1 \
+          libxkbcommon-x11-0 \
+          libxcb-cursor0 \
+          libxcb-icccm4 \
+          libxcb-image0 \
+          libxcb-keysyms1 \
+          libxcb-randr0 \
+          libxcb-render-util0 \
+          libxcb-shape0 \
+          libxcb-xinerama0 \
+          libxcb-xkb1
+
     - name: Install dependencies
       run: |
+        make install-dev
         uv sync --extra security
 
     - name: Install Semgrep
@@ -79,14 +101,14 @@ jobs:
     - name: Run security tests
       run: |
         if [ -d "tests/security" ] && [ "$(ls -A tests/security/*.py 2>/dev/null)" ]; then
-          uv run pytest tests/security/ \
-            --junitxml=security-test-results.xml \
-            -v
+          # Set Qt to use offscreen platform for headless testing
+          export QT_QPA_PLATFORM=offscreen
+          export QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false"
+          # Run with virtual display
+          xvfb-run -a -s "-screen 0 1024x768x24" make test-security VERBOSE=true
         else
           echo "No security tests found, skipping"
         fi
-      env:
-        QT_QPA_PLATFORM: "offscreen"
 
     - name: Generate security report
       if: always()

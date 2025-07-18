@@ -226,7 +226,7 @@ class TestJiraConfigPage:
         page.username_input.setText("user")
         assert page.is_dirty()
 
-    @patch("wes.gui.unified_config.config_pages.jira_page.ConnectionTestDialog")
+    @patch("wes.gui.unified_config.components.connection_tester.ConnectionTestDialog")
     def test_test_connection(self, mock_dialog_class, page):
         """Test connection testing."""
         # Set valid config
@@ -245,7 +245,7 @@ class TestJiraConfigPage:
         mock_dialog_class.assert_called_once()
         mock_dialog.exec.assert_called_once()
 
-    @patch("PySide6.QtWidgets.QMessageBox.warning")
+    @patch("wes.gui.unified_config.utils.dialogs.DialogManager.show_warning")
     def test_test_connection_invalid_config(self, mock_warning, page):
         """Test connection testing with invalid config shows warning."""
         # Leave URL empty

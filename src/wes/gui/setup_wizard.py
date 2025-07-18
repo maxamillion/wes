@@ -351,7 +351,7 @@ class JiraSetupPage(WizardPage):
                 "selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens"
             )
         else:
-            token_url = "https://id.atlassian.com/manage-profile/security/api-tokens"
+            token_url = "https://id.atlassian.com/manage-profile/security/api-tokens"  # nosec B105
 
         msg = QMessageBox()
         msg.setWindowTitle("Generate API Token")
@@ -462,8 +462,9 @@ class JiraSetupPage(WizardPage):
                         False,
                         "Red Hat Jira username should contain only letters, numbers, dots, underscores, and hyphens",
                     )
-        except Exception:
-            pass  # Continue with basic validation
+        except Exception as e:
+            self.logger.debug(f"Exception during validation: {e}")
+            # Continue with basic validation
 
         if not self.token_edit.text().strip():
             return False, "API token is required"

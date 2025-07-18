@@ -155,7 +155,7 @@ class AppSettingsPage(ConfigPageBase):
 
         proxy_layout = QHBoxLayout()
         self.proxy_input = QLineEdit()
-        self.proxy_input.setPlaceholderText("http://proxy.company.com:8080")
+        self.proxy_input.setPlaceholderText("https://proxy.company.com:8080")
         self.proxy_input.setEnabled(False)
         self.proxy_input.textChanged.connect(self.mark_dirty)
         proxy_layout.addWidget(self.proxy_input)

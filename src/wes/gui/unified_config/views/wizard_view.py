@@ -94,12 +94,12 @@ class SummaryPage(WizardPage):
     """Summary page showing configuration status."""
 
     def __init__(self, parent=None):
+        self.status_labels = {}
         super().__init__(
             "Setup Complete!",
             "Your configuration is ready. Here's what we've set up:",
             parent,
         )
-        self.status_labels = {}
 
     def _add_content(self, layout: QVBoxLayout):
         """Add summary content."""

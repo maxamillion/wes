@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from ..gui.credential_validators import CredentialHealthMonitor, CredentialValidator
+from ..gui.credential_validators import CredentialValidator
 from ..utils.logging_config import get_logger, get_security_logger
 from .config_manager import ConfigManager
 
@@ -63,7 +63,6 @@ class CredentialMonitor(QObject):
         self.security_logger = get_security_logger()
 
         self.validator = CredentialValidator()
-        self.health_monitor = CredentialHealthMonitor()
 
         # Credential status tracking
         self.credential_statuses: Dict[str, CredentialStatus] = {}
@@ -97,8 +96,8 @@ class CredentialMonitor(QObject):
         self.check_all_credentials()
 
         self.logger.info(
-            f"Credential monitoring started (interval: {
-                self.monitoring_config.check_interval_minutes}m)"
+            f"Credential monitoring started (interval: "
+            f"{self.monitoring_config.check_interval_minutes}m)"
         )
 
         self.security_logger.log_security_event(
@@ -439,8 +438,10 @@ class CredentialNotificationManager:
 
     def on_status_changed(self, service: str, credential_type: str, healthy: bool):
         """Handle credential status change."""
-        message = f"Credential {service}:{credential_type} is now {
-            'healthy' if healthy else 'unhealthy'}"
+        message = (
+            f"Credential {service}:{credential_type} is now "
+            f"{'healthy' if healthy else 'unhealthy'}"
+        )
         severity = "info" if healthy else "warning"
 
         self._send_notification(

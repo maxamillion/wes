@@ -91,8 +91,8 @@ class ConnectionTestWorker(QThread):
             url = self.config.get("url", "")
             if not url:
                 return False, "URL is required"
-            if not url.startswith(("http://", "https://")):
-                return False, "URL must start with http:// or https://"
+            if not url.startswith("https://"):
+                return False, "URL must start with https://"
         return True, "URL format valid"
 
     def _test_connectivity(self) -> tuple[bool, str]:

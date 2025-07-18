@@ -179,7 +179,8 @@ class TestWorkflowOrchestrator:
         # Verify error handling
         assert result.status == WorkflowStatus.FAILED
         assert "Configuration validation failed" in result.error_message
-        assert result.execution_time > 0
+        # Execution time should be non-negative (can be 0.0 on very fast systems)
+        assert result.execution_time >= 0
         orchestrator._cleanup_clients.assert_called_once()
 
     @pytest.mark.asyncio

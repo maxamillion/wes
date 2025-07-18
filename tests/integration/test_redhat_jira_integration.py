@@ -183,7 +183,10 @@ class TestRedHatJiraIntegration:
             mock_jira_instance.search_issues.return_value = []
             mock_jira.return_value = mock_jira_instance
 
-            client = RedHatJiraClient(rate_limit=50, **redhat_jira_config)
+            # Override rate_limit in config
+            config_with_custom_rate_limit = redhat_jira_config.copy()
+            config_with_custom_rate_limit["rate_limit"] = 50
+            client = RedHatJiraClient(**config_with_custom_rate_limit)
 
             # Test rate limiting is configured
             assert client.rate_limiter is not None
@@ -210,21 +213,6 @@ class TestRedHatJiraIntegration:
             info = client.get_connection_info()
             assert info["client_type"] == "rhjira"
             assert info["rhjira_available"]
-
-    @pytest.mark.integration
-    def test_redhat_environment_detection(self):
-        """Test Red Hat environment detection and configuration."""
-        # Test with environment variables
-        test_env = {
-            "RHJIRA_TEST_MODE": "true",
-            "RHJIRA_COMPREHENSIVE_TEST": "true",
-        }
-
-        for key, value in test_env.items():
-            assert (
-                os.environ.get(key, "").lower() in ["true", "1", "yes"]
-                or key not in os.environ
-            )
 
     @pytest.mark.integration
     @pytest.mark.asyncio

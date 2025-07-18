@@ -125,8 +125,7 @@ class TestUnifiedConfigDialog:
         assert result is True
 
         # Check that config manager was updated
-        config_manager.update_service_config.assert_called()
-        config_manager.save_config.assert_called()
+        config_manager.update_jira_config.assert_called_with(url="https://test.com")
 
     def test_validation_before_save(self, dialog):
         """Test that validation runs before saving."""
@@ -142,13 +141,17 @@ class TestUnifiedConfigDialog:
         result = dialog._save_configuration()
         assert result is False
 
-    def test_dirty_state_tracking(self, dialog, qtbot):
+    def test_dirty_state_tracking(self, dialog, qtbot, monkeypatch):
         """Test that dirty state is tracked."""
         assert dialog.dirty is False
 
         # Simulate configuration change
         dialog._on_config_changed()
         assert dialog.dirty is True
+
+        # Mock QMessageBox.information to prevent hanging
+        mock_info = Mock()
+        monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.information", mock_info)
 
         # Save should clear dirty state
         dialog._save_configuration = Mock(return_value=True)
@@ -157,10 +160,12 @@ class TestUnifiedConfigDialog:
 
     def test_close_with_unsaved_changes(self, dialog, qtbot, monkeypatch):
         """Test close dialog with unsaved changes."""
+        from PySide6.QtWidgets import QMessageBox
+
         dialog.dirty = True
 
         # Mock QMessageBox to return Save
-        mock_reply = QDialogButtonBox.Save
+        mock_reply = QMessageBox.Save
         monkeypatch.setattr(
             "PySide6.QtWidgets.QMessageBox.question", lambda *args, **kwargs: mock_reply
         )
@@ -176,9 +181,13 @@ class TestUnifiedConfigDialog:
         dialog._save_configuration.assert_called_once()
         event.accept.assert_called_once()
 
-    def test_mode_switch_button_in_wizard(self, dialog):
+    def test_mode_switch_button_in_wizard(self, dialog, qtbot):
         """Test mode switch button appears in wizard mode."""
+        dialog.show()
         dialog.set_mode(UIMode.WIZARD)
+        # Process events to ensure UI updates are applied
+        qtbot.wait(10)
+        QApplication.processEvents()
         assert dialog.mode_switch_button.isVisible()
         assert "Skip" in dialog.mode_switch_button.text()
 
@@ -195,18 +204,56 @@ class TestUnifiedConfigDialog:
         # Should save and accept dialog
         dialog._save_configuration.assert_called_once()
 
-    @patch("wes.gui.unified_config.unified_config_dialog.WizardView")
-    def test_lazy_widget_creation(self, mock_wizard_class, dialog):
+    def test_lazy_widget_creation(self, qtbot):
         """Test that mode widgets are created lazily."""
-        # Initially, wizard widget should be None
+        # Create a mock config manager with complete config to avoid wizard mode
+        config_manager = Mock(spec=ConfigManager)
+        config_manager.config = {
+            "jira": {
+                "url": "https://example.atlassian.net",
+                "username": "user@example.com",
+                "api_token": "test-token",
+            },
+            "google": {"credentials_path": "/path/to/creds.json"},
+            "gemini": {"api_key": "AIzaSyTest123456789"},
+        }
+        config_manager.retrieve_credential.return_value = None
+
+        # Create a fresh dialog for this test
+        dialog = UnifiedConfigDialog(config_manager)
+        qtbot.addWidget(dialog)
+
+        # Initially, wizard widget should be None (it starts in direct mode)
         assert dialog.wizard_widget is None
 
-        # Switch to wizard mode
-        dialog.set_mode(UIMode.WIZARD)
+        # Create a mock that tracks calls
+        calls = []
 
-        # Now wizard widget should be created
-        assert dialog.wizard_widget is not None
-        mock_wizard_class.assert_called_once()
+        # Patch the import
+        with patch(
+            "wes.gui.unified_config.views.wizard_view.WizardView"
+        ) as mock_wizard_class:
+            # Create a mock widget that inherits from QWidget
+            from PySide6.QtWidgets import QWidget
+
+            class MockWizardView(QWidget):
+                def __init__(self, *args, **kwargs):
+                    super().__init__()
+                    calls.append(1)
+                    # Mock the required signals
+                    self.wizard_complete = Mock()
+                    self.wizard_complete.connect = Mock()
+                    self.page_changed = Mock()
+                    self.page_changed.connect = Mock()
+
+            mock_wizard_class.side_effect = lambda *args, **kwargs: MockWizardView()
+
+            # Switch to wizard mode
+            dialog.set_mode(UIMode.WIZARD)
+
+            # Now wizard widget should be created
+            assert dialog.wizard_widget is not None
+            assert len(calls) == 1  # Check that WizardView was instantiated once
 
     def test_configuration_complete_signal(self, dialog, qtbot):
         """Test that configuration_complete signal is emitted."""

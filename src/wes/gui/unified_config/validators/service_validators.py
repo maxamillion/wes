@@ -31,7 +31,7 @@ class JiraValidator(BaseValidator):
         if not self._is_valid_url(url):
             return ValidationResult(
                 is_valid=False,
-                message="Invalid URL format. Must start with http:// or https://",
+                message="Invalid URL format. Must start with https://",
                 service=self.service_type,
                 details={"field": "url", "value": url},
             )
@@ -115,7 +115,7 @@ class JiraValidator(BaseValidator):
             return False, "URL is required"
 
         if not self._is_valid_url(url):
-            return False, "Must be a valid URL starting with http:// or https://"
+            return False, "Must be a valid URL starting with https://"
 
         # Check for common Jira patterns
         if "atlassian.net" in url:
