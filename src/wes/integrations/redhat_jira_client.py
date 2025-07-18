@@ -7,13 +7,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 # Try to import rhjira if available, fallback to standard jira
 # To install rhjira: pip install git+https://gitlab.com/prarit/rhjira-python.git
 # Note: rhjira is an optional dependency for Red Hat Jira optimization
 from jira import JIRA
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 try:
     import rhjira
 
