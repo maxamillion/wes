@@ -149,8 +149,16 @@ class JiraValidator(BaseValidator):
         if not token:
             return False, "API token is required"
 
-        if len(token) < 20:
-            return False, "API token appears too short"
+        # More flexible token validation - different Jira instances have different requirements
+        # Atlassian Cloud tokens are typically 24+ chars, but self-hosted/Red Hat may vary
+        if len(token) < 10:
+            return False, "API token appears too short (minimum 10 characters)"
+
+        # Basic character validation - allow alphanumeric, hyphens, underscores
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9._\-]+$", token):
+            return False, "API token contains invalid characters"
 
         return True, "Token format is valid"
 

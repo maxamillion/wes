@@ -334,11 +334,22 @@ class JiraConfigPage(ConfigPageBase):
             else:
                 return False, "API token is required"
 
-        if len(token) < 20:
+        # More flexible token validation - different Jira instances have different requirements
+        # Atlassian Cloud tokens are typically 24+ chars, but self-hosted/Red Hat may vary
+        if len(token) < 10:
             token_name = (
                 "Personal Access Token" if jira_type == JiraType.REDHAT else "API token"
             )
-            return False, f"{token_name} appears too short"
+            return False, f"{token_name} appears too short (minimum 10 characters)"
+
+        # Basic character validation - allow alphanumeric, hyphens, underscores, dots
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9._\-]+$", token):
+            token_name = (
+                "Personal Access Token" if jira_type == JiraType.REDHAT else "API token"
+            )
+            return False, f"{token_name} contains invalid characters"
 
         if jira_type == JiraType.REDHAT:
             return True, "Personal Access Token format valid"

@@ -248,15 +248,16 @@ class InputValidator:
         if not api_key:
             raise ValidationError("API key cannot be empty")
 
-        # Basic format validation
+        # Basic format validation - be more flexible
         if len(api_key) < 10:
             raise ValidationError("API key too short")
 
         if len(api_key) > 500:
             raise ValidationError("API key too long")
 
-        # Check for basic format (alphanumeric, hyphens, underscores)
-        if not re.match(r"^[a-zA-Z0-9_-]+$", api_key):
+        # Check for basic format (alphanumeric, hyphens, underscores, dots)
+        # Allow dots for some token formats
+        if not re.match(r"^[a-zA-Z0-9._\-]+$", api_key):
             raise ValidationError("API key contains invalid characters")
 
         return True
