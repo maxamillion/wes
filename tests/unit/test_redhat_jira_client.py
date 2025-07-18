@@ -483,17 +483,19 @@ class TestRHJiraLibraryIntegration:
         # Let's be more flexible about what we check for
         # At minimum, the module should be importable and have some content
         assert rhjira is not None
-        
+
         # Check for any common attributes that might exist
         has_content = (
-            hasattr(rhjira, "JIRA") or 
-            hasattr(rhjira, "RHJIRA") or 
-            hasattr(rhjira, "__version__") or
-            hasattr(rhjira, "__file__") or
-            hasattr(rhjira, "__name__") or
-            len(dir(rhjira)) > 0  # Module has some attributes
+            hasattr(rhjira, "JIRA")
+            or hasattr(rhjira, "RHJIRA")
+            or hasattr(rhjira, "__version__")
+            or hasattr(rhjira, "__file__")
+            or hasattr(rhjira, "__name__")
+            or len(dir(rhjira)) > 0  # Module has some attributes
         )
-        assert has_content, f"rhjira module has no recognizable attributes. Available: {dir(rhjira)}"
+        assert (
+            has_content
+        ), f"rhjira module has no recognizable attributes. Available: {dir(rhjira)}"
 
     @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @patch("wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", True)
@@ -509,10 +511,10 @@ class TestRHJiraLibraryIntegration:
             # Create a mock RHJIRA class
             mock_client = Mock()
             mock_client.current_user.return_value = "testuser"
-            
+
             # Set up the rhjira module mock to have RHJIRA attribute
             mock_rhjira.RHJIRA = Mock(return_value=mock_client)
-            
+
             # Now test the client
             client = RedHatJiraClient(**config)
 
