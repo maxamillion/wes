@@ -243,9 +243,7 @@ class RedHatJiraClient:
             if "401" in str(e) or "unauthorized" in error_str:
                 raise AuthenticationError(
                     "Red Hat Jira authentication failed. Please ensure you're using a valid "
-                    "Personal Access Token (PAT). Go to your Red Hat Jira profile → "
-                    "Personal Access Tokens → Create token. Use the token (not your password) "
-                    "in the API Token field."
+                    "Personal Access Token (PAT)."
                 )
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")

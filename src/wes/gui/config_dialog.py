@@ -668,7 +668,7 @@ class ConfigDialog(QDialog):
                             )
                             return False
                 except Exception as e:
-                    logger.debug(f"Exception during validation: {e}")
+                    self.logger.debug(f"Exception during validation: {e}")
                     # Continue with basic validation
 
             if (
