@@ -137,13 +137,29 @@ class RedHatJiraClient:
             }
 
             # Add Red Hat specific configurations
-            if RHJIRA_AVAILABLE and hasattr(rhjira, "RHJIRA"):
-                # Use Red Hat specific client if available with Bearer token
-                self._client = rhjira.RHJIRA(
-                    server=self.url,
-                    token_auth=self.api_token,  # Use Bearer token instead of basic auth
-                    options=options,
-                )
+            if RHJIRA_AVAILABLE:
+                # Check if rhjira has RHJIRA class, otherwise use JIRA
+                if hasattr(rhjira, "RHJIRA"):
+                    # Use Red Hat specific client if available with Bearer token
+                    self._client = rhjira.RHJIRA(
+                        server=self.url,
+                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
+                        options=options,
+                    )
+                elif hasattr(rhjira, "JIRA"):
+                    # Some versions of rhjira might provide JIRA instead of RHJIRA
+                    self._client = rhjira.JIRA(
+                        server=self.url,
+                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
+                        options=options,
+                    )
+                else:
+                    # Fallback to standard JIRA
+                    self._client = JIRA(
+                        server=self.url,
+                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
+                        options=options,
+                    )
             else:
                 # Fallback to standard JIRA with Red Hat Bearer token
                 self._client = JIRA(
