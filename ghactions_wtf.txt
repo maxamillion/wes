@@ -1,0 +1,500 @@
+﻿2025-07-18T20:18:03.4094090Z Current runner version: '2.326.0'
+2025-07-18T20:18:03.4111180Z ##[group]Operating System
+2025-07-18T20:18:03.4111750Z macOS
+2025-07-18T20:18:03.4112040Z 14.7.6
+2025-07-18T20:18:03.4112330Z 23H626
+2025-07-18T20:18:03.4112970Z ##[endgroup]
+2025-07-18T20:18:03.4113320Z ##[group]Runner Image
+2025-07-18T20:18:03.4113660Z Image: macos-14-arm64
+2025-07-18T20:18:03.4114010Z Version: 20250715.1663
+2025-07-18T20:18:03.4114680Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20250715.1663/images/macos/macos-14-arm64-Readme.md
+2025-07-18T20:18:03.4115600Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20250715.1663
+2025-07-18T20:18:03.4116170Z ##[endgroup]
+2025-07-18T20:18:03.4116490Z ##[group]Runner Image Provisioner
+2025-07-18T20:18:03.4116880Z 2.0.449.1+6d46f4794670abc677653e70ad733fc4b7478209
+2025-07-18T20:18:03.4117260Z ##[endgroup]
+2025-07-18T20:18:03.4117910Z ##[group]GITHUB_TOKEN Permissions
+2025-07-18T20:18:03.4118870Z Contents: read
+2025-07-18T20:18:03.4119200Z Metadata: read
+2025-07-18T20:18:03.4119500Z Packages: read
+2025-07-18T20:18:03.4119840Z ##[endgroup]
+2025-07-18T20:18:03.4121110Z Secret source: Actions
+2025-07-18T20:18:03.4121500Z Prepare workflow directory
+2025-07-18T20:18:03.4502620Z Prepare all required actions
+2025-07-18T20:18:03.4528830Z Getting action download info
+2025-07-18T20:18:03.7217250Z ##[group]Download immutable action package 'actions/checkout@v4'
+2025-07-18T20:18:03.7218070Z Version: 4.2.2
+2025-07-18T20:18:03.7219010Z Digest: sha256:ccb2698953eaebd21c7bf6268a94f9c26518a7e38e27e0b83c1fe1ad049819b1
+2025-07-18T20:18:03.7219990Z Source commit SHA: 11bd71901bbe5b1630ceea73d27597364c9af683
+2025-07-18T20:18:03.7220650Z ##[endgroup]
+2025-07-18T20:18:04.0198910Z Download action repository 'astral-sh/setup-uv@v6' (SHA:7edac99f961f18b581bbd960d59d049f04c0002f)
+2025-07-18T20:18:05.6966890Z Download action repository 'codecov/codecov-action@v5' (SHA:18283e04ce6e62d37312384ff67231eb8fd56d24)
+2025-07-18T20:18:06.6695250Z ##[group]Download immutable action package 'actions/upload-artifact@v4'
+2025-07-18T20:18:06.6696050Z Version: 4.6.2
+2025-07-18T20:18:06.6696760Z Digest: sha256:290722aa3281d5caf23d0acdc3dbeb3424786a1a01a9cc97e72f147225e37c38
+2025-07-18T20:18:06.6697780Z Source commit SHA: ea165f8d65b6e75b540449e92b4886f43607fa02
+2025-07-18T20:18:06.6698450Z ##[endgroup]
+2025-07-18T20:18:06.8311630Z Getting action download info
+2025-07-18T20:18:06.9354320Z ##[group]Download immutable action package 'actions/github-script@v7'
+2025-07-18T20:18:06.9355350Z Version: 7.0.1
+2025-07-18T20:18:06.9356270Z Digest: sha256:bce02966afe3a75123f766b765abe432fac5464b74976015dc06b811ac9054c7
+2025-07-18T20:18:06.9357490Z Source commit SHA: 60a0d83039c74a4aee543508d2ffcb1c3799cdea
+2025-07-18T20:18:06.9358320Z ##[endgroup]
+2025-07-18T20:18:07.5234220Z Complete job name: test (macos-latest, 3.11)
+2025-07-18T20:18:07.5633830Z ##[group]Run actions/checkout@v4
+2025-07-18T20:18:07.5634510Z with:
+2025-07-18T20:18:07.5634930Z   repository: maxamillion/wes
+2025-07-18T20:18:07.5635630Z   token: ***
+2025-07-18T20:18:07.5636000Z   ssh-strict: true
+2025-07-18T20:18:07.5636380Z   ssh-user: git
+2025-07-18T20:18:07.5636780Z   persist-credentials: true
+2025-07-18T20:18:07.5637230Z   clean: true
+2025-07-18T20:18:07.5637640Z   sparse-checkout-cone-mode: true
+2025-07-18T20:18:07.5638130Z   fetch-depth: 1
+2025-07-18T20:18:07.5638530Z   fetch-tags: false
+2025-07-18T20:18:07.5638930Z   show-progress: true
+2025-07-18T20:18:07.5639340Z   lfs: false
+2025-07-18T20:18:07.5639710Z   submodules: false
+2025-07-18T20:18:07.5640180Z   set-safe-directory: true
+2025-07-18T20:18:07.5640740Z ##[endgroup]
+2025-07-18T20:18:07.9368140Z Syncing repository: maxamillion/wes
+2025-07-18T20:18:07.9369620Z ##[group]Getting Git version info
+2025-07-18T20:18:07.9370240Z Working directory is '/Users/runner/work/wes/wes'
+2025-07-18T20:18:07.9371340Z [command]/opt/homebrew/bin/git version
+2025-07-18T20:18:07.9891270Z git version 2.50.1
+2025-07-18T20:18:07.9915510Z ##[endgroup]
+2025-07-18T20:18:07.9920760Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/58b68022-7676-4f51-b455-cd04c92b1e0e/.gitconfig'
+2025-07-18T20:18:07.9933370Z Temporarily overriding HOME='/Users/runner/work/_temp/58b68022-7676-4f51-b455-cd04c92b1e0e' before making global git config changes
+2025-07-18T20:18:07.9938340Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-18T20:18:07.9942170Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/wes/wes
+2025-07-18T20:18:08.0015580Z Deleting the contents of '/Users/runner/work/wes/wes'
+2025-07-18T20:18:08.0017790Z ##[group]Initializing the repository
+2025-07-18T20:18:08.0022210Z [command]/opt/homebrew/bin/git init /Users/runner/work/wes/wes
+2025-07-18T20:18:08.0199400Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-07-18T20:18:08.0200830Z hint: is subject to change. To configure the initial branch name to use in all
+2025-07-18T20:18:08.0201910Z hint: of your new repositories, which will suppress this warning, call:
+2025-07-18T20:18:08.0202650Z hint:
+2025-07-18T20:18:08.0203150Z hint: 	git config --global init.defaultBranch <name>
+2025-07-18T20:18:08.0203760Z hint:
+2025-07-18T20:18:08.0204340Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-07-18T20:18:08.0205320Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-07-18T20:18:08.0206070Z hint:
+2025-07-18T20:18:08.0206470Z hint: 	git branch -m <name>
+2025-07-18T20:18:08.0206980Z hint:
+2025-07-18T20:18:08.0207620Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-07-18T20:18:08.0208600Z Initialized empty Git repository in /Users/runner/work/wes/wes/.git/
+2025-07-18T20:18:08.0210370Z [command]/opt/homebrew/bin/git remote add origin https://github.com/maxamillion/wes
+2025-07-18T20:18:08.0268160Z ##[endgroup]
+2025-07-18T20:18:08.0272600Z ##[group]Disabling automatic garbage collection
+2025-07-18T20:18:08.0273660Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2025-07-18T20:18:08.0309980Z ##[endgroup]
+2025-07-18T20:18:08.0310710Z ##[group]Setting up auth
+2025-07-18T20:18:08.0314920Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-18T20:18:08.0356980Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-18T20:18:08.0960000Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-18T20:18:08.1002010Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-18T20:18:08.1454940Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-07-18T20:18:08.1520660Z ##[endgroup]
+2025-07-18T20:18:08.1521580Z ##[group]Fetching the repository
+2025-07-18T20:18:08.1527070Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +383f4a9dcb0b687db9cce46e623abcdf81e82ffa:refs/remotes/pull/8/merge
+2025-07-18T20:18:09.2023630Z From https://github.com/maxamillion/wes
+2025-07-18T20:18:09.2025000Z  * [new ref]         383f4a9dcb0b687db9cce46e623abcdf81e82ffa -> pull/8/merge
+2025-07-18T20:18:09.2133760Z ##[endgroup]
+2025-07-18T20:18:09.2134510Z ##[group]Determining the checkout info
+2025-07-18T20:18:09.2135380Z ##[endgroup]
+2025-07-18T20:18:09.2142110Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2025-07-18T20:18:09.2248700Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2025-07-18T20:18:09.2314700Z ##[group]Checking out the ref
+2025-07-18T20:18:09.2318280Z [command]/opt/homebrew/bin/git checkout --progress --force refs/remotes/pull/8/merge
+2025-07-18T20:18:09.2578580Z HEAD is now at 383f4a9 Merge 5b285b33f4b6d63b4d58de579e0d666d27585aaf into 790170656f745e885e2bc4bdc70ec95fd8a306b6
+2025-07-18T20:18:09.2880530Z ##[endgroup]
+2025-07-18T20:18:09.3181680Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2025-07-18T20:18:09.3281850Z 383f4a9dcb0b687db9cce46e623abcdf81e82ffa
+2025-07-18T20:18:09.3448690Z ##[group]Run astral-sh/setup-uv@v6
+2025-07-18T20:18:09.3448930Z with:
+2025-07-18T20:18:09.3449090Z   version: latest
+2025-07-18T20:18:09.3449260Z   enable-cache: true
+2025-07-18T20:18:09.3449440Z   activate-environment: false
+2025-07-18T20:18:09.3449670Z   working-directory: /Users/runner/work/wes/wes
+2025-07-18T20:18:09.3449930Z   server-url: https://github.com
+2025-07-18T20:18:09.3450250Z   github-token: ***
+2025-07-18T20:18:09.3450640Z   cache-dependency-glob: **/*requirements*.txt
+**/*requirements*.in
+**/*constraints*.txt
+**/*constraints*.in
+**/pyproject.toml
+**/uv.lock
+
+2025-07-18T20:18:09.3451040Z   prune-cache: true
+2025-07-18T20:18:09.3451230Z   ignore-nothing-to-cache: false
+2025-07-18T20:18:09.3451440Z   ignore-empty-workdir: false
+2025-07-18T20:18:09.3451630Z ##[endgroup]
+2025-07-18T20:18:09.9535070Z manifest-file not provided, reading from local file.
+2025-07-18T20:18:09.9535680Z manifest-file does not contain version 0.8.0, arch aarch64, platform apple-darwin. Falling back to GitHub releases.
+2025-07-18T20:18:09.9536320Z Downloading uv from "https://github.com/astral-sh/uv/releases/download/0.8.0/uv-aarch64-apple-darwin.tar.gz" ...
+2025-07-18T20:18:10.4353200Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/7ea194c1-e1c5-45c8-99ec-17e7bf774069 -f /Users/runner/work/_temp/23981e3e-73c7-42e6-9061-4e61a82465dd
+2025-07-18T20:18:10.5885780Z Added /Users/runner/.local/bin to the path
+2025-07-18T20:18:10.5960690Z Added /Users/runner/hostedtoolcache/uv/0.8.0/aarch64 to the path
+2025-07-18T20:18:10.6205740Z Set UV_CACHE_DIR to /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:10.6307130Z Successfully installed uv version 0.8.0
+2025-07-18T20:18:10.6307710Z Searching files using cache dependency glob: **/*requirements*.txt,**/*requirements*.in,**/*constraints*.txt,**/*constraints*.in,**/pyproject.toml,**/uv.lock
+2025-07-18T20:18:10.6347150Z /Users/runner/work/wes/wes/pyproject.toml
+2025-07-18T20:18:10.6347560Z /Users/runner/work/wes/wes/uv.lock
+2025-07-18T20:18:10.6347890Z Found 2 files to hash.
+2025-07-18T20:18:10.8110690Z Trying to restore uv cache from GitHub Actions cache with key: setup-uv-1-aarch64-apple-darwin-3.13.5-pruned-2a1b55d15b194a1572946cedbcf4d7b1a62e043649833154b76b6c1995d83f0f
+2025-07-18T20:18:10.8575870Z Cache hit for: setup-uv-1-aarch64-apple-darwin-3.13.5-pruned-2a1b55d15b194a1572946cedbcf4d7b1a62e043649833154b76b6c1995d83f0f
+2025-07-18T20:18:10.9359000Z Received 86302 of 86302 (100.0%), 3.4 MBs/sec
+2025-07-18T20:18:10.9361930Z Cache Size: ~0 MB (86302 B)
+2025-07-18T20:18:10.9389980Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/e392e523-285e-47ec-b408-db583a0dceee/cache.tzst -P -C /Users/runner/work/wes/wes --delay-directory-restore --use-compress-program unzstd
+2025-07-18T20:18:10.9568430Z Cache restored successfully
+2025-07-18T20:18:10.9632990Z uv cache restored from GitHub Actions cache with key: setup-uv-1-aarch64-apple-darwin-3.13.5-pruned-2a1b55d15b194a1572946cedbcf4d7b1a62e043649833154b76b6c1995d83f0f
+2025-07-18T20:18:10.9681950Z ##[group]Run uv python install 3.11
+2025-07-18T20:18:10.9682270Z [36;1muv python install 3.11[0m
+2025-07-18T20:18:10.9735810Z shell: /bin/bash -e {0}
+2025-07-18T20:18:10.9735990Z env:
+2025-07-18T20:18:10.9736170Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:10.9736380Z ##[endgroup]
+2025-07-18T20:18:11.3840250Z Downloading cpython-3.11.13-macos-aarch64-none (download) (17.2MiB)
+2025-07-18T20:18:11.8892430Z  Downloading cpython-3.11.13-macos-aarch64-none (download)
+2025-07-18T20:18:13.0830400Z Installed Python 3.11.13 in 2.07s
+2025-07-18T20:18:13.0830750Z  + cpython-3.11.13-macos-aarch64-none (python3.11)
+2025-07-18T20:18:13.0869300Z ##[group]Run make install-dev
+2025-07-18T20:18:13.0869810Z [36;1mmake install-dev[0m
+2025-07-18T20:18:13.0926000Z shell: /bin/bash -e {0}
+2025-07-18T20:18:13.0926160Z env:
+2025-07-18T20:18:13.0926330Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:13.0926540Z ##[endgroup]
+2025-07-18T20:18:13.4421700Z Validating development environment...
+2025-07-18T20:18:13.4501030Z Environment validation passed
+2025-07-18T20:18:13.4516440Z Installing development dependencies...
+2025-07-18T20:18:13.4516790Z uv sync --frozen --extra dev -q
+2025-07-18T20:18:26.4413720Z Development dependencies installed
+2025-07-18T20:18:26.4483680Z ##[group]Run uv sync --extra redhat || echo "Red Hat dependencies not available, continuing with standard tests"
+2025-07-18T20:18:26.4484320Z [36;1muv sync --extra redhat || echo "Red Hat dependencies not available, continuing with standard tests"[0m
+2025-07-18T20:18:26.4564100Z shell: /bin/bash -e {0}
+2025-07-18T20:18:26.4564350Z env:
+2025-07-18T20:18:26.4565020Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:26.4565530Z ##[endgroup]
+2025-07-18T20:18:26.5600320Z Resolved 200 packages in 1ms
+2025-07-18T20:18:26.5646800Z    Updating https://gitlab.com/prarit/rhjira-python.git (HEAD)
+2025-07-18T20:18:27.4300680Z     Updated https://gitlab.com/prarit/rhjira-python.git (89be8200dbc1687b5b6d0b8ddc9a88d25feb9ef2)
+2025-07-18T20:18:27.4302600Z    Building rhjira @ git+https://gitlab.com/prarit/rhjira-python.git@89be8200dbc1687b5b6d0b8ddc9a88d25feb9ef2
+2025-07-18T20:18:28.0065640Z       Built rhjira @ git+https://gitlab.com/prarit/rhjira-python.git@89be8200dbc1687b5b6d0b8ddc9a88d25feb9ef2
+2025-07-18T20:18:28.0089170Z Prepared 2 packages in 1.44s
+2025-07-18T20:18:28.5949900Z Uninstalled 92 packages in 585ms
+2025-07-18T20:18:28.6062800Z Installed 2 packages in 11ms
+2025-07-18T20:18:28.6063470Z  - alabaster==1.0.0
+2025-07-18T20:18:28.6064070Z  - astroid==3.3.10
+2025-07-18T20:18:28.6064570Z  - authlib==1.6.0
+2025-07-18T20:18:28.6065100Z  - babel==2.17.0
+2025-07-18T20:18:28.6065520Z  - bandit==1.8.6
+2025-07-18T20:18:28.6066060Z  - black==25.1.0
+2025-07-18T20:18:28.6066470Z  - boltons==21.0.0
+2025-07-18T20:18:28.6066950Z  - bracex==2.6
+2025-07-18T20:18:28.6067360Z  - cfgv==3.4.0
+2025-07-18T20:18:28.6067900Z  - chardet==5.2.0
+2025-07-18T20:18:28.6075620Z  - click==8.1.8
+2025-07-18T20:18:28.6076170Z  - click-option-group==0.5.7
+2025-07-18T20:18:28.6076780Z  - colorama==0.4.6
+2025-07-18T20:18:28.6086560Z  - cx-freeze==8.3.0
+2025-07-18T20:18:28.6087130Z  - dill==0.4.0
+2025-07-18T20:18:28.6087530Z  - distlib==0.3.9
+2025-07-18T20:18:28.6087940Z  - dmgbuild==1.6.5
+2025-07-18T20:18:28.6088450Z  - docutils==0.21.2
+2025-07-18T20:18:28.6088860Z  - dparse==0.6.4
+2025-07-18T20:18:28.6089300Z  - ds-store==1.3.1
+2025-07-18T20:18:28.6089790Z  - exceptiongroup==1.2.2
+2025-07-18T20:18:28.6090370Z  - execnet==2.1.1
+2025-07-18T20:18:28.6090790Z  - face==24.0.0
+2025-07-18T20:18:28.6102320Z  - filelock==3.16.1
+2025-07-18T20:18:28.6102820Z  - flake8==7.3.0
+2025-07-18T20:18:28.6103290Z  - glom==22.1.0
+2025-07-18T20:18:28.6103700Z  - identify==2.6.12
+2025-07-18T20:18:28.6104170Z  - imagesize==1.4.1
+2025-07-18T20:18:28.6104640Z  - isort==6.0.1
+2025-07-18T20:18:28.6105050Z  - jinja2==3.1.6
+2025-07-18T20:18:28.6107360Z  - joblib==1.5.1
+2025-07-18T20:18:28.6108880Z  - jsonschema==4.24.0
+2025-07-18T20:18:28.6109490Z  - jsonschema-specifications==2025.4.1
+2025-07-18T20:18:28.6109850Z  - mac-alias==2.2.2
+2025-07-18T20:18:28.6110150Z  - markdown-it-py==3.0.0
+2025-07-18T20:18:28.6110570Z  - markupsafe==3.0.2
+2025-07-18T20:18:28.6110860Z  - marshmallow==4.0.0
+2025-07-18T20:18:28.6126070Z  - mccabe==0.7.0
+2025-07-18T20:18:28.6126490Z  - mdurl==0.1.2
+2025-07-18T20:18:28.6126810Z  - mypy==1.16.1
+2025-07-18T20:18:28.6127160Z  - mypy-extensions==1.1.0
+2025-07-18T20:18:28.6127560Z  - nltk==3.9.1
+2025-07-18T20:18:28.6127840Z  - nodeenv==1.9.1
+2025-07-18T20:18:28.6128250Z  - opentelemetry-api==1.25.0
+2025-07-18T20:18:28.6128660Z  - opentelemetry-exporter-otlp-proto-common==1.25.0
+2025-07-18T20:18:28.6131180Z  - opentelemetry-exporter-otlp-proto-http==1.25.0
+2025-07-18T20:18:28.6137200Z  - opentelemetry-instrumentation==0.46b0
+2025-07-18T20:18:28.6137560Z  - opentelemetry-instrumentation-requests==0.46b0
+2025-07-18T20:18:28.6137850Z  - opentelemetry-proto==1.25.0
+2025-07-18T20:18:28.6138080Z  - opentelemetry-sdk==1.25.0
+2025-07-18T20:18:28.6138420Z  - opentelemetry-semantic-conventions==0.46b0
+2025-07-18T20:18:28.6138690Z  - opentelemetry-util-http==0.46b0
+2025-07-18T20:18:28.6138930Z  - pathspec==0.12.1
+2025-07-18T20:18:28.6139190Z  - pbr==6.1.1
+2025-07-18T20:18:28.6139370Z  - peewee==3.18.2
+2025-07-18T20:18:28.6139890Z  - platformdirs==4.3.8
+2025-07-18T20:18:28.6140170Z  - pre-commit==4.2.0
+2025-07-18T20:18:28.6140350Z  - psutil==6.1.1
+2025-07-18T20:18:28.6140540Z  - pylint==3.3.7
+2025-07-18T20:18:28.6140800Z  - pyproject-api==1.9.1
+2025-07-18T20:18:28.6141010Z  - pytest-mock==3.14.1
+2025-07-18T20:18:28.6141200Z  - pytest-xdist==3.8.0
+2025-07-18T20:18:28.6141450Z  - pyyaml==6.0.2
+2025-07-18T20:18:28.6141630Z  - referencing==0.36.2
+2025-07-18T20:18:28.6141810Z  - regex==2024.11.6
+2025-07-18T20:18:28.6142280Z  + rhjira==2.7.3 (from git+https://gitlab.com/prarit/rhjira-python.git@89be8200dbc1687b5b6d0b8ddc9a88d25feb9ef2)
+2025-07-18T20:18:28.6142670Z  - rich==13.5.3
+2025-07-18T20:18:28.6142860Z  - roman-numerals-py==3.1.0
+2025-07-18T20:18:28.6143120Z  - rpds-py==0.26.0
+2025-07-18T20:18:28.6143300Z  - ruamel-yaml==0.18.14
+2025-07-18T20:18:28.6143520Z  - ruamel-yaml-clib==0.2.12
+2025-07-18T20:18:28.6143780Z  - safety==3.6.0
+2025-07-18T20:18:28.6143980Z  - safety-schemas==0.0.14
+2025-07-18T20:18:28.6144260Z  - semgrep==1.128.1
+2025-07-18T20:18:28.6144460Z  - shellingham==1.5.4
+2025-07-18T20:18:28.6144690Z  - snowballstemmer==3.0.1
+2025-07-18T20:18:28.6144950Z  - sphinx==8.2.3
+2025-07-18T20:18:28.6145160Z  - sphinx-rtd-theme==3.0.2
+2025-07-18T20:18:28.6145380Z  - sphinxcontrib-applehelp==2.0.0
+2025-07-18T20:18:28.6145670Z  - sphinxcontrib-devhelp==2.0.0
+2025-07-18T20:18:28.6145900Z  - sphinxcontrib-htmlhelp==2.1.0
+2025-07-18T20:18:28.6146140Z  - sphinxcontrib-jquery==4.1
+2025-07-18T20:18:28.6146420Z  - sphinxcontrib-jsmath==1.0.1
+2025-07-18T20:18:28.6146650Z  - sphinxcontrib-qthelp==2.0.0
+2025-07-18T20:18:28.6146890Z  - sphinxcontrib-serializinghtml==2.0.0
+2025-07-18T20:18:28.6147200Z  - stevedore==5.4.1
+2025-07-18T20:18:28.6147410Z  + tabulate==0.9.0
+2025-07-18T20:18:28.6147590Z  - tenacity==9.1.2
+2025-07-18T20:18:28.6147850Z  - tomli==2.0.2
+2025-07-18T20:18:28.6148090Z  - tomlkit==0.13.3
+2025-07-18T20:18:28.6148280Z  - tox==4.27.0
+2025-07-18T20:18:28.6148490Z  - typer==0.16.0
+2025-07-18T20:18:28.6148690Z  - virtualenv==20.31.2
+2025-07-18T20:18:28.6148890Z  - wcmatch==8.5.2
+2025-07-18T20:18:28.6466840Z ##[group]Run uv run --extra dev flake8 --version
+2025-07-18T20:18:28.6467160Z [36;1muv run --extra dev flake8 --version[0m
+2025-07-18T20:18:28.6467400Z [36;1muv run --extra dev pylint --version[0m
+2025-07-18T20:18:28.6516820Z shell: /bin/bash -e {0}
+2025-07-18T20:18:28.6532220Z env:
+2025-07-18T20:18:28.6532430Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:28.6532670Z ##[endgroup]
+2025-07-18T20:18:29.0354680Z Installed 92 packages in 304ms
+2025-07-18T20:18:29.2500940Z 7.3.0 (mccabe: 0.7.0, pycodestyle: 2.14.0, pyflakes: 3.4.0) CPython 3.11.13 on
+2025-07-18T20:18:29.2501250Z Darwin
+2025-07-18T20:18:29.6823620Z pylint 3.3.7
+2025-07-18T20:18:29.6823830Z astroid 3.3.10
+2025-07-18T20:18:29.6824080Z Python 3.11.13 (main, Jul 11 2025, 22:26:10) [Clang 20.1.4 ]
+2025-07-18T20:18:29.7209780Z ##[group]Run make lint VERBOSE=true
+2025-07-18T20:18:29.7210020Z [36;1mmake lint VERBOSE=true[0m
+2025-07-18T20:18:29.7258730Z shell: /bin/bash -e {0}
+2025-07-18T20:18:29.7258920Z env:
+2025-07-18T20:18:29.7259090Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:29.7259320Z ##[endgroup]
+2025-07-18T20:18:29.7708500Z Running linting...
+2025-07-18T20:18:29.7708800Z uv run --extra dev flake8 src tests -v
+2025-07-18T20:18:29.8448140Z flake8.checker            MainProcess     37 INFO     Making checkers
+2025-07-18T20:18:30.4319710Z flake8.main.application   MainProcess    624 INFO     Finished running
+2025-07-18T20:18:30.4321130Z flake8.main.application   MainProcess    624 INFO     Reporting errors
+2025-07-18T20:18:30.4354790Z flake8.main.application   MainProcess    628 INFO     Found a total of 47 violations and reported 0
+2025-07-18T20:18:30.4468510Z uv run --extra dev pylint src/wes -v
+2025-07-18T20:18:30.6832020Z Using config file /Users/runner/work/wes/wes/pyproject.toml
+2025-07-18T20:18:39.3175770Z 
+2025-07-18T20:18:39.3233510Z ------------------------------------------------------------------------------
+2025-07-18T20:18:39.3241610Z Your code has been rated at 10.00/10
+2025-07-18T20:18:39.3249730Z Checked 59 files, skipped 0 files/modules
+2025-07-18T20:18:39.3250270Z 
+2025-07-18T20:18:41.7487170Z ##[group]Run # Use Qt's offscreen platform instead of Xvfb for better performance
+2025-07-18T20:18:41.7487900Z [36;1m# Use Qt's offscreen platform instead of Xvfb for better performance[0m
+2025-07-18T20:18:41.7488360Z [36;1mecho "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV[0m
+2025-07-18T20:18:41.7488770Z [36;1mecho "QT_LOGGING_RULES=*.debug=false;qt.qpa.xcb=false" >> $GITHUB_ENV[0m
+2025-07-18T20:18:41.7489120Z [36;1mecho "DISPLAY=:99" >> $GITHUB_ENV[0m
+2025-07-18T20:18:41.7575570Z shell: /bin/bash -e {0}
+2025-07-18T20:18:41.7575810Z env:
+2025-07-18T20:18:41.7576120Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:41.7576400Z ##[endgroup]
+2025-07-18T20:18:41.8021380Z ##[group]Run make test-unit
+2025-07-18T20:18:41.8022840Z [36;1mmake test-unit[0m
+2025-07-18T20:18:41.8071600Z shell: /bin/bash -e {0}
+2025-07-18T20:18:41.8071920Z env:
+2025-07-18T20:18:41.8072170Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:41.8072470Z   QT_QPA_PLATFORM: offscreen
+2025-07-18T20:18:41.8072960Z   QT_LOGGING_RULES: *.debug=false;qt.qpa.xcb=false
+2025-07-18T20:18:41.8073300Z   DISPLAY: :99
+2025-07-18T20:18:41.8073840Z   RHJIRA_TEST_MODE: true
+2025-07-18T20:18:41.8074410Z ##[endgroup]
+2025-07-18T20:18:41.8526720Z Running unit tests...
+2025-07-18T20:18:41.8527260Z QT_QPA_PLATFORM=offscreen QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false" \
+2025-07-18T20:18:41.8527820Z 	uv run --extra dev pytest tests/unit/  \
+2025-07-18T20:18:41.8528260Z 		--cov=src/wes \
+2025-07-18T20:18:41.8528510Z 		--cov-report=html:htmlcov \
+2025-07-18T20:18:41.8529000Z 		--cov-report=term-missing \
+2025-07-18T20:18:41.8529270Z 		--cov-fail-under=1 \
+2025-07-18T20:18:41.8529700Z 		--junitxml=test-results-unit.xml
+2025-07-18T20:18:44.8614660Z ============================= test session starts ==============================
+2025-07-18T20:18:44.8615890Z platform darwin -- Python 3.11.13, pytest-8.4.1, pluggy-1.6.0
+2025-07-18T20:18:44.8616830Z PySide6 6.9.1 -- Qt runtime 6.9.1 -- Qt compiled 6.9.1
+2025-07-18T20:18:44.8617260Z rootdir: /Users/runner/work/wes/wes
+2025-07-18T20:18:44.8617610Z configfile: pyproject.toml
+2025-07-18T20:18:44.8618080Z plugins: anyio-4.9.0, xdist-3.8.0, cov-6.2.1, mock-3.14.1, qt-4.5.0, asyncio-1.0.0
+2025-07-18T20:18:44.8618700Z asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+2025-07-18T20:18:44.8619260Z collected 158 items
+2025-07-18T20:18:44.8619540Z 
+2025-07-18T20:18:44.9116300Z tests/unit/gui/unified_config/components/test_service_selector.py ...... [  3%]
+2025-07-18T20:18:44.9254990Z ......                                                                   [  7%]
+2025-07-18T20:18:45.3335680Z tests/unit/gui/unified_config/components/test_validation_indicator.py .. [  8%]
+2025-07-18T20:18:48.6584660Z ................                                                         [ 18%]
+2025-07-18T20:18:51.1897730Z tests/unit/gui/unified_config/config_pages/test_jira_page.py ........... [ 25%]
+2025-07-18T20:18:51.2528890Z ....                                                                     [ 28%]
+2025-07-18T20:18:51.7695860Z tests/unit/gui/unified_config/test_unified_config_dialog.py ............ [ 36%]
+2025-07-18T20:18:51.8175840Z ..                                                                       [ 37%]
+2025-07-18T20:18:51.8246130Z tests/unit/gui/unified_config/utils/test_config_detector.py .......      [ 41%]
+2025-07-18T20:18:51.8283570Z tests/unit/gui/unified_config/validators/test_service_validators.py .... [ 44%]
+2025-07-18T20:18:51.8406930Z ............                                                             [ 51%]
+2025-07-18T20:18:51.8732730Z tests/unit/test_config_manager.py ..............                         [ 60%]
+2025-07-18T20:18:51.9294940Z tests/unit/test_orchestrator.py ...............                          [ 70%]
+2025-07-18T20:18:54.4933560Z tests/unit/test_redhat_jira_client.py ..................s.....s.F.       [ 87%]
+2025-07-18T20:18:57.5856650Z tests/unit/test_security_manager.py ...................                  [100%]
+2025-07-18T20:18:57.5857910Z 
+2025-07-18T20:18:57.5858620Z =================================== FAILURES ===================================
+2025-07-18T20:18:57.5859520Z ___________ TestRHJiraLibraryIntegration.test_rhjira_library_import ____________
+2025-07-18T20:18:57.5859930Z 
+2025-07-18T20:18:57.5860240Z self = <tests.unit.test_redhat_jira_client.TestRHJiraLibraryIntegration object at 0x10f9add50>
+2025-07-18T20:18:57.5860530Z 
+2025-07-18T20:18:57.5860740Z     def test_rhjira_library_import(self):
+2025-07-18T20:18:57.5861080Z         """Test that rhjira library can be imported when available."""
+2025-07-18T20:18:57.5861480Z         import rhjira
+2025-07-18T20:18:57.5862470Z     
+2025-07-18T20:18:57.5863000Z         # rhjira library provides JIRA class, not RHJIRA
+2025-07-18T20:18:57.5863410Z >       assert hasattr(rhjira, "JIRA") or hasattr(rhjira, "__version__")
+2025-07-18T20:18:57.5863790Z E       AssertionError: assert (False or False)
+2025-07-18T20:18:57.5864430Z E        +  where False = hasattr(<module 'rhjira' from '/Users/runner/work/wes/wes/.venv/lib/python3.11/site-packages/rhjira/__init__.py'>, 'JIRA')
+2025-07-18T20:18:57.5865150Z E        +  and   False = hasattr(<module 'rhjira' from '/Users/runner/work/wes/wes/.venv/lib/python3.11/site-packages/rhjira/__init__.py'>, '__version__')
+2025-07-18T20:18:57.5865620Z 
+2025-07-18T20:18:57.5865740Z tests/unit/test_redhat_jira_client.py:483: AssertionError
+2025-07-18T20:18:57.5866230Z ----- generated xml file: /Users/runner/work/wes/wes/test-results-unit.xml -----
+2025-07-18T20:18:57.5866660Z ================================ tests coverage ================================
+2025-07-18T20:18:57.5867010Z ______________ coverage: platform darwin, python 3.11.13-final-0 _______________
+2025-07-18T20:18:57.5867330Z 
+2025-07-18T20:18:57.5867530Z Name                                                            Stmts   Miss Branch BrPart  Cover   Missing
+2025-07-18T20:18:57.5867930Z -----------------------------------------------------------------------------------------------------------
+2025-07-18T20:18:57.5868420Z src/wes/__init__.py                                                 3      0      0      0   100%
+2025-07-18T20:18:57.5868740Z src/wes/core/__init__.py                                            0      0      0      0   100%
+2025-07-18T20:18:57.5869610Z src/wes/core/config_manager.py                                    267     71     78     20    68%   102, 132-134, 140->144, 144->148, 148->152, 167-168, 191-193, 202->206, 203->206, 207-210, 212->216, 213->216, 220, 225-251, 258->273, 260->273, 282->293, 306, 310-313, 317->316, 323-325, 335-343, 347->346, 353-355, 359, 363-382, 391-393, 401-403, 412-414, 425, 428, 432->435, 438-440, 455-456
+2025-07-18T20:18:57.5870500Z src/wes/core/credential_monitor.py                                235    235     66      0     0%   3-500
+2025-07-18T20:18:57.5871050Z src/wes/core/export_manager.py                                    168    168     40      0     0%   3-445
+2025-07-18T20:18:57.5871660Z src/wes/core/orchestrator.py                                      208     44     38     13    74%   45->exit, 123, 152, 203, 213, 226, 235, 323, 332, 347-350, 359-360, 380, 396-400, 406-410, 424-464, 480-483, 515-516, 520-525, 569-571, 580
+2025-07-18T20:18:57.5872650Z src/wes/core/performance_monitor.py                               197    197     40      0     0%   3-373
+2025-07-18T20:18:57.5873320Z src/wes/core/security_manager.py                                  125     21     16      2    84%   78, 106-110, 139-144, 163-168, 180-185, 192, 214-216, 227, 235-237
+2025-07-18T20:18:57.5873950Z src/wes/core/service_factory.py                                   132     94     32      1    24%   32-35, 45-46, 50-88, 92-120, 124-155, 160-171, 175-185, 189-211, 215, 219, 223-224, 233->236, 244, 248
+2025-07-18T20:18:57.5874620Z src/wes/gui/__init__.py                                             0      0      0      0   100%
+2025-07-18T20:18:57.5875050Z src/wes/gui/config_dialog.py                                      389    389     48      0     0%   3-697
+2025-07-18T20:18:57.5875840Z src/wes/gui/credential_validators.py                              283    228    118      0    14%   25-26, 32-117, 121-198, 202-206, 210-211, 215-229, 233-237, 241, 246-251, 255-266, 270-285, 289-313, 317-340, 344-351, 356-364, 368-381, 385-398, 405-406, 412-455, 461-466, 472-487, 518-520, 526-542, 548-556, 560-569, 575, 579-582, 595
+2025-07-18T20:18:57.5876750Z src/wes/gui/export_dialog.py                                      119    119     16      0     0%   3-272
+2025-07-18T20:18:57.5877200Z src/wes/gui/ldap_config_dialog.py                                 152    152     12      0     0%   3-269
+2025-07-18T20:18:57.5877880Z src/wes/gui/main_window.py                                        444    444     74      0     0%   3-907
+2025-07-18T20:18:57.5878350Z src/wes/gui/main_window_single.py                                 883    883     90      0     0%   3-1892
+2025-07-18T20:18:57.5878790Z src/wes/gui/progress_dialog.py                                    157    157     26      0     0%   3-282
+2025-07-18T20:18:57.5879390Z src/wes/gui/setup_wizard.py                                       672    672    120      0     0%   3-1256
+2025-07-18T20:18:57.5879860Z src/wes/gui/summary_worker.py                                      45     45      4      0     0%   3-111
+2025-07-18T20:18:57.5880360Z src/wes/gui/unified_config/__init__.py                              3      0      0      0   100%
+2025-07-18T20:18:57.5880870Z src/wes/gui/unified_config/components/__init__.py                   4      0      0      0   100%
+2025-07-18T20:18:57.5881610Z src/wes/gui/unified_config/components/connection_tester.py        246    210     62      0    12%   31-35, 39-86, 90-96, 101, 106-124, 129, 133, 137, 141, 145-150, 154, 158, 170-182, 186-248, 252-282, 286-290, 294-316, 325-351, 355-382, 386-399, 405-423, 427-431, 435, 439-442
+2025-07-18T20:18:57.5882550Z src/wes/gui/unified_config/components/service_selector.py          73      0     16      3    97%   126->exit, 143->exit, 175->179
+2025-07-18T20:18:57.5883170Z src/wes/gui/unified_config/components/validation_indicator.py     147      6     24      3    95%   244, 248-249, 277, 289, 293
+2025-07-18T20:18:57.5883720Z src/wes/gui/unified_config/config_pages/__init__.py                 4      0      0      0   100%
+2025-07-18T20:18:57.5884270Z src/wes/gui/unified_config/config_pages/app_settings_page.py      130     13      8      2    86%   172-179, 184-199, 210->213, 227->230, 246, 268, 280, 290
+2025-07-18T20:18:57.5885000Z src/wes/gui/unified_config/config_pages/base_page.py              126     18     16      3    81%   75->84, 88->95, 160-170, 174-184, 230-239, 268-269
+2025-07-18T20:18:57.5886950Z src/wes/gui/unified_config/config_pages/gemini_page.py            147     16     18      7    85%   180-182, 186-198, 203, 207, 212, 224->228, 237, 255, 286-294, 303, 312
+2025-07-18T20:18:57.5887560Z src/wes/gui/unified_config/config_pages/jira_page.py              152     20     44      8    81%   160->168, 163, 254, 264, 283, 292, 299, 312-325, 332-335, 343-346
+2025-07-18T20:18:57.5888130Z src/wes/gui/unified_config/config_pages/security_page.py          147     49      8      0    63%   168-217, 225-249, 253-264, 304, 324, 336, 345
+2025-07-18T20:18:57.5888710Z src/wes/gui/unified_config/types.py                                34      0      0      0   100%
+2025-07-18T20:18:57.5889580Z src/wes/gui/unified_config/unified_config_dialog.py               222     37     68     11    75%   72, 208->218, 233->244, 258->270, 304->exit, 313, 317-318, 324->341, 335, 346-365, 369-379, 389-392, 397, 401-409, 419-421, 438-442
+2025-07-18T20:18:57.5890450Z src/wes/gui/unified_config/utils/__init__.py                        8      0      0      0   100%
+2025-07-18T20:18:57.5890970Z src/wes/gui/unified_config/utils/config_detector.py                66      5     32      2    91%   56, 150-156
+2025-07-18T20:18:57.5891530Z src/wes/gui/unified_config/utils/constants.py                      54      0      0      0   100%
+2025-07-18T20:18:57.5892180Z src/wes/gui/unified_config/utils/dialogs.py                       108     68     22      0    31%   43-63, 80, 97, 114, 131, 153-167, 191-202, 220-236, 257-262, 274-280, 306-309, 331-334, 350-356, 372
+2025-07-18T20:18:57.5892750Z src/wes/gui/unified_config/utils/factory.py                        37     15      4      0    54%   58, 79-83, 91, 103-104, 123-131, 144, 154
+2025-07-18T20:18:57.5893350Z src/wes/gui/unified_config/utils/responsive_layout.py              91     51     24      0    35%   44-55, 60-66, 71-77, 81, 85-110, 114-136, 140-142, 191-212, 220-221
+2025-07-18T20:18:57.5894160Z src/wes/gui/unified_config/utils/service_locator.py                72     38      6      0    44%   36-37, 62-72, 89-92, 96-97, 105-106, 122, 132, 161-172, 180-181, 185-187, 191-193, 197, 201
+2025-07-18T20:18:57.5894780Z src/wes/gui/unified_config/utils/styles.py                         45     10      8      1    68%   60-113, 162->170, 179, 219, 256
+2025-07-18T20:18:57.5895360Z src/wes/gui/unified_config/validators/__init__.py                   3      0      0      0   100%
+2025-07-18T20:18:57.5895930Z src/wes/gui/unified_config/validators/base_validator.py            14      3      6      0    75%   50-52
+2025-07-18T20:18:57.5896550Z src/wes/gui/unified_config/validators/service_validators.py       116     30     52      7    74%   69-78, 90-91, 98, 102, 109-110, 126, 130-145, 150, 184, 220-234, 239
+2025-07-18T20:18:57.5897290Z src/wes/gui/unified_config/views/__init__.py                        4      0      0      0   100%
+2025-07-18T20:18:57.5897890Z src/wes/gui/unified_config/views/direct_view.py                   120     31     34      4    66%   152->155, 155->exit, 160, 165->171, 183-185, 207-208, 221-238, 247-252, 261-263, 268-278
+2025-07-18T20:18:57.5898640Z src/wes/gui/unified_config/views/guided_view.py                   153     47     26      1    64%   247-248, 267-303, 308-335, 340-356, 365
+2025-07-18T20:18:57.5899270Z src/wes/gui/unified_config/views/wizard_view.py                   146     32     16      1    72%   62, 143-150, 250-252, 264-266, 271-289, 294-297, 301-309, 313-319
+2025-07-18T20:18:57.5899740Z src/wes/integrations/__init__.py                                    0      0      0      0   100%
+2025-07-18T20:18:57.5900440Z src/wes/integrations/base_client.py                               150    114     26      0    20%   25-29, 33-54, 58, 63-65, 79-83, 87-100, 110-129, 142-158, 177-192, 196, 213-291, 300, 309, 320, 328, 332-335, 345-358, 362-374, 384, 388-389, 393, 397-398
+2025-07-18T20:18:57.5901270Z src/wes/integrations/gemini_client.py                             249    214     84      0    11%   50-65, 70-98, 102-130, 134-187, 197-226, 232-250, 254-266, 270-282, 289-312, 318-340, 344-380, 384-400, 406-423, 429-446, 450-489, 493-514, 518-524, 533-549, 554-563, 568-581
+2025-07-18T20:18:57.5902180Z src/wes/integrations/jira_client.py                               214    184     48      0    11%   20-23, 27-45, 59-93, 97-125, 129-135, 147-182, 192-218, 224-247, 253-288, 297-314, 318-340, 344-378, 384-421, 425-438, 443-447, 459-472, 481-515
+2025-07-18T20:18:57.5903160Z src/wes/integrations/redhat_jira_client.py                        283     76     72     26    68%   22-23, 87-90, 151, 165, 173-175, 204-205, 231-233, 237-261, 274-284, 301, 353-354, 368-369, 429, 467->473, 473->477, 483, 487, 490, 495, 498->503, 503->507, 507->510, 512-518, 545->548, 548->556, 553-554, 563->577, 564-572, 587-601, 625, 639-641, 654->670, 661-668, 675->682, 677->680, 684-685, 708-709
+2025-07-18T20:18:57.5904380Z src/wes/integrations/redhat_jira_ldap_integration.py              144    124     50      0    10%   23-35, 39-69, 95-156, 170-180, 192-203, 218-232, 243-264, 290-323, 334-369, 373-386, 390-400
+2025-07-18T20:18:57.5905200Z src/wes/integrations/redhat_ldap_client.py                        213    167     38      0    18%   34-35, 76-86, 90-93, 97-136, 140-141, 147-152, 156-170, 188-222, 233-267, 278-312, 326-349, 365-389, 393-396, 409-418, 433-452, 469-503, 511-531, 535-553, 557-558, 562
+2025-07-18T20:18:57.5905820Z src/wes/main.py                                                   150    150     30      0     0%   3-317
+2025-07-18T20:18:57.5906260Z src/wes/utils/__init__.py                                           0      0      0      0   100%
+2025-07-18T20:18:57.5906620Z src/wes/utils/exceptions.py                                        19      0      0      0   100%
+2025-07-18T20:18:57.5907020Z src/wes/utils/logging_config.py                                    87     42     26      3    46%   41, 56, 58, 67-68, 73-82, 95-173, 234
+2025-07-18T20:18:57.5907940Z src/wes/utils/validators.py                                       258    137    124     23    40%   43, 50, 54, 61, 65-66, 72, 99, 104, 110, 118, 122, 130, 137, 155, 160-176, 182, 201-216, 222, 228, 233, 235->239, 241, 249, 253, 256, 260, 267-291, 296-307, 312-327, 334-338, 347, 352-359, 390-431, 450-469, 473-491, 499, 505, 510-513, 518-526, 534-544
+2025-07-18T20:18:57.5908580Z -----------------------------------------------------------------------------------------------------------
+2025-07-18T20:18:57.5908920Z TOTAL                                                            8718   5826   1810    141    31%
+2025-07-18T20:18:57.5909170Z Coverage HTML written to dir htmlcov
+2025-07-18T20:18:57.5909480Z Required test coverage of 1% reached. Total coverage: 30.84%
+2025-07-18T20:18:57.5909810Z =========================== short test summary info ============================
+2025-07-18T20:18:57.5910150Z SKIPPED [1] tests/unit/test_redhat_jira_client.py:248: Async test causing hang
+2025-07-18T20:18:57.5910600Z SKIPPED [1] tests/unit/test_redhat_jira_client.py:378: Async test causing hang
+2025-07-18T20:18:57.5911290Z FAILED tests/unit/test_redhat_jira_client.py::TestRHJiraLibraryIntegration::test_rhjira_library_import - AssertionError: assert (False or False)
+2025-07-18T20:18:57.5911980Z  +  where False = hasattr(<module 'rhjira' from '/Users/runner/work/wes/wes/.venv/lib/python3.11/site-packages/rhjira/__init__.py'>, 'JIRA')
+2025-07-18T20:18:57.5912670Z  +  and   False = hasattr(<module 'rhjira' from '/Users/runner/work/wes/wes/.venv/lib/python3.11/site-packages/rhjira/__init__.py'>, '__version__')
+2025-07-18T20:18:57.5913130Z ================== 1 failed, 155 passed, 2 skipped in 14.09s ===================
+2025-07-18T20:18:58.0596290Z make: *** [test-unit] Error 1
+2025-07-18T20:18:58.0609010Z ##[error]Process completed with exit code 2.
+2025-07-18T20:18:58.0674900Z ##[group]Run actions/upload-artifact@v4
+2025-07-18T20:18:58.0675110Z with:
+2025-07-18T20:18:58.0675260Z   name: test-results-macos-latest-3.11
+2025-07-18T20:18:58.0675550Z   path: test-results-*.xml
+bandit-report.json
+safety-report.json
+htmlcov/
+
+2025-07-18T20:18:58.0675820Z   if-no-files-found: warn
+2025-07-18T20:18:58.0675970Z   compression-level: 6
+2025-07-18T20:18:58.0676100Z   overwrite: false
+2025-07-18T20:18:58.0676240Z   include-hidden-files: false
+2025-07-18T20:18:58.0676390Z env:
+2025-07-18T20:18:58.0676540Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+2025-07-18T20:18:58.0676740Z   QT_QPA_PLATFORM: offscreen
+2025-07-18T20:18:58.0676920Z   QT_LOGGING_RULES: *.debug=false;qt.qpa.xcb=false
+2025-07-18T20:18:58.0677110Z   DISPLAY: :99
+2025-07-18T20:18:58.0677270Z ##[endgroup]
+2025-07-18T20:18:58.3681540Z With the provided path, there will be 68 files uploaded
+2025-07-18T20:18:58.3682490Z Artifact name is valid!
+2025-07-18T20:18:58.3682710Z Root directory input is valid!
+2025-07-18T20:18:58.4803190Z Beginning upload of artifact content to blob storage
+2025-07-18T20:18:58.6714560Z Uploaded bytes 602519
+2025-07-18T20:18:58.7362350Z Finished uploading artifact content to blob storage!
+2025-07-18T20:18:58.7364090Z SHA256 digest of uploaded artifact zip is 629cff7c77c04e6a731bf8c0a2efcc3dcf2fdb13c9c9a2192fe66220c44a0155
+2025-07-18T20:18:58.7364710Z Finalizing artifact upload
+2025-07-18T20:18:58.8133670Z Artifact test-results-macos-latest-3.11.zip successfully finalized. Artifact ID 3566745254
+2025-07-18T20:18:58.8134420Z Artifact test-results-macos-latest-3.11 has been successfully uploaded! Final size is 602519 bytes. Artifact ID is 3566745254
+2025-07-18T20:18:58.8141580Z Artifact download URL: https://github.com/maxamillion/wes/actions/runs/16379548989/artifacts/3566745254
+2025-07-18T20:18:58.8243460Z Post job cleanup.
+2025-07-18T20:18:58.9006230Z [command]/opt/homebrew/bin/git version
+2025-07-18T20:18:58.9220100Z git version 2.50.1
+2025-07-18T20:18:58.9242350Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/a37ff1d9-331e-4332-afa9-abfe736d7e47/.gitconfig'
+2025-07-18T20:18:58.9250260Z Temporarily overriding HOME='/Users/runner/work/_temp/a37ff1d9-331e-4332-afa9-abfe736d7e47' before making global git config changes
+2025-07-18T20:18:58.9251060Z Adding repository directory to the temporary git global config as a safe directory
+2025-07-18T20:18:58.9254790Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/wes/wes
+2025-07-18T20:18:58.9335480Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-07-18T20:18:58.9381700Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-07-18T20:18:59.0041770Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-07-18T20:18:59.0075900Z http.https://github.com/.extraheader
+2025-07-18T20:18:59.0093050Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-07-18T20:18:59.0132560Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-07-18T20:18:59.0665310Z Cleaning up orphan processes
