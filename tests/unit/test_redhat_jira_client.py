@@ -71,8 +71,9 @@ class TestRedHatJiraClient:
             "timeout": 30,
         }
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @patch("wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", False)
-    def test_client_initialization_without_rhjira(self, redhat_config):
+    def test_client_initialization_without_rhjira(self, mock_test_connection, redhat_config):
         """Test client initialization when rhjira is not available."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -84,9 +85,11 @@ class TestRedHatJiraClient:
             assert client.use_rhjira == False
             assert client._client == mock_jira_instance
             mock_jira.assert_called_once()
+            mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @patch("wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", True)
-    def test_client_initialization_with_rhjira(self, redhat_config):
+    def test_client_initialization_with_rhjira(self, mock_test_connection, redhat_config):
         """Test client initialization when rhjira is available."""
         with patch("wes.integrations.redhat_jira_client.rhjira") as mock_rhjira:
             mock_client_instance = Mock()
@@ -99,8 +102,10 @@ class TestRedHatJiraClient:
 
             assert client.use_rhjira
             assert client._client == mock_client_instance
+            mock_test_connection.assert_called_once()
 
-    def test_client_initialization_with_ssl_disabled(self, redhat_config):
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    def test_client_initialization_with_ssl_disabled(self, mock_test_connection, redhat_config):
         """Test client initialization with SSL verification disabled."""
         redhat_config["verify_ssl"] = False
 
@@ -113,19 +118,22 @@ class TestRedHatJiraClient:
 
             assert client.verify_ssl == False
             mock_jira.assert_called_once()
+            mock_test_connection.assert_called_once()
 
-    def test_authentication_failure(self, redhat_config):
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    def test_authentication_failure(self, mock_test_connection, redhat_config):
         """Test handling of authentication failures."""
-        with patch("jira.JIRA") as mock_jira:
-            mock_jira.side_effect = Exception("Authentication failed")
+        mock_test_connection.side_effect = AuthenticationError("Red Hat Jira authentication failed")
 
-            with pytest.raises(
-                AuthenticationError, match="Red Hat Jira authentication failed"
-            ):
-                RedHatJiraClient(**redhat_config)
+        with pytest.raises(
+            AuthenticationError, match="Red Hat Jira authentication failed"
+        ):
+            RedHatJiraClient(**redhat_config)
+        mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @pytest.mark.asyncio
-    async def test_get_user_activities_success(self, redhat_config):
+    async def test_get_user_activities_success(self, mock_test_connection, redhat_config):
         """Test successful user activities retrieval."""
         with patch("jira.JIRA") as mock_jira:
             # Setup mock client
@@ -147,9 +155,11 @@ class TestRedHatJiraClient:
 
             assert isinstance(activities, list)
             mock_jira_instance.search_issues.assert_called_once()
+            mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @pytest.mark.asyncio
-    async def test_get_user_activities_with_comments(self, redhat_config):
+    async def test_get_user_activities_with_comments(self, mock_test_connection, redhat_config):
         """Test user activities retrieval with comments enabled."""
         with patch("jira.JIRA") as mock_jira:
             # Setup mock issue
@@ -192,9 +202,11 @@ class TestRedHatJiraClient:
             assert activities[0]["id"] == "RH-123"
             assert activities[0]["title"] == "Test issue"
             assert "comments" in activities[0]
+            mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @pytest.mark.asyncio
-    async def test_get_projects_success(self, redhat_config):
+    async def test_get_projects_success(self, mock_test_connection, redhat_config):
         """Test successful projects retrieval."""
         with patch("jira.JIRA") as mock_jira:
             # Setup mock project
@@ -217,10 +229,12 @@ class TestRedHatJiraClient:
             assert len(projects) == 1
             assert projects[0]["key"] == "RH"
             assert projects[0]["name"] == "Red Hat"
+            mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @pytest.mark.asyncio
     @pytest.mark.skip(reason="Async test causing hang")
-    async def test_rate_limiting(self, redhat_config):
+    async def test_rate_limiting(self, mock_test_connection, redhat_config):
         """Test rate limiting functionality."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -246,8 +260,10 @@ class TestRedHatJiraClient:
             # Should have been delayed due to rate limiting (rate_limit=1 means 1 req/sec)
             # Allow some tolerance for timing variations
             assert end_time - start_time >= 0.3  # Some delay expected
+            mock_test_connection.assert_called_once()
 
-    def test_get_connection_info(self, redhat_config):
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    def test_get_connection_info(self, mock_test_connection, redhat_config):
         """Test connection information retrieval."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -265,9 +281,11 @@ class TestRedHatJiraClient:
             assert info["client_type"] in ["rhjira", "jira"]
             assert "rhjira_available" in info
             assert "ssl_verification" in info
+            mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @pytest.mark.asyncio
-    async def test_close_client(self, redhat_config):
+    async def test_close_client(self, mock_test_connection, redhat_config):
         """Test client cleanup."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -279,8 +297,10 @@ class TestRedHatJiraClient:
             await client.close()
 
             assert client._client is None
+            mock_test_connection.assert_called_once()
 
-    def test_redhat_specific_filters(self, redhat_config):
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    def test_redhat_specific_filters(self, mock_test_connection, redhat_config):
         """Test Red Hat specific JQL filters."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -292,9 +312,11 @@ class TestRedHatJiraClient:
             # Test Red Hat specific filters
             filters = client._get_redhat_specific_filters()
             assert isinstance(filters, str)
+            mock_test_connection.assert_called_once()
 
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
     @pytest.mark.asyncio
-    async def test_jira_error_handling(self, redhat_config):
+    async def test_jira_error_handling(self, mock_test_connection, redhat_config):
         """Test handling of Jira-specific errors."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -310,12 +332,14 @@ class TestRedHatJiraClient:
                     start_date=datetime(2024, 1, 1),
                     end_date=datetime(2024, 1, 31),
                 )
+            mock_test_connection.assert_called_once()
 
 
 class TestRedHatJiraFactory:
     """Test Red Hat Jira client factory function."""
 
-    def test_get_redhat_jira_client(self):
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    def test_get_redhat_jira_client(self, mock_test_connection):
         """Test factory function for creating Red Hat Jira client."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
@@ -331,6 +355,7 @@ class TestRedHatJiraFactory:
             assert isinstance(client, RedHatJiraClient)
             assert client.url == "https://issues.redhat.com"
             assert client.username == "testuser"
+            mock_test_connection.assert_called_once()
 
 
 class TestRedHatJiraIntegration:
@@ -339,7 +364,8 @@ class TestRedHatJiraIntegration:
     @pytest.mark.integration
     @pytest.mark.asyncio
     @pytest.mark.skip(reason="Async test causing hang")
-    async def test_end_to_end_workflow(self):
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    async def test_end_to_end_workflow(self, mock_test_connection):
         """Test complete Red Hat Jira workflow."""
         config = {
             "url": "https://issues.redhat.com",
@@ -405,6 +431,7 @@ class TestRedHatJiraIntegration:
 
             # Cleanup
             await client.close()
+            mock_test_connection.assert_called_once()
 
     @pytest.mark.integration
     def test_redhat_vs_standard_detection(self):
