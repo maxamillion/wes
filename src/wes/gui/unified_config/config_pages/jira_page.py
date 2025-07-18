@@ -224,10 +224,10 @@ class JiraConfigPage(ConfigPageBase):
 
         # Validate URL format
         url = config["url"]
-        if not url.startswith(("http://", "https://")):
+        if not url.startswith("https://"):
             return ValidationResult(
                 is_valid=False,
-                message="URL must start with http:// or https://",
+                message="URL must start with https://",
                 service=self.service_type,
                 details={"field": "url", "current_value": url},
             )
@@ -282,8 +282,8 @@ class JiraConfigPage(ConfigPageBase):
         if not url:
             return False, "URL is required"
 
-        if not url.startswith(("http://", "https://")):
-            return False, "Must start with http:// or https://"
+        if not url.startswith("https://"):
+            return False, "Must start with or https://"
 
         # Check for common patterns
         if "atlassian.net" in url:

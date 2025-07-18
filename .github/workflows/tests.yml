@@ -55,9 +55,14 @@ jobs:
           libxkbcommon-x11-0 \
           libdbus-1-3
 
+    - name: Check linter versions
+      run: |
+        uv run --extra dev flake8 --version
+        uv run --extra dev pylint --version
+
     - name: Run linting
       run: |
-        make lint
+        make lint VERBOSE=true
 
     # - name: Run type checking
     #   run: |

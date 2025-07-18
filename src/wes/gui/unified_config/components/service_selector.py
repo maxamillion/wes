@@ -172,7 +172,7 @@ class ServiceSelector(QWidget):
         elif any(rh in url_lower for rh in ["redhat.com", "engineering.redhat.com"]):
             self.set_service_type(JiraType.REDHAT)
         # Default to server for other URLs
-        elif url_lower.startswith(("http://", "https://")):
+        elif url_lower.startswith("https://"):
             self.set_service_type(JiraType.SERVER)
 
         # Emit signal for the new selection
