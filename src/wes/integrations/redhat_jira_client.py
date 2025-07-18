@@ -13,15 +13,13 @@ from urllib3.util.retry import Retry
 # Try to import rhjira if available, fallback to standard jira
 # To install rhjira: pip install git+https://gitlab.com/prarit/rhjira-python.git
 # Note: rhjira is an optional dependency for Red Hat Jira optimization
+from jira import JIRA
 try:
     import rhjira
 
     RHJIRA_AVAILABLE = True
 except ImportError:
     RHJIRA_AVAILABLE = False
-    # Fallback to standard jira library
-    from jira import JIRA
-    import jira as rhjira
 
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
@@ -138,7 +136,7 @@ class RedHatJiraClient:
             }
 
             # Add Red Hat specific configurations
-            if hasattr(rhjira, "RHJIRA"):
+            if RHJIRA_AVAILABLE and hasattr(rhjira, "RHJIRA"):
                 # Use Red Hat specific client if available with Bearer token
                 self._client = rhjira.RHJIRA(
                     server=self.url,
@@ -147,7 +145,7 @@ class RedHatJiraClient:
                 )
             else:
                 # Fallback to standard JIRA with Red Hat Bearer token
-                self._client = rhjira.JIRA(
+                self._client = JIRA(
                     server=self.url,
                     token_auth=self.api_token,  # Use Bearer token instead of basic auth
                     options=options,

@@ -74,7 +74,7 @@ class TestRedHatJiraClient:
     @patch("wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", False)
     def test_client_initialization_without_rhjira(self, redhat_config):
         """Test client initialization when rhjira is not available."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -104,7 +104,7 @@ class TestRedHatJiraClient:
         """Test client initialization with SSL verification disabled."""
         redhat_config["verify_ssl"] = False
 
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -116,7 +116,7 @@ class TestRedHatJiraClient:
 
     def test_authentication_failure(self, redhat_config):
         """Test handling of authentication failures."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira.side_effect = Exception("Authentication failed")
 
             with pytest.raises(
@@ -127,7 +127,7 @@ class TestRedHatJiraClient:
     @pytest.mark.asyncio
     async def test_get_user_activities_success(self, redhat_config):
         """Test successful user activities retrieval."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             # Setup mock client
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
@@ -151,7 +151,7 @@ class TestRedHatJiraClient:
     @pytest.mark.asyncio
     async def test_get_user_activities_with_comments(self, redhat_config):
         """Test user activities retrieval with comments enabled."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             # Setup mock issue
             mock_issue = Mock()
             mock_issue.key = "RH-123"
@@ -196,7 +196,7 @@ class TestRedHatJiraClient:
     @pytest.mark.asyncio
     async def test_get_projects_success(self, redhat_config):
         """Test successful projects retrieval."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             # Setup mock project
             mock_project = Mock()
             mock_project.key = "RH"
@@ -222,7 +222,7 @@ class TestRedHatJiraClient:
     @pytest.mark.skip(reason="Async test causing hang")
     async def test_rate_limiting(self, redhat_config):
         """Test rate limiting functionality."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -249,7 +249,7 @@ class TestRedHatJiraClient:
 
     def test_get_connection_info(self, redhat_config):
         """Test connection information retrieval."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira_instance.server_info.return_value = {"version": "8.0.0"}
@@ -269,7 +269,7 @@ class TestRedHatJiraClient:
     @pytest.mark.asyncio
     async def test_close_client(self, redhat_config):
         """Test client cleanup."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -282,7 +282,7 @@ class TestRedHatJiraClient:
 
     def test_redhat_specific_filters(self, redhat_config):
         """Test Red Hat specific JQL filters."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -296,7 +296,7 @@ class TestRedHatJiraClient:
     @pytest.mark.asyncio
     async def test_jira_error_handling(self, redhat_config):
         """Test handling of Jira-specific errors."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira_instance.search_issues.side_effect = Exception("API Error")
@@ -317,7 +317,7 @@ class TestRedHatJiraFactory:
 
     def test_get_redhat_jira_client(self):
         """Test factory function for creating Red Hat Jira client."""
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
             mock_jira.return_value = mock_jira_instance
@@ -347,7 +347,7 @@ class TestRedHatJiraIntegration:
             "api_token": "test_token",
         }
 
-        with patch("wes.integrations.redhat_jira_client.JIRA") as mock_jira:
+        with patch("jira.JIRA") as mock_jira:
             # Setup comprehensive mock
             mock_issue = Mock()
             mock_issue.key = "RH-123"
@@ -438,7 +438,7 @@ class TestRHJiraLibraryIntegration:
         """Test that rhjira library can be imported when available."""
         import rhjira
 
-        assert hasattr(rhjira, "JIRA") or hasattr(rhjira, "RHJIRA")
+        assert hasattr(rhjira, "RHJIRA")
 
     @patch("src.wes.integrations.redhat_jira_client.RHJIRA_AVAILABLE", True)
     def test_client_uses_rhjira_when_available(self):
