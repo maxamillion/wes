@@ -112,6 +112,19 @@ class InputValidator:
         return True
 
     @staticmethod
+    def validate_email(email: str) -> bool:
+        """Validate email format."""
+        if not email:
+            return False
+
+        # Email validation pattern
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(pattern, email):
+            raise ValidationError("Invalid email format")
+
+        return True
+
+    @staticmethod
     def validate_user_list(users: List[str]) -> bool:
         """Validate list of user identifiers."""
         if not users:
