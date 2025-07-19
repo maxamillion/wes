@@ -58,7 +58,3 @@ class NetworkError(WesError):
 
 class ConnectionError(WesError):
     """Connection-related errors."""
-
-
-class ExportError(WesError):
-    """Export-related errors."""

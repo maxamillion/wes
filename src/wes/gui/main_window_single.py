@@ -1,6 +1,5 @@
 """Single-window main application for the Executive Summary Tool."""
 
-import json
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict

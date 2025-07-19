@@ -1,6 +1,5 @@
 """Unified credential setup wizard for simplified onboarding."""
 
-import json
 from typing import Any, Dict
 from urllib.parse import urlparse
 
@@ -19,7 +18,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
