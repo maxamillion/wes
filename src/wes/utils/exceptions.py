@@ -44,7 +44,7 @@ class GeminiIntegrationError(IntegrationError):
     """Google Gemini AI integration errors."""
 
 
-class ExportError(WESError):
+class ExportError(WesError):
     """Document export errors."""
 
 

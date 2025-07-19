@@ -8,7 +8,7 @@ reduce duplication, and enhance testability.
 from .config_detector import ConfigDetector
 
 # Configuration constants
-from .constants import ConfigConstants, ServiceScopes, URLConstants, ValidationPatterns
+from .constants import ConfigConstants, URLConstants, ValidationPatterns
 
 # Dialog utilities
 from .dialogs import DialogManager, FileDialogManager, MessageType, ValidationDialog
@@ -50,7 +50,6 @@ __all__ = [
     # Constants
     "ConfigConstants",
     "URLConstants",
-    "ServiceScopes",
     "ValidationPatterns",
     # Factory
     "ConfigPageFactory",
