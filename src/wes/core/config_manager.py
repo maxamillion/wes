@@ -203,11 +203,6 @@ class ConfigManager:
             if "api_token" in sanitized["jira"]:
                 del sanitized["jira"]["api_token"]
 
-        if "google" in sanitized:
-            if "oauth_client_secret" in sanitized["google"]:
-                del sanitized["google"]["oauth_client_secret"]
-            if "oauth_refresh_token" in sanitized["google"]:
-                del sanitized["google"]["oauth_refresh_token"]
 
         if "ai" in sanitized:
             if "gemini_api_key" in sanitized["ai"]:

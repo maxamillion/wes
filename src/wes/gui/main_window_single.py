@@ -43,7 +43,6 @@ from ..core.config_manager import ConfigManager
 from ..core.credential_monitor import CredentialMonitor, MonitoringConfig
 from ..utils.logging_config import get_logger
 from .credential_validators import CredentialValidator
-from .oauth_handler import GoogleOAuthHandler
 from .unified_config import UnifiedConfigDialog
 from .unified_config.types import ConfigState as UnifiedConfigState
 from .unified_config.utils.config_detector import ConfigDetector
@@ -68,10 +67,6 @@ class ValidationWorker(QThread):
                     self.credentials.get("url", ""),
                     self.credentials.get("username", ""),
                     self.credentials.get("api_token", ""),
-                )
-            elif self.service == "google":
-                success, message = self.validator.validate_google_credentials(
-                    self.credentials
                 )
             elif self.service == "gemini":
                 success, message = self.validator.validate_gemini_credentials(
@@ -104,7 +99,6 @@ class SingleWindowMainWindow(QMainWindow):
         self.config_manager = ConfigManager()
         self.config_detector = ConfigDetector()
         self.credential_validator = CredentialValidator()
-        self.oauth_handler = GoogleOAuthHandler()
 
         # Initialize credential monitoring
         monitoring_config = MonitoringConfig(
@@ -321,7 +315,6 @@ class SingleWindowMainWindow(QMainWindow):
         # Create setup pages
         self.create_service_selection_page()
         self.create_jira_setup_page()
-        self.create_google_setup_page()
         self.create_gemini_setup_page()
         self.create_setup_summary_page()
 
@@ -419,7 +412,6 @@ class SingleWindowMainWindow(QMainWindow):
 
         services = [
             ("jira", "Jira", "Connect to Jira for activity tracking"),
-            ("google", "Google Drive", "Create and manage Google Docs"),
             ("gemini", "Google Gemini", "AI-powered summary generation"),
         ]
 
@@ -493,61 +485,6 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(scroll)
 
-    def create_google_setup_page(self):
-        """Create Google setup page."""
-        page = QWidget()
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(page)
-
-        layout = QVBoxLayout(page)
-
-        # Title
-        title_label = QLabel("Google Drive Configuration")
-        title_font = QFont()
-        title_font.setPointSize(16)
-        title_font.setBold(True)
-        title_label.setFont(title_font)
-        layout.addWidget(title_label)
-
-        # OAuth setup
-        oauth_group = QGroupBox("OAuth Configuration")
-        oauth_layout = QVBoxLayout(oauth_group)
-
-        oauth_desc = QLabel(
-            "Configure OAuth credentials to access Google Drive. "
-            "You'll need to create credentials in Google Cloud Console."
-        )
-        oauth_desc.setWordWrap(True)
-        oauth_layout.addWidget(oauth_desc)
-
-        oauth_btn_layout = QHBoxLayout()
-        self.oauth_config_btn = QPushButton("Configure OAuth")
-        self.oauth_config_btn.clicked.connect(self.configure_oauth)
-        oauth_btn_layout.addWidget(self.oauth_config_btn)
-
-        self.oauth_status_label = QLabel()
-        oauth_btn_layout.addWidget(self.oauth_status_label)
-        oauth_btn_layout.addStretch()
-
-        oauth_layout.addLayout(oauth_btn_layout)
-        layout.addWidget(oauth_group)
-
-        # Test connection
-        test_layout = QHBoxLayout()
-        self.google_test_btn = QPushButton("Test Connection")
-        self.google_test_btn.clicked.connect(lambda: self.test_credentials("google"))
-        test_layout.addWidget(self.google_test_btn)
-
-        self.google_status_label = QLabel()
-        test_layout.addWidget(self.google_status_label)
-        test_layout.addStretch()
-
-        layout.addLayout(test_layout)
-
-        layout.addStretch()
-
-        self.setup_stack.addWidget(scroll)
 
     def create_gemini_setup_page(self):
         """Create Gemini setup page."""
@@ -744,21 +681,17 @@ class SingleWindowMainWindow(QMainWindow):
 
         layout = QVBoxLayout(output_tab)
 
-        # Google Docs configuration group
-        docs_group = QGroupBox("Google Docs Configuration")
-        docs_layout = QFormLayout(docs_group)
+        # Export configuration group
+        export_group = QGroupBox("Export Configuration")
+        export_layout = QFormLayout(export_group)
 
         self.document_title_edit = QLineEdit()
         self.document_title_edit.setPlaceholderText(
             "Executive Summary - Week of {date}"
         )
-        docs_layout.addRow("Document Title:", self.document_title_edit)
+        export_layout.addRow("Document Title:", self.document_title_edit)
 
-        self.folder_id_edit = QLineEdit()
-        self.folder_id_edit.setPlaceholderText("Google Drive folder ID (optional)")
-        docs_layout.addRow("Folder ID:", self.folder_id_edit)
-
-        layout.addWidget(docs_group)
+        layout.addWidget(export_group)
 
         # Document preview
         preview_group = QGroupBox("Document Preview")
@@ -778,10 +711,10 @@ class SingleWindowMainWindow(QMainWindow):
         self.preview_btn.setEnabled(False)
         actions_layout.addWidget(self.preview_btn)
 
-        self.create_doc_btn = QPushButton("Create Google Doc")
-        self.create_doc_btn.clicked.connect(self.create_google_doc)
-        self.create_doc_btn.setEnabled(False)
-        actions_layout.addWidget(self.create_doc_btn)
+        self.export_btn = QPushButton("Export Document")
+        self.export_btn.clicked.connect(self.export_document)
+        self.export_btn.setEnabled(False)
+        actions_layout.addWidget(self.export_btn)
 
         layout.addLayout(actions_layout)
 
@@ -812,9 +745,6 @@ class SingleWindowMainWindow(QMainWindow):
 
         # Jira config tab
         self.create_jira_config_tab(config_tabs)
-
-        # Google config tab
-        self.create_google_config_tab(config_tabs)
 
         # AI config tab
         self.create_ai_config_tab(config_tabs)
@@ -856,27 +786,6 @@ class SingleWindowMainWindow(QMainWindow):
         layout.addStretch()
 
         parent_tabs.addTab(tab, "Jira")
-
-    def create_google_config_tab(self, parent_tabs):
-        """Create Google configuration tab."""
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-
-        # OAuth config
-        oauth_group = QGroupBox("OAuth Configuration")
-        oauth_layout = QVBoxLayout(oauth_group)
-
-        self.config_oauth_status = QLabel("OAuth status will be displayed here")
-        oauth_layout.addWidget(self.config_oauth_status)
-
-        oauth_btn = QPushButton("Configure OAuth")
-        oauth_btn.clicked.connect(self.configure_oauth)
-        oauth_layout.addWidget(oauth_btn)
-
-        layout.addWidget(oauth_group)
-        layout.addStretch()
-
-        parent_tabs.addTab(tab, "Google")
 
     def create_ai_config_tab(self, parent_tabs):
         """Create AI configuration tab."""
@@ -1268,16 +1177,6 @@ class SingleWindowMainWindow(QMainWindow):
     #         summary_lines.append(f"  URL: {self.jira_url_input.text()}")
     #         summary_lines.append(f"  Username: {self.jira_username_input.text()}")
     #         summary_lines.append("")
-    #
-    #     if self.service_checkboxes["google"].isChecked():
-    #         summary_lines.append("Google Drive Configuration:")
-    #         summary_lines.append(
-    #             "  OAuth: Configured"
-    #             if hasattr(self, "oauth_configured") and self.oauth_configured
-    #             else "  OAuth: Not configured"
-    #         )
-    #         summary_lines.append("")
-    #
     #     if self.service_checkboxes["gemini"].isChecked():
     #         summary_lines.append("Google Gemini Configuration:")
     #         summary_lines.append(
@@ -1334,9 +1233,6 @@ class SingleWindowMainWindow(QMainWindow):
     #             "api_token": self.jira_token_input.text(),
     #         }
     #         status_label = self.jira_status_label
-    #     elif service == "google":
-    #         credentials = {}  # OAuth flow handles this
-    #         status_label = self.google_status_label
     #     elif service == "gemini":
     #         credentials = {
     #             "api_key": self.gemini_key_input.text(),
@@ -1361,216 +1257,6 @@ class SingleWindowMainWindow(QMainWindow):
     #     worker.finished.connect(worker.deleteLater)
     #     worker.start()
     #     self.validation_threads.append(worker)
-
-    def configure_oauth(self):
-        """Configure OAuth credentials."""
-        try:
-            # Show OAuth configuration dialog
-            self.show_oauth_config_dialog()
-        except Exception as e:
-            self.logger.error(f"OAuth configuration failed: {e}")
-            self.show_error("OAuth Error", str(e))
-
-    def show_oauth_config_dialog(self):
-        """Show OAuth configuration dialog."""
-        from PySide6.QtWidgets import (
-            QDialog,
-            QScrollArea,
-        )
-
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Configure Google OAuth")
-        dialog.setMinimumSize(700, 600)
-
-        main_layout = QVBoxLayout(dialog)
-        main_layout.setSpacing(20)
-
-        # Create scroll area
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-        # Create scroll widget
-        scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
-        scroll_layout.setSpacing(15)
-
-        # Instructions
-        instructions = QLabel(
-            "<h3>Google OAuth Setup Instructions</h3>"
-            "<ol>"
-            "<li>Go to the <a href='https://console.cloud.google.com/'>Google Cloud Console</a></li>"
-            "<li>Create a new project or select an existing one</li>"
-            "<li>Enable the Google Drive API and Google Docs API</li>"
-            "<li>Create OAuth 2.0 credentials (Desktop application type)</li>"
-            "<li>Add <code>http://localhost:8080/callback</code> as a redirect URI</li>"
-            "<li>Copy your Client ID and Client Secret below</li>"
-            "</ol>"
-        )
-        instructions.setWordWrap(True)
-        instructions.setOpenExternalLinks(True)
-        scroll_layout.addWidget(instructions)
-
-        # Credentials group
-        cred_group = QGroupBox("OAuth Credentials")
-        form_layout = QFormLayout(cred_group)
-
-        client_id_edit = QLineEdit()
-        client_id_edit.setPlaceholderText("Your OAuth Client ID")
-        form_layout.addRow("Client ID:", client_id_edit)
-
-        client_secret_edit = QLineEdit()
-        client_secret_edit.setEchoMode(QLineEdit.Password)
-        client_secret_edit.setPlaceholderText("Your OAuth Client Secret")
-        form_layout.addRow("Client Secret:", client_secret_edit)
-
-        scroll_layout.addWidget(cred_group)
-
-        # Important note
-        note_label = QLabel(
-            "<b>Note:</b> The application will use <code>http://localhost:8080/callback</code> "
-            "as the redirect URI. This is automatically configured for Desktop applications."
-        )
-        note_label.setWordWrap(True)
-        note_label.setStyleSheet(
-            "background-color: #f0f0f0; padding: 10px; border-radius: 5px;"
-        )
-        scroll_layout.addWidget(note_label)
-
-        # Add stretch to push content up
-        scroll_layout.addStretch()
-
-        # Set the scroll widget
-        scroll_area.setWidget(scroll_widget)
-        main_layout.addWidget(scroll_area)
-
-        # Buttons (outside scroll area)
-        button_layout = QHBoxLayout()
-
-        help_btn = QPushButton("🌐 Open Google Console")
-        help_btn.clicked.connect(self.open_google_console)
-        button_layout.addWidget(help_btn)
-
-        button_layout.addStretch()
-
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(dialog.reject)
-        button_layout.addWidget(cancel_btn)
-
-        save_btn = QPushButton("Save and Continue")
-        save_btn.clicked.connect(
-            lambda: self.save_oauth_config(
-                dialog, client_id_edit.text(), client_secret_edit.text()
-            )
-        )
-        save_btn.setDefault(True)
-        button_layout.addWidget(save_btn)
-
-        main_layout.addLayout(button_layout)
-
-        dialog.exec()
-
-    def open_google_console(self):
-        """Open Google Cloud Console in browser."""
-        import webbrowser
-
-        webbrowser.open("https://console.cloud.google.com/apis/credentials")
-
-    def save_oauth_config(self, dialog, client_id, client_secret):
-        """Save OAuth configuration."""
-        if not client_id or not client_secret:
-            QMessageBox.warning(
-                dialog,
-                "Missing Credentials",
-                "Please enter both Client ID and Client Secret",
-            )
-            return
-
-        try:
-            # Update OAuth handler configuration
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
-
-            # Save to config manager
-            self.config_manager.update_google_config(oauth_client_id=client_id)
-            self.config_manager.store_credential(
-                "google", "oauth_client_secret", client_secret
-            )
-
-            # Also save to credentials file for persistence
-            from pathlib import Path
-
-            cred_dir = Path.home() / ".wes"
-            cred_dir.mkdir(exist_ok=True)
-            cred_file = cred_dir / "google_oauth_credentials.json"
-
-            with open(cred_file, "w") as f:
-                import json
-
-                json.dump({"client_id": client_id, "client_secret": client_secret}, f)
-
-            dialog.accept()
-
-            # Update status
-            self.oauth_configured = True
-            if hasattr(self, "oauth_status_label"):
-                self.oauth_status_label.setText("✓ OAuth configured")
-                self.oauth_status_label.setStyleSheet("color: green;")
-            if hasattr(self, "config_oauth_status"):
-                self.config_oauth_status.setText(
-                    "OAuth credentials configured successfully"
-                )
-
-            # Start OAuth flow
-            self.start_oauth_flow()
-
-        except Exception as e:
-            QMessageBox.critical(dialog, "Error", f"Failed to save credentials: {e}")
-
-    def start_oauth_flow(self):
-        """Start the OAuth authentication flow."""
-        try:
-            # Connect signals
-            self.oauth_handler.auth_complete.connect(self.on_oauth_complete)
-            self.oauth_handler.auth_error.connect(self.on_oauth_error)
-
-            # Start flow
-            self.oauth_handler.start_flow(port=8080)
-
-            self.show_info(
-                "Authorization Required",
-                "A browser window will open for Google authorization. "
-                "Please sign in and authorize the application.",
-            )
-        except Exception as e:
-            self.logger.error(f"Failed to start OAuth flow: {e}")
-            self.show_error("OAuth Error", str(e))
-
-    def on_oauth_complete(self, cred_data):
-        """Handle successful OAuth completion."""
-        try:
-            # Save credentials
-            self.config_manager.store_credential(
-                "google", "oauth_credentials", json.dumps(cred_data)
-            )
-
-            self.show_info(
-                "Authorization Successful",
-                "Google Drive authorization completed successfully!",
-            )
-
-            # Update status
-            if hasattr(self, "google_status_label"):
-                self.google_status_label.setText("✓ Authorized")
-                self.google_status_label.setStyleSheet("color: green;")
-
-        except Exception as e:
-            self.logger.error(f"Failed to save OAuth credentials: {e}")
-            self.show_error("Save Error", str(e))
-
-    def on_oauth_error(self, error_msg):
-        """Handle OAuth error."""
-        self.show_error("Authorization Failed", error_msg)
 
     def load_configuration(self):
         """Load configuration into UI elements."""
@@ -1783,8 +1469,8 @@ class SingleWindowMainWindow(QMainWindow):
             self.preview_text.setPlainText(content)
             self.tab_widget.setCurrentIndex(2)  # Switch to output tab
 
-    def create_google_doc(self):
-        """Create Google Doc."""
+    def export_document(self):
+        """Export document to file."""
         try:
             if not self.current_summary:
                 self.show_error("No Summary", "Please generate a summary first")
@@ -1792,28 +1478,25 @@ class SingleWindowMainWindow(QMainWindow):
 
             # Show progress
             self.show_progress_message(
-                "Creating Google Doc...", "Uploading to Google Drive"
+                "Exporting Document...", "Saving to file"
             )
 
-            # TODO: Implement actual Google Doc creation
+            # TODO: Implement actual file export
             # Simulate progress
             QTimer.singleShot(
-                1000, lambda: self.update_progress(50, "Creating document...")
+                1000, lambda: self.update_progress(50, "Exporting document...")
             )
             QTimer.singleShot(
-                2000, lambda: self.update_progress(100, "Document created")
+                2000, lambda: self.update_progress(100, "Document exported")
             )
             QTimer.singleShot(2500, self.hide_progress_message)
 
-            doc_url = "https://docs.google.com/document/d/demo_document_id/edit"
-            self.document_url_label.setText(f'<a href="{doc_url}">Open Document</a>')
-
-            self.status_label.setText("Google Doc created successfully")
+            self.status_label.setText("Document exported successfully")
 
         except Exception as e:
             self.hide_progress_message()
-            self.logger.error(f"Failed to create Google Doc: {e}")
-            self.show_error("Document Creation Error", str(e))
+            self.logger.error(f"Failed to export document: {e}")
+            self.show_error("Export Error", str(e))
 
     def new_summary(self):
         """Start a new summary."""
@@ -1830,8 +1513,8 @@ class SingleWindowMainWindow(QMainWindow):
             self.generate_summary_btn.setEnabled(False)
         if hasattr(self, "preview_btn"):
             self.preview_btn.setEnabled(False)
-        if hasattr(self, "create_doc_btn"):
-            self.create_doc_btn.setEnabled(False)
+        if hasattr(self, "export_btn"):
+            self.export_btn.setEnabled(False)
 
         self.status_label.setText("Ready for new summary")
         self.switch_view(ViewState.MAIN)
@@ -1851,7 +1534,7 @@ class SingleWindowMainWindow(QMainWindow):
         <ul>
             <li>Jira data integration</li>
             <li>AI-powered summarization</li>
-            <li>Google Docs output</li>
+            <li>Multiple export formats</li>
             <li>Secure credential management</li>
         </ul>
         <p>Built with PySide6 and Python.</p>

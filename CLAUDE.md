@@ -99,7 +99,6 @@ uv add --dev package-name # Add dev dependency
 ### GUI Development
 - Uses PySide6 (Qt6) - check existing components in `src/wes/gui/` for patterns
 - Follow existing signal/slot patterns for event handling
-- Use the custom OAuth handler for Google authentication flows
 
 ### Configuration
 - User configs stored in platform-specific directories

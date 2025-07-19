@@ -67,8 +67,7 @@ class SecureCredentialManager:
 ## API Security
 
 ### Authentication
-- **Jira**: OAuth 2.0 with PKCE or API tokens
-- **Google APIs**: OAuth 2.0 with service account credentials
+- **Jira**: API token authentication
 - **Gemini AI**: API key authentication with rate limiting
 
 ### Transport Security

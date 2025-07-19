@@ -101,7 +101,7 @@ class CredentialValidator:
             return False, error_msg
 
         except AuthenticationError as e:
-            # Handle Red Hat Jira OAuth authentication errors specifically
+            # Handle Red Hat Jira authentication errors specifically
             error_msg = str(e)
             self.security_logger.log_security_event(
                 "jira_credential_validation_failed",
@@ -444,9 +444,6 @@ class CredentialHealthChecker:
                     "Please re-configure credentials"
                 )
 
-            # Check for expiration warnings (OAuth tokens)
-            if service == "google" and success:
-                self._check_google_token_expiration(credentials, health_status)
 
         except Exception as e:
             health_status["issues"].append(f"Health check failed: {e}")
@@ -454,16 +451,6 @@ class CredentialHealthChecker:
 
         return health_status
 
-    def _check_google_token_expiration(
-        self, credentials: Dict[str, str], health_status: Dict
-    ):
-        """Check Google token expiration."""
-        try:
-            # This would check token expiration dates
-            # For now, just add a general recommendation
-            health_status["recommendations"].append("Monitor token expiration dates")
-        except Exception as e:
-            self.logger.error(f"Failed to check token expiration: {e}")
 
     def get_health_recommendations(
         self, health_results: List[Dict[str, any]]

@@ -44,8 +44,8 @@ class GeminiIntegrationError(IntegrationError):
     """Google Gemini AI integration errors."""
 
 
-class GoogleDocsIntegrationError(IntegrationError):
-    """Google Docs integration errors."""
+class ExportError(WESError):
+    """Document export errors."""
 
 
 class RateLimitError(IntegrationError):

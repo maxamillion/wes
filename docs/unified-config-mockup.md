@@ -15,8 +15,8 @@
 │  │  This wizard will guide you through:                    │  │
 │  │                                                          │  │
 │  │  • Connecting to your Jira instance                     │  │
-│  │  • Setting up Google Docs integration                   │  │
 │  │  • Configuring Gemini AI                               │  │
+│  │  • Setting up export preferences                       │  │
 │  │                                                          │  │
 │  │  The setup takes about 5 minutes.                       │  │
 │  └─────────────────────────────────────────────────────────┘  │
@@ -68,13 +68,13 @@
 │  │  Status Overview                                        │  │
 │  │                                                          │  │
 │  │  ✓ Jira:        Connected to company.atlassian.net     │  │
-│  │  ⚠️ Google Docs: OAuth setup required                   │  │
 │  │  ✗ Gemini AI:   API key missing                        │  │
+│  │  ✓ Export:      Local file export configured           │  │
 │  │                                                          │  │
 │  │  Click on any incomplete service to set it up.         │  │
 │  └─────────────────────────────────────────────────────────┘  │
 │                                                                 │
-│  [➤ Setup Google Docs]  [➤ Setup Gemini AI]                   │
+│  [➤ Setup Gemini AI]  [➤ Configure Export]                    │
 │                                                                 │
 │  [Complete Later]                    [Help] [Continue Setup]   │
 └─────────────────────────────────────────────────────────────────┘
@@ -127,17 +127,19 @@
 ### Progressive Disclosure Example
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Google Configuration                                    │
+│ Export Configuration                                    │
 ├─────────────────────────────────────────────────────────┤
 │ ┌─────────────────────────────────────────────────┐   │
 │ │ Basic Settings                                   │   │
 │ │                                                  │   │
-│ │ Authentication Method:                           │   │
-│ │ ◉ OAuth 2.0 (Recommended)                       │   │
-│ │ ○ Service Account                               │   │
+│ │ Export Format:                                   │   │
+│ │ ◉ Markdown (.md)                                │   │
+│ │ ○ HTML (.html)                                  │   │
+│ │ ○ PDF (.pdf)                                     │   │
+│ │ ○ Plain Text (.txt)                             │   │
 │ │                                                  │   │
-│ │ [Configure OAuth]  ✓ Authenticated as:          │   │
-│ │                    user@company.com             │   │
+│ │ Output Directory: [~/Documents/WES/exports    ] │   │
+│ │                   [Browse...]                    │   │
 │ └─────────────────────────────────────────────────┘   │
 │                                                         │
 │ ▶ Show Advanced Settings                               │
@@ -146,17 +148,16 @@
 │ ┌─────────────────────────────────────────────────┐   │
 │ │ Advanced Settings                                │   │
 │ │                                                  │   │
-│ │ OAuth Scopes:                                    │   │
-│ │ ☑ Google Docs (read/write)                      │   │
-│ │ ☑ Google Drive (create)                         │   │
-│ │ □ Google Sheets (optional)                      │   │
+│ │ File Naming Pattern:                             │   │
+│ │ [Executive_Summary_{date}_{time}]               │   │
 │ │                                                  │   │
-│ │ Token Storage:                                   │   │
-│ │ ◉ Encrypted local storage                       │   │
-│ │ ○ System keychain                               │   │
+│ │ ☑ Open file after export                        │   │
+│ │ ☑ Copy to clipboard                             │   │
+│ │ □ Auto-save after generation                    │   │
 │ │                                                  │   │
-│ │ Retry Attempts: [3    ]                         │   │
-│ │ Request Timeout: [30   ] seconds                │   │
+│ │ PDF Settings:                                    │   │
+│ │ Page Size: [Letter      ▼]                      │   │
+│ │ Margins:   [Normal     ▼]                       │   │
 │ └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -171,9 +172,9 @@ Setup > Jira Configuration > Connection Test
 
 ### Tab with Status Indicators (Direct Mode)
 ```
-┌──────────┬────────────┬─────────────┬───────┬──────────┐
-│ ✓ Jira   │ ⚠️ Google  │ ✗ Gemini   │  App  │ Security │
-└──────────┴────────────┴─────────────┴───────┴──────────┘
+┌──────────┬─────────────┬───────────┬───────┬──────────┐
+│ ✓ Jira   │ ✗ Gemini   │ ✓ Export  │  App  │ Security │
+└──────────┴─────────────┴───────────┴───────┴──────────┘
 ```
 
 ### Quick Jump Sidebar (All Modes)
@@ -185,12 +186,12 @@ Setup > Jira Configuration > Connection Test
 │   • URL   │
 │   • Auth  │
 │   • Test  │
-│ › Google  │
-│   • OAuth │
-│   • Scope │
 │ › Gemini  │
 │   • API   │
 │   • Model │
+│ › Export  │
+│   • Format│
+│   • Path  │
 └───────────┘
 ```
 

@@ -1,13 +1,13 @@
 # Wes - Weekly Executive Summary
 [![Quick Checks](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml/badge.svg)](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml)
 
-A cross-platform desktop application that automates the creation of executive summaries by integrating Jira activity data with Google's Gemini AI and outputting formatted Google Docs.
+A cross-platform desktop application that automates the creation of executive summaries by integrating Jira activity data with Google's Gemini AI and exporting summaries in multiple formats.
 
 ## Features
 
 - **Jira Integration**: Fetch team activity data from configurable Jira instances
 - **AI-Powered Summarization**: Generate intelligent executive summaries using Google Gemini AI
-- **Google Docs Output**: Create professionally formatted documents in Google Docs
+- **Multiple Export Formats**: Export summaries as Markdown, HTML, PDF, or plain text
 - **Cross-Platform**: Runs on Windows, macOS, and Linux
 - **Secure**: Enterprise-grade security with encrypted credential storage
 - **User-Friendly**: Intuitive desktop GUI built with PySide6
@@ -53,28 +53,16 @@ A cross-platform desktop application that automates the creation of executive su
 3. **Configure the application**:
    - Launch the application: `make run`
    - Complete the initial setup wizard
-   - Configure your Jira, Google, and AI credentials
+   - Configure your Jira and AI credentials
 
 ### Configuration
 
-The application requires configuration for three main services:
+The application requires configuration for two main services:
 
 #### Jira Configuration
 - **Jira URL**: Your Atlassian instance URL
 - **Username**: Your Jira username/email
 - **API Token**: Generate from Jira account settings
-
-#### Google Services Configuration
-Choose one authentication method:
-
-**Service Account (Recommended for Organizations)**:
-- Create a service account in Google Cloud Console
-- Download the JSON credentials file
-- Configure the file path in the application
-
-**OAuth 2.0 (Individual Use)**:
-- Create OAuth credentials in Google Cloud Console
-- Configure Client ID and Client Secret
 
 #### AI Configuration
 - **Gemini API Key**: Get from Google AI Studio
@@ -95,10 +83,10 @@ Choose one authentication method:
    - Process with AI to generate executive summary
    - Preview the generated content
 
-3. **Create Document**:
-   - Generate formatted Google Doc
-   - Share with stakeholders
-   - Export to other formats if needed
+3. **Export Document**:
+   - Choose export format (Markdown, HTML, PDF, or text)
+   - Save to local file system
+   - Copy to clipboard for sharing
 
 ### Command Line Interface
 
@@ -265,10 +253,10 @@ The application is designed to meet enterprise security requirements:
 - Reduce date range for large datasets
 - Check system resources and network bandwidth
 
-**Google Docs Issues**:
-- Verify Google Drive API is enabled
-- Check service account permissions
-- Ensure folder IDs are accessible
+**Export Issues**:
+- Verify output directory permissions
+- Check available disk space
+- Ensure selected format is supported
 
 ### Logging
 
@@ -326,7 +314,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - Initial release
 - Jira integration with configurable queries
 - Google Gemini AI summarization
-- Google Docs document creation
+- Multiple format document export
 - Cross-platform GUI application
 - Enterprise-grade security features
 - Comprehensive test suite
