@@ -485,7 +485,6 @@ class SingleWindowMainWindow(QMainWindow):
 
         self.setup_stack.addWidget(scroll)
 
-
     def create_gemini_setup_page(self):
         """Create Gemini setup page."""
         page = QWidget()
@@ -1477,9 +1476,7 @@ class SingleWindowMainWindow(QMainWindow):
                 return
 
             # Show progress
-            self.show_progress_message(
-                "Exporting Document...", "Saving to file"
-            )
+            self.show_progress_message("Exporting Document...", "Saving to file")
 
             # TODO: Implement actual file export
             # Simulate progress

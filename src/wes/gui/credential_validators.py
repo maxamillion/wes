@@ -444,13 +444,11 @@ class CredentialHealthChecker:
                     "Please re-configure credentials"
                 )
 
-
         except Exception as e:
             health_status["issues"].append(f"Health check failed: {e}")
             health_status["recommendations"].append("Manual verification recommended")
 
         return health_status
-
 
     def get_health_recommendations(
         self, health_results: List[Dict[str, any]]

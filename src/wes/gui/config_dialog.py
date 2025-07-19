@@ -143,7 +143,6 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-
     def create_ai_tab(self):
         """Create AI configuration tab."""
         ai_tab = QWidget()
@@ -317,7 +316,6 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-
     def _on_jira_url_changed(self, text: str):
         """Handle Jira URL change to update username guidance."""
         if not text:
@@ -361,7 +359,6 @@ class ConfigDialog(QDialog):
         self.jira_username_edit.setPlaceholderText("your.email@company.com")
         self.jira_username_edit.setToolTip("")
 
-
     def load_configuration(self):
         """Load current configuration into UI."""
         try:
@@ -375,7 +372,6 @@ class ConfigDialog(QDialog):
             self.default_query_edit.setPlainText(jira_config.default_query)
             self.jira_rate_limit_spin.setValue(jira_config.rate_limit)
             self.jira_timeout_spin.setValue(jira_config.timeout)
-
 
             # AI configuration
             ai_config = config.ai
@@ -420,7 +416,6 @@ class ConfigDialog(QDialog):
             if gemini_key:
                 self.gemini_api_key_edit.setText(gemini_key)
 
-
             # Update Jira username guidance based on URL
             self._on_jira_url_changed(self.jira_url_edit.text())
 
@@ -445,7 +440,6 @@ class ConfigDialog(QDialog):
                 timeout=self.jira_timeout_spin.value(),
             )
 
-
             # Update AI configuration
             self.config_manager.update_ai_config(
                 model_name=self.ai_model_combo.currentText(),
@@ -465,7 +459,6 @@ class ConfigDialog(QDialog):
                 self.config_manager.store_credential(
                     "ai", "gemini_api_key", self.gemini_api_key_edit.text()
                 )
-
 
             self.logger.info("Configuration saved from dialog")
 

@@ -203,7 +203,6 @@ class ConfigManager:
             if "api_token" in sanitized["jira"]:
                 del sanitized["jira"]["api_token"]
 
-
         if "ai" in sanitized:
             if "gemini_api_key" in sanitized["ai"]:
                 del sanitized["ai"]["gemini_api_key"]

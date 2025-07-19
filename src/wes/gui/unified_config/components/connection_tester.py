@@ -120,7 +120,6 @@ class ConnectionTestWorker(QThread):
         # Service-specific permission checks
         return True, "Permissions verified"
 
-
     def _check_api_key(self) -> tuple[bool, str]:
         """Check API key format."""
         api_key = self.config.get("api_key", "")

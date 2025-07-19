@@ -40,7 +40,6 @@ class ConfigConstants:
     DIALOG_MIN_HEIGHT: Final[int] = 400
     INSTRUCTIONS_MAX_HEIGHT: Final[int] = 150
 
-
     # File permissions
     CREDENTIALS_FILE_PERMISSIONS: Final[int] = 0o600
 
@@ -67,8 +66,6 @@ class URLConstants:
     GOOGLE_CLOUD_CONSOLE_CREDENTIALS: Final[str] = (
         "https://console.cloud.google.com/apis/credentials"
     )
-
-
 
 
 class ValidationPatterns:

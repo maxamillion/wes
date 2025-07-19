@@ -472,10 +472,6 @@ class JiraSetupPage(WizardPage):
         }
 
 
-
-
-
-
 class GeminiSetupPage(WizardPage):
     """Google Gemini API setup page."""
 
@@ -750,7 +746,6 @@ class SetupWizard(QDialog):
         self.jira_page = JiraSetupPage()
         self.pages.append(self.jira_page)
 
-
         self.gemini_page = GeminiSetupPage()
         self.pages.append(self.gemini_page)
 
@@ -837,7 +832,6 @@ class SetupWizard(QDialog):
                 self.config_manager.store_credential(
                     "jira", "api_token", jira_data["api_token"]
                 )
-
 
             if service_selection.get("gemini", False):
                 gemini_data = self.gemini_page.get_data()
