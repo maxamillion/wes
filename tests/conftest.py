@@ -115,9 +115,6 @@ def sample_google_config():
     """Sample Google configuration data."""
     return {
         "service_account_path": "/path/to/service-account.json",
-        "oauth_client_id": "test_client_id",
-        "oauth_client_secret": "test_client_secret",
-        "oauth_refresh_token": "test_refresh_token",
         "docs_folder_id": "test_folder_id_12345",
         "rate_limit": 100,
         "timeout": 30,

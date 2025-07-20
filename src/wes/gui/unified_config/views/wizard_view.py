@@ -69,7 +69,7 @@ class WelcomePage(WizardPage):
         super().__init__(
             "Welcome to WES Setup",
             "Let's configure WES to create executive summaries from your Jira data. "
-            "This wizard will guide you through connecting to Jira, Google Docs, "
+            "This wizard will guide you through connecting to Jira "
             "and Gemini AI.",
             parent,
         )
@@ -81,7 +81,7 @@ class WelcomePage(WizardPage):
             "<h3>What you'll set up:</h3>"
             "<ul>"
             "<li><b>Jira Connection</b> - Access your project data</li>"
-            "<li><b>Google Docs</b> - Create and share summaries</li>"
+            "<li><b>Export</b> - Save summaries in multiple formats</li>"
             "<li><b>Gemini AI</b> - Generate intelligent insights</li>"
             "</ul>"
             "<p>This process takes about 5 minutes.</p>"

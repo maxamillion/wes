@@ -45,12 +45,6 @@ class ConnectionTestWorker(QThread):
                     ("Validating credentials", self._validate_credentials),
                     ("Checking permissions", self._check_permissions),
                 ]
-            elif self.service_type == "google":
-                self.steps = [
-                    ("Checking OAuth configuration", self._check_oauth),
-                    ("Validating tokens", self._validate_tokens),
-                    ("Testing API access", self._test_api_access),
-                ]
             elif self.service_type == "gemini":
                 self.steps = [
                     ("Validating API key format", self._check_api_key),
@@ -110,8 +104,6 @@ class ConnectionTestWorker(QThread):
                     self.config.get("username", ""),
                     self.config.get("api_token", ""),
                 )
-            elif self.service_type == "google":
-                result = self.validator.validate_google_credentials(self.config)
             elif self.service_type == "gemini":
                 result = self.validator.validate_gemini_credentials(
                     self.config.get("api_key", "")
@@ -127,18 +119,6 @@ class ConnectionTestWorker(QThread):
         """Check user permissions."""
         # Service-specific permission checks
         return True, "Permissions verified"
-
-    def _check_oauth(self) -> tuple[bool, str]:
-        """Check OAuth configuration."""
-        return True, "OAuth configuration valid"
-
-    def _validate_tokens(self) -> tuple[bool, str]:
-        """Validate OAuth tokens."""
-        return True, "Tokens are valid"
-
-    def _test_api_access(self) -> tuple[bool, str]:
-        """Test API access."""
-        return True, "API access confirmed"
 
     def _check_api_key(self) -> tuple[bool, str]:
         """Check API key format."""

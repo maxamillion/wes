@@ -100,7 +100,7 @@ spinbox.setRange(
 spinbox.setValue(ConfigConstants.RETRY_ATTEMPTS_DEFAULT)
 
 # File paths
-cred_file = Path.home() / ConfigConstants.WES_CONFIG_DIR / ConfigConstants.OAUTH_CREDENTIALS_FILE
+config_dir = Path.home() / ConfigConstants.WES_CONFIG_DIR
 
 # Permissions
 os.chmod(file_path, ConfigConstants.CREDENTIALS_FILE_PERMISSIONS)

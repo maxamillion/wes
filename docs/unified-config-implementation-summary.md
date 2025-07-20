@@ -17,7 +17,7 @@ src/wes/gui/unified_config/
 │   ├── __init__.py
 │   ├── base_page.py             # Base class for all pages
 │   ├── jira_page.py             # Jira configuration
-│   ├── google_page.py           # Google services configuration  
+│   ├── google_page.py           # (Removed - Google Drive integration unavailable)
 │   ├── gemini_page.py           # Gemini AI configuration
 │   ├── app_settings_page.py     # Application settings
 │   └── security_page.py         # Security settings
@@ -83,11 +83,9 @@ Each service has a dedicated page inheriting from `ConfigPageBase`:
 - Different requirements for Cloud vs Red Hat Jira
 - Advanced settings in collapsible section
 
-**GoogleConfigPage**:
-- OAuth 2.0 and Service Account support
-- Visual authentication status
-- Scope management
-- Integration with existing OAuth handler
+**GoogleConfigPage** (Removed):
+- Google Drive integration has been temporarily removed
+- Export summaries using local file exports instead
 
 **GeminiConfigPage**:
 - API key validation
@@ -113,7 +111,7 @@ Each service has a dedicated page inheriting from `ConfigPageBase`:
 
 **Centralized Validators**:
 - `JiraValidator`: URL format, email requirements for Cloud
-- `GoogleValidator`: OAuth/Service Account validation
+- `GoogleValidator`: (Removed - Google Drive integration temporarily unavailable)
 - `GeminiValidator`: API key format, model validation
 
 **Real-time Validation**:

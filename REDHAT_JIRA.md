@@ -177,7 +177,7 @@ A: Red Hat corporate networks may require specific SSL configuration. The applic
 
 **Q: Can I use my email address as username?**
 
-A: Username format is less relevant since OAuth is required. However, Red Hat typically uses employee IDs or LDAP usernames.
+A: Red Hat typically uses employee IDs or LDAP usernames rather than email addresses.
 
 ### Performance Optimization
 

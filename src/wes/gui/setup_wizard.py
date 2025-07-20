@@ -1,6 +1,5 @@
 """Unified credential setup wizard for simplified onboarding."""
 
-import json
 from typing import Any, Dict
 from urllib.parse import urlparse
 
@@ -19,7 +18,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -29,7 +27,6 @@ from ..core.config_manager import ConfigManager
 from ..integrations.redhat_jira_client import is_redhat_jira
 from ..utils.logging_config import get_logger
 from .credential_validators import CredentialValidator
-from .oauth_handler import GoogleOAuthHandler
 
 
 class ValidationWorker(QObject):
@@ -140,7 +137,6 @@ class WelcomePage(WizardPage):
 
         services = [
             ("Jira", "Connect to your Jira instance to fetch work item data"),
-            ("Google Drive", "Create and store executive summary documents"),
             ("Google Gemini", "Generate AI-powered summaries from your data"),
         ]
 
@@ -162,7 +158,7 @@ class WelcomePage(WizardPage):
         self.content_layout.addWidget(services_group)
 
         # Estimated time
-        time_label = QLabel("⏱️ Estimated setup time: 5-10 minutes")
+        time_label = QLabel("⏱️ Estimated setup time: 3-5 minutes")
         time_label.setStyleSheet(
             "background-color: #e8f4fd; padding: 10px; border-radius: 4px;"
         )
@@ -182,12 +178,6 @@ class ServiceSelectionPage(WizardPage):
 
         services = [
             ("jira", "Jira", "Required for fetching work item data", True),
-            (
-                "google_drive",
-                "Google Drive",
-                "For creating and storing documents",
-                False,
-            ),
             ("gemini", "Google Gemini", "Required for AI-powered summaries", True),
         ]
 
@@ -480,364 +470,6 @@ class JiraSetupPage(WizardPage):
         }
 
 
-class GoogleSetupPage(WizardPage):
-    """Google services setup page with OAuth flow."""
-
-    def __init__(self):
-        super().__init__(
-            "Connect to Google Services",
-            "We'll set up Google Drive access for document creation and storage.",
-        )
-
-        # OAuth setup
-        oauth_group = QGroupBox("Google Account Connection")
-        oauth_layout = QVBoxLayout(oauth_group)
-
-        oauth_info = QLabel(
-            "We'll use Google OAuth to securely connect to your Google account. "
-            "This will give the application permission to create and manage documents in Google Drive."
-        )
-        oauth_info.setWordWrap(True)
-        oauth_layout.addWidget(oauth_info)
-
-        # OAuth button
-        oauth_btn_layout = QHBoxLayout()
-        self.oauth_btn = QPushButton("🔗 Connect to Google Account")
-        self.oauth_btn.clicked.connect(self.start_oauth_flow)
-        oauth_btn_layout.addWidget(self.oauth_btn)
-        oauth_btn_layout.addStretch()
-
-        oauth_layout.addLayout(oauth_btn_layout)
-
-        # Status
-        self.oauth_status = QLabel()
-        oauth_layout.addWidget(self.oauth_status)
-
-        self.content_layout.addWidget(oauth_group)
-
-        # Optional folder configuration
-        folder_group = QGroupBox("Document Storage (Optional)")
-        folder_layout = QFormLayout(folder_group)
-
-        self.folder_id_edit = QLineEdit()
-        self.folder_id_edit.setPlaceholderText("Leave empty to use root folder")
-        folder_layout.addRow("Google Drive Folder ID:", self.folder_id_edit)
-
-        folder_help = QLabel(
-            "If you want to store documents in a specific folder, "
-            "copy the folder ID from the URL when viewing the folder in Google Drive."
-        )
-        folder_help.setWordWrap(True)
-        folder_help.setStyleSheet("color: #666666; font-size: 10px;")
-        folder_layout.addRow("", folder_help)
-
-        self.content_layout.addWidget(folder_group)
-
-        # OAuth handler will be initialized when needed
-        self.oauth_handler = None
-        self.credentials = None
-        self.config_manager = None
-
-    def start_oauth_flow(self):
-        """Start Google OAuth flow."""
-        # Initialize OAuth handler if not already done
-        if not self.oauth_handler:
-            # Get config manager from parent wizard
-            wizard = self.window()
-            if hasattr(wizard, "config_manager"):
-                self.oauth_handler = GoogleOAuthHandler(wizard.config_manager)
-            else:
-                self.oauth_handler = GoogleOAuthHandler()
-
-            self.oauth_handler.auth_complete.connect(self.on_oauth_complete)
-            self.oauth_handler.auth_error.connect(self.on_oauth_error)
-
-        # Check if OAuth client is configured
-        if (
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_id"]
-            == "your-client-id.apps.googleusercontent.com"
-            or self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"]
-            == "your-client-secret"
-        ):
-            # Show configuration dialog
-            self.show_oauth_config_dialog()
-            return
-
-        self.oauth_btn.setEnabled(False)
-        self.oauth_status.setText("🔄 Opening browser for Google authentication...")
-        self.oauth_status.setStyleSheet("color: blue;")
-
-        self.oauth_handler.start_flow()
-
-        # Ensure the dialog stays visible during OAuth flow
-        if self.window():
-            self.window().show()
-            self.window().raise_()
-            self.window().activateWindow()
-
-    def on_oauth_complete(self, credentials: Dict[str, str]):
-        """Handle OAuth completion."""
-        self.credentials = credentials
-        self.oauth_btn.setEnabled(True)
-        self.oauth_btn.setText("✅ Connected to Google")
-        self.oauth_status.setText("✅ Successfully connected to Google account!")
-        self.oauth_status.setStyleSheet("color: green;")
-
-        # Ensure dialog remains visible and focused after OAuth
-        wizard = self.window()
-        if wizard and isinstance(wizard, SetupWizard):
-            wizard.show()
-            wizard.raise_()
-            wizard.activateWindow()
-
-    def on_oauth_error(self, error: str):
-        """Handle OAuth error."""
-        self.oauth_btn.setEnabled(True)
-        self.oauth_status.setText(f"❌ Authentication failed: {error}")
-        self.oauth_status.setStyleSheet("color: red;")
-
-        # Ensure dialog remains visible and focused after OAuth error
-        wizard = self.window()
-        if wizard and isinstance(wizard, SetupWizard):
-            wizard.show()
-            wizard.raise_()
-            wizard.activateWindow()
-
-    def show_oauth_config_dialog(self):
-        """Show dialog to configure OAuth client credentials."""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Configure Google OAuth")
-        dialog.setModal(True)
-        dialog.resize(700, 600)  # Set a reasonable default size
-
-        main_layout = QVBoxLayout(dialog)
-
-        # Create a scroll area for the content
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
-
-        # Title
-        title = QLabel("Google OAuth Setup Required")
-        title_font = QFont()
-        title_font.setPointSize(14)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        scroll_layout.addWidget(title)
-
-        # Main instructions
-        intro = QLabel(
-            "Google OAuth client credentials are required to authenticate with Google services. "
-            "Follow the steps below to obtain these credentials."
-        )
-        intro.setWordWrap(True)
-        scroll_layout.addWidget(intro)
-
-        # Add some spacing
-        scroll_layout.addSpacing(20)
-
-        # Step-by-step instructions with clickable links
-        steps_group = QGroupBox("Setup Instructions")
-        steps_layout = QVBoxLayout(steps_group)
-
-        # Step 1
-        step1_layout = QVBoxLayout()
-        step1_label = QLabel("<b>Step 1: Go to Google Cloud Console</b>")
-        step1_layout.addWidget(step1_label)
-
-        console_link = QLabel(
-            '<a href="https://console.cloud.google.com">https://console.cloud.google.com</a>'
-        )
-        console_link.setOpenExternalLinks(True)
-        console_link.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        step1_layout.addWidget(console_link)
-
-        # Quick link to credentials page
-        quick_link = QLabel(
-            'Or go directly to: <a href="https://console.cloud.google.com/apis/credentials">Credentials Page</a>'
-        )
-        quick_link.setOpenExternalLinks(True)
-        quick_link.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        quick_link.setStyleSheet("margin-left: 20px;")
-        step1_layout.addWidget(quick_link)
-
-        steps_layout.addLayout(step1_layout)
-        steps_layout.addSpacing(10)
-
-        # Step 2
-        step2 = QLabel(
-            "<b>Step 2: Create a Project</b><br>"
-            "• Click 'Select a project' → 'New Project'<br>"
-            "• Enter a project name (e.g., 'Executive Summary Tool')<br>"
-            "• Click 'Create'"
-        )
-        step2.setWordWrap(True)
-        steps_layout.addWidget(step2)
-        steps_layout.addSpacing(10)
-
-        # Step 3
-        step3 = QLabel(
-            "<b>Step 3: Enable Required APIs</b><br>"
-            "• In your project, go to 'APIs & Services' → 'Library'<br>"
-            "• Search for and enable:<br>"
-            "  - Google Drive API<br>"
-            "  - Google Docs API"
-        )
-        step3.setWordWrap(True)
-        steps_layout.addWidget(step3)
-        steps_layout.addSpacing(10)
-
-        # Step 4
-        step4 = QLabel(
-            "<b>Step 4: Create OAuth Credentials</b><br>"
-            "• Go to 'APIs & Services' → 'Credentials'<br>"
-            "• Click 'Create Credentials' → 'OAuth client ID'<br>"
-            "• If prompted to configure consent screen:<br>"
-            "  - Choose 'Internal' (for Google Workspace) or 'External' (personal)<br>"
-            "  - Fill in required fields<br>"
-            "  - Add your email to test users if 'External'<br>"
-            "• For Application type, select <b>'Desktop app'</b><br>"
-            "• Name it (e.g., 'Executive Summary Tool Desktop')<br>"
-            "• Click 'Create'"
-        )
-        step4.setWordWrap(True)
-        steps_layout.addWidget(step4)
-        steps_layout.addSpacing(10)
-
-        # Step 5
-        step5 = QLabel(
-            "<b>Step 5: Copy Your Credentials</b><br>"
-            "• Copy the Client ID and Client Secret<br>"
-            "• Paste them in the fields below"
-        )
-        step5.setWordWrap(True)
-        steps_layout.addWidget(step5)
-
-        scroll_layout.addWidget(steps_group)
-        scroll_layout.addSpacing(20)
-
-        # Credentials form
-        cred_group = QGroupBox("Enter Your OAuth Credentials")
-        form_layout = QFormLayout(cred_group)
-
-        self.client_id_edit = QLineEdit()
-        self.client_id_edit.setPlaceholderText(
-            "e.g., 123456789-abcdef.apps.googleusercontent.com"
-        )
-        form_layout.addRow("Client ID:", self.client_id_edit)
-
-        self.client_secret_edit = QLineEdit()
-        self.client_secret_edit.setEchoMode(QLineEdit.Password)
-        self.client_secret_edit.setPlaceholderText("Your OAuth Client Secret")
-        form_layout.addRow("Client Secret:", self.client_secret_edit)
-
-        scroll_layout.addWidget(cred_group)
-
-        # Important note
-        note_label = QLabel(
-            "<b>Note:</b> The application will use <code>http://localhost:8080/callback</code> "
-            "as the redirect URI. This is automatically configured for Desktop applications."
-        )
-        note_label.setWordWrap(True)
-        note_label.setStyleSheet(
-            "background-color: #f0f0f0; padding: 10px; border-radius: 5px;"
-        )
-        scroll_layout.addWidget(note_label)
-
-        # Add stretch to push content up
-        scroll_layout.addStretch()
-
-        # Set the scroll widget
-        scroll_area.setWidget(scroll_widget)
-        main_layout.addWidget(scroll_area)
-
-        # Buttons (outside scroll area)
-        button_layout = QHBoxLayout()
-
-        help_btn = QPushButton("🌐 Open Google Console")
-        help_btn.clicked.connect(lambda: self._open_google_console())
-        button_layout.addWidget(help_btn)
-
-        button_layout.addStretch()
-
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(dialog.reject)
-        button_layout.addWidget(cancel_btn)
-
-        save_btn = QPushButton("Save and Continue")
-        save_btn.clicked.connect(
-            lambda: self._save_oauth_config(
-                dialog, self.client_id_edit.text(), self.client_secret_edit.text()
-            )
-        )
-        save_btn.setDefault(True)
-        button_layout.addWidget(save_btn)
-
-        main_layout.addLayout(button_layout)
-
-        dialog.exec()
-
-    def _open_google_console(self):
-        """Open Google Cloud Console in browser."""
-        import webbrowser
-
-        webbrowser.open("https://console.cloud.google.com/apis/credentials")
-
-    def _save_oauth_config(self, dialog, client_id, client_secret):
-        """Save OAuth configuration."""
-        if not client_id or not client_secret:
-            QMessageBox.warning(
-                dialog,
-                "Missing Credentials",
-                "Please enter both Client ID and Client Secret",
-            )
-            return
-
-        try:
-            # Update OAuth handler configuration
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_id"] = client_id
-            self.oauth_handler.CLIENT_CONFIG["web"]["client_secret"] = client_secret
-
-            # Save to config manager if available
-            wizard = self.window()
-            if hasattr(wizard, "config_manager"):
-                wizard.config_manager.update_google_config(oauth_client_id=client_id)
-                wizard.config_manager.store_credential(
-                    "google", "oauth_client_secret", client_secret
-                )
-
-            # Also save to credentials file for persistence
-            from pathlib import Path
-
-            cred_dir = Path.home() / ".wes"
-            cred_dir.mkdir(exist_ok=True)
-            cred_file = cred_dir / "google_oauth_credentials.json"
-
-            with open(cred_file, "w") as f:
-                json.dump({"client_id": client_id, "client_secret": client_secret}, f)
-
-            dialog.accept()
-
-            # Restart OAuth flow
-            self.start_oauth_flow()
-
-        except Exception as e:
-            QMessageBox.critical(dialog, "Error", f"Failed to save credentials: {e}")
-
-    def validate_page(self) -> tuple[bool, str]:
-        """Validate Google setup."""
-        if not self.credentials:
-            return False, "Google authentication is required"
-        return True, ""
-
-    def get_data(self) -> Dict[str, Any]:
-        """Get Google configuration data."""
-        data = self.credentials or {}
-        data["docs_folder_id"] = self.folder_id_edit.text().strip()
-        return data
-
-
 class GeminiSetupPage(WizardPage):
     """Google Gemini API setup page."""
 
@@ -1032,8 +664,6 @@ class SummaryPage(WizardPage):
             if service_id == "jira" and service_id in service_data:
                 url = service_data[service_id].get("url", "")
                 detail_label = QLabel(f"Connected to: {url}")
-            elif service_id == "google_drive":
-                detail_label = QLabel("OAuth authentication configured")
             elif service_id == "gemini" and service_id in service_data:
                 model = service_data[service_id].get("model_name", "gemini-2.5-pro")
                 detail_label = QLabel(f"Using model: {model}")
@@ -1114,9 +744,6 @@ class SetupWizard(QDialog):
         self.jira_page = JiraSetupPage()
         self.pages.append(self.jira_page)
 
-        self.google_page = GoogleSetupPage()
-        self.pages.append(self.google_page)
-
         self.gemini_page = GeminiSetupPage()
         self.pages.append(self.gemini_page)
 
@@ -1180,8 +807,6 @@ class SetupWizard(QDialog):
         service_data = {}
         if service_selection.get("jira", False):
             service_data["jira"] = self.jira_page.get_data()
-        if service_selection.get("google_drive", False):
-            service_data["google_drive"] = self.google_page.get_data()
         if service_selection.get("gemini", False):
             service_data["gemini"] = self.gemini_page.get_data()
 
@@ -1205,21 +830,6 @@ class SetupWizard(QDialog):
                 self.config_manager.store_credential(
                     "jira", "api_token", jira_data["api_token"]
                 )
-
-            if service_selection.get("google_drive", False):
-                google_data = self.google_page.get_data()
-                self.config_manager.update_google_config(
-                    oauth_client_id=google_data.get("client_id", ""),
-                    docs_folder_id=google_data.get("docs_folder_id", ""),
-                )
-                if "client_secret" in google_data:
-                    self.config_manager.store_credential(
-                        "google", "oauth_client_secret", google_data["client_secret"]
-                    )
-                if "refresh_token" in google_data:
-                    self.config_manager.store_credential(
-                        "google", "oauth_refresh_token", google_data["refresh_token"]
-                    )
 
             if service_selection.get("gemini", False):
                 gemini_data = self.gemini_page.get_data()

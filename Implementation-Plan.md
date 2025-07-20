@@ -219,10 +219,9 @@ def test_document_formatting():
 ```
 
 **Security Implementation:**
-- OAuth2 secure token handling
-- Document access control verification
-- Content validation before upload
-- Audit trail for document operations
+- API token secure handling
+- Content validation before export
+- Audit trail for export operations
 
 **Deliverables:**
 - GoogleDocsClient with full document management

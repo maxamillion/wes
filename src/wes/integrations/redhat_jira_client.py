@@ -39,7 +39,6 @@ class RedHatJiraClient:
         timeout: int = 30,
         verify_ssl: bool = True,
         use_rhjira: bool = True,
-        oauth_config: Optional[Dict[str, str]] = None,
     ):
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
@@ -55,7 +54,6 @@ class RedHatJiraClient:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
         self.use_rhjira = use_rhjira and RHJIRA_AVAILABLE
-        self.oauth_config = oauth_config
 
         # Initialize rate limiter
         self.rate_limiter = self._create_rate_limiter(rate_limit)

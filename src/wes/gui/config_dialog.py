@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -53,7 +52,6 @@ class ConfigDialog(QDialog):
 
         # Create tabs
         self.create_jira_tab()
-        self.create_google_tab()
         self.create_ai_tab()
         self.create_app_tab()
         self.create_security_tab()
@@ -141,76 +139,6 @@ class ConfigDialog(QDialog):
         performance_layout.addRow("Timeout:", self.jira_timeout_spin)
 
         layout.addWidget(performance_group)
-
-        layout.addStretch()
-
-    def create_google_tab(self):
-        """Create Google services configuration tab."""
-        google_tab = QWidget()
-        self.tab_widget.addTab(google_tab, "Google")
-
-        layout = QVBoxLayout(google_tab)
-
-        # Authentication method
-        auth_group = QGroupBox("Authentication Method")
-        auth_layout = QVBoxLayout(auth_group)
-
-        self.auth_method_combo = QComboBox()
-        self.auth_method_combo.addItems(["Service Account", "OAuth 2.0"])
-        self.auth_method_combo.currentTextChanged.connect(self.on_auth_method_changed)
-        auth_layout.addWidget(self.auth_method_combo)
-
-        layout.addWidget(auth_group)
-
-        # Service Account settings
-        self.service_account_group = QGroupBox("Service Account")
-        sa_layout = QFormLayout(self.service_account_group)
-
-        sa_file_layout = QHBoxLayout()
-        self.service_account_path_edit = QLineEdit()
-        self.service_account_path_edit.setPlaceholderText(
-            "Path to service account JSON file"
-        )
-        sa_file_layout.addWidget(self.service_account_path_edit)
-
-        self.browse_sa_btn = QPushButton("Browse...")
-        self.browse_sa_btn.clicked.connect(self.browse_service_account_file)
-        sa_file_layout.addWidget(self.browse_sa_btn)
-
-        sa_layout.addRow("Service Account File:", sa_file_layout)
-
-        layout.addWidget(self.service_account_group)
-
-        # OAuth settings
-        self.oauth_group = QGroupBox("OAuth 2.0")
-        oauth_layout = QFormLayout(self.oauth_group)
-
-        self.oauth_client_id_edit = QLineEdit()
-        self.oauth_client_id_edit.setPlaceholderText("Your OAuth client ID")
-        oauth_layout.addRow("Client ID:", self.oauth_client_id_edit)
-
-        self.oauth_client_secret_edit = QLineEdit()
-        self.oauth_client_secret_edit.setEchoMode(QLineEdit.Password)
-        self.oauth_client_secret_edit.setPlaceholderText("Your OAuth client secret")
-        oauth_layout.addRow("Client Secret:", self.oauth_client_secret_edit)
-
-        layout.addWidget(self.oauth_group)
-
-        # Google Docs settings
-        docs_group = QGroupBox("Google Docs Settings")
-        docs_layout = QFormLayout(docs_group)
-
-        self.docs_folder_id_edit = QLineEdit()
-        self.docs_folder_id_edit.setPlaceholderText("Google Drive folder ID (optional)")
-        docs_layout.addRow("Default Folder ID:", self.docs_folder_id_edit)
-
-        self.google_rate_limit_spin = QSpinBox()
-        self.google_rate_limit_spin.setRange(1, 1000)
-        self.google_rate_limit_spin.setValue(100)
-        self.google_rate_limit_spin.setSuffix(" requests/min")
-        docs_layout.addRow("Rate Limit:", self.google_rate_limit_spin)
-
-        layout.addWidget(docs_group)
 
         layout.addStretch()
 
@@ -387,15 +315,6 @@ class ConfigDialog(QDialog):
 
         layout.addStretch()
 
-    def on_auth_method_changed(self, method: str):
-        """Handle authentication method change."""
-        if method == "Service Account":
-            self.service_account_group.setVisible(True)
-            self.oauth_group.setVisible(False)
-        else:
-            self.service_account_group.setVisible(False)
-            self.oauth_group.setVisible(True)
-
     def _on_jira_url_changed(self, text: str):
         """Handle Jira URL change to update username guidance."""
         if not text:
@@ -439,18 +358,6 @@ class ConfigDialog(QDialog):
         self.jira_username_edit.setPlaceholderText("your.email@company.com")
         self.jira_username_edit.setToolTip("")
 
-    def browse_service_account_file(self):
-        """Browse for service account file."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Service Account File",
-            "",
-            "JSON Files (*.json);;All Files (*)",
-        )
-
-        if file_path:
-            self.service_account_path_edit.setText(file_path)
-
     def load_configuration(self):
         """Load current configuration into UI."""
         try:
@@ -464,13 +371,6 @@ class ConfigDialog(QDialog):
             self.default_query_edit.setPlainText(jira_config.default_query)
             self.jira_rate_limit_spin.setValue(jira_config.rate_limit)
             self.jira_timeout_spin.setValue(jira_config.timeout)
-
-            # Google configuration
-            google_config = config.google
-            self.service_account_path_edit.setText(google_config.service_account_path)
-            self.oauth_client_id_edit.setText(google_config.oauth_client_id)
-            self.docs_folder_id_edit.setText(google_config.docs_folder_id)
-            self.google_rate_limit_spin.setValue(google_config.rate_limit)
 
             # AI configuration
             ai_config = config.ai
@@ -515,15 +415,6 @@ class ConfigDialog(QDialog):
             if gemini_key:
                 self.gemini_api_key_edit.setText(gemini_key)
 
-            oauth_secret = self.config_manager.retrieve_credential(
-                "google", "oauth_client_secret"
-            )
-            if oauth_secret:
-                self.oauth_client_secret_edit.setText(oauth_secret)
-
-            # Set initial auth method visibility
-            self.on_auth_method_changed(self.auth_method_combo.currentText())
-
             # Update Jira username guidance based on URL
             self._on_jira_url_changed(self.jira_url_edit.text())
 
@@ -548,14 +439,6 @@ class ConfigDialog(QDialog):
                 timeout=self.jira_timeout_spin.value(),
             )
 
-            # Update Google configuration
-            self.config_manager.update_google_config(
-                service_account_path=self.service_account_path_edit.text(),
-                oauth_client_id=self.oauth_client_id_edit.text(),
-                docs_folder_id=self.docs_folder_id_edit.text(),
-                rate_limit=self.google_rate_limit_spin.value(),
-            )
-
             # Update AI configuration
             self.config_manager.update_ai_config(
                 model_name=self.ai_model_combo.currentText(),
@@ -574,13 +457,6 @@ class ConfigDialog(QDialog):
             if self.gemini_api_key_edit.text():
                 self.config_manager.store_credential(
                     "ai", "gemini_api_key", self.gemini_api_key_edit.text()
-                )
-
-            if self.oauth_client_secret_edit.text():
-                self.config_manager.store_credential(
-                    "google",
-                    "oauth_client_secret",
-                    self.oauth_client_secret_edit.text(),
                 )
 
             self.logger.info("Configuration saved from dialog")

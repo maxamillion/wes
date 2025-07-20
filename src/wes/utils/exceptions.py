@@ -44,8 +44,8 @@ class GeminiIntegrationError(IntegrationError):
     """Google Gemini AI integration errors."""
 
 
-class GoogleDocsIntegrationError(IntegrationError):
-    """Google Docs integration errors."""
+class ExportError(WesError):
+    """Document export errors."""
 
 
 class RateLimitError(IntegrationError):
@@ -58,7 +58,3 @@ class NetworkError(WesError):
 
 class ConnectionError(WesError):
     """Connection-related errors."""
-
-
-class ExportError(WesError):
-    """Export-related errors."""

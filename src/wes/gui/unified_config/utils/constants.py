@@ -27,12 +27,6 @@ class ConfigConstants:
 
     # Path constants
     WES_CONFIG_DIR: Final[str] = ".wes"
-    OAUTH_CREDENTIALS_FILE: Final[str] = "google_oauth_credentials.json"
-
-    # Google OAuth constants
-    GOOGLE_CLIENT_ID_SUFFIX: Final[str] = ".apps.googleusercontent.com"
-    GOOGLE_OAUTH_TIMEOUT_MS: Final[int] = 300000  # 5 minutes
-    GOOGLE_OAUTH_CHECK_INTERVAL_MS: Final[int] = 500
 
     # Jira constants
     JIRA_URL_MIN_LENGTH: Final[int] = 8
@@ -44,12 +38,7 @@ class ConfigConstants:
     # UI Constants
     DIALOG_MIN_WIDTH: Final[int] = 600
     DIALOG_MIN_HEIGHT: Final[int] = 400
-    OAUTH_DIALOG_WIDTH: Final[int] = 600
-    OAUTH_DIALOG_HEIGHT: Final[int] = 500
     INSTRUCTIONS_MAX_HEIGHT: Final[int] = 150
-
-    # Port constants
-    OAUTH_CALLBACK_PORT_DEFAULT: Final[int] = 8080
 
     # File permissions
     CREDENTIALS_FILE_PERMISSIONS: Final[int] = 0o600
@@ -77,31 +66,6 @@ class URLConstants:
     GOOGLE_CLOUD_CONSOLE_CREDENTIALS: Final[str] = (
         "https://console.cloud.google.com/apis/credentials"
     )
-    GOOGLE_AUTH_URI: Final[str] = "https://accounts.google.com/o/oauth2/auth"
-    GOOGLE_TOKEN_URI: Final[str] = "https://oauth2.googleapis.com/token"
-    GOOGLE_REVOKE_URI: Final[str] = "https://oauth2.googleapis.com/revoke"
-
-    # OAuth redirect URIs
-    OAUTH_REDIRECT_URI_TEMPLATE: Final[str] = "http://localhost:{port}/callback"
-
-    # Documentation URLs
-    DOCS_GOOGLE_OAUTH_SETUP: Final[str] = "docs/GOOGLE_OAUTH_SETUP.md"
-    DOCS_GOOGLE_OAUTH_FIX: Final[str] = "docs/GOOGLE_OAUTH_FIX.md"
-
-
-class ServiceScopes:
-    """OAuth scopes for various services."""
-
-    # Google scopes
-    GOOGLE_DOCS_READ_WRITE: Final[str] = "https://www.googleapis.com/auth/documents"
-    GOOGLE_DRIVE_FILE: Final[str] = "https://www.googleapis.com/auth/drive.file"
-    GOOGLE_SHEETS_OPTIONAL: Final[str] = "https://www.googleapis.com/auth/spreadsheets"
-
-    # Default Google scopes
-    GOOGLE_DEFAULT_SCOPES: Final[list[str]] = [
-        GOOGLE_DOCS_READ_WRITE,
-        GOOGLE_DRIVE_FILE,
-    ]
 
 
 class ValidationPatterns:
