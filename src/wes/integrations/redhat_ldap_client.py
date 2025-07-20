@@ -1,6 +1,7 @@
 """Red Hat LDAP integration client for organizational hierarchy queries."""
 
 import asyncio
+import os
 import ssl
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
@@ -80,7 +81,20 @@ class RedHatLDAPClient:
         self.base_dn = base_dn or self.LDAP_BASE_DN
         self.timeout = timeout or self.LDAP_TIMEOUT
         self.use_ssl = use_ssl
-        self.validate_certs = validate_certs
+
+        # Allow environment variable override for certificate validation
+        # This is a temporary workaround for SSL certificate issues
+        if os.environ.get("WES_LDAP_SKIP_CERT_VERIFY", "").lower() in (
+            "true",
+            "1",
+            "yes",
+        ):
+            self.logger.warning(
+                "SSL certificate verification disabled via environment variable"
+            )
+            self.validate_certs = False
+        else:
+            self.validate_certs = validate_certs
 
         self._connection: Optional[Connection] = None
         self._server: Optional[Server] = None
@@ -90,7 +104,13 @@ class RedHatLDAPClient:
         if self.validate_certs:
             return Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLS)
         else:
-            return Tls(validate=ssl.CERT_NONE, version=ssl.PROTOCOL_TLS)
+            # Create a custom SSL context that doesn't verify certificates
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            return Tls(
+                validate=ssl.CERT_NONE, version=ssl.PROTOCOL_TLS, ssl_context=ctx
+            )
 
     def _initialize_connection(self) -> None:
         """Initialize LDAP connection to Red Hat server."""
@@ -99,6 +119,8 @@ class RedHatLDAPClient:
             tls_config = self._create_tls_configuration() if self.use_ssl else None
 
             # Create server object
+            # For ldaps:// URLs, ldap3 will use SSL even without use_ssl=True
+            # The tls parameter is used for STARTTLS or to configure SSL behavior
             self._server = Server(
                 self.server_url,
                 use_ssl=self.use_ssl,
@@ -115,7 +137,9 @@ class RedHatLDAPClient:
                 raise_exceptions=True,
             )
 
-            self.logger.info(f"Connected to LDAP server: {self.server_url}")
+            self.logger.info(
+                f"Connected to LDAP server: {self.server_url} (validate_certs={self.validate_certs})"
+            )
             self.security_logger.log_authentication_attempt(
                 service="redhat_ldap",
                 username="anonymous",
