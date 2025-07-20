@@ -5,9 +5,8 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from ..utils.exceptions import JiraIntegrationError
 from ..utils.logging_config import get_logger
 
 
@@ -232,74 +231,94 @@ class JiraUserMapper:
             Username if found, None otherwise
         """
         try:
-            # Use Jira's user search API
-            # Note: This requires appropriate permissions
-            search_params = {"query": email, "maxResults": 5}
-
             # For Red Hat Jira, we might use a different approach
             if hasattr(self.jira_client, "is_redhat") and self.jira_client.is_redhat:
-                # Red Hat Jira often uses the email prefix as username
-                if "@redhat.com" in email:
-                    username = email.split("@")[0]
-                    # Verify the user exists
-                    try:
-                        user_data = await self.jira_client._make_request(
-                            "GET", f"/rest/api/2/user?username={username}"
-                        )
-                        # Verify it's the correct user by email if possible
-                        if user_data:
-                            user_email = user_data.get("emailAddress", "")
-                            if not user_email or user_email.lower() == email.lower():
-                                return username
-                    except Exception as e:
-                        self.logger.debug(
-                            f"Failed to verify Red Hat user {username}: {e}"
-                        )
+                username = await self._search_redhat_user(email)
+                if username:
+                    return username
 
             # Try different API versions for user search
             # First try API v2 which is more widely supported
-            try:
-                # API v2 user picker endpoint
-                response = await self.jira_client._make_request(
-                    "GET", "/rest/api/2/user/picker", params={"query": email}
-                )
+            username = await self._search_user_v2(email)
+            if username:
+                return username
 
-                # Check if we got users
-                if response and "users" in response:
-                    for user in response["users"]:
-                        # Check for exact email match
-                        if user.get("emailAddress", "").lower() == email.lower():
-                            return user.get("name") or user.get("key")
-
-                    # If only one user returned, assume it's the right one
-                    if len(response["users"]) == 1:
-                        user = response["users"][0]
-                        return user.get("name") or user.get("key")
-
-            except Exception as e:
-                self.logger.debug(f"API v2 user picker failed: {e}")
-
-                # Fallback to API v3 if available
-                try:
-                    response = await self.jira_client._make_request(
-                        "GET", "/rest/api/3/user/search", params=search_params
-                    )
-
-                    # Process API v3 response
-                    if response and isinstance(response, list):
-                        for user in response:
-                            if user.get("emailAddress", "").lower() == email.lower():
-                                return user.get("name") or user.get("accountId")
-
-                        if len(response) == 1:
-                            user = response[0]
-                            return user.get("name") or user.get("accountId")
-
-                except Exception as e:
-                    self.logger.debug(f"API v3 user search failed: {e}")
+            # Fallback to API v3 if available
+            username = await self._search_user_v3(email)
+            if username:
+                return username
 
         except Exception as e:
             self.logger.debug(f"User search failed for {email}: {e}")
+
+        return None
+
+    async def _search_redhat_user(self, email: str) -> Optional[str]:
+        """Search for Red Hat user by email prefix."""
+        if "@redhat.com" not in email:
+            return None
+
+        username = email.split("@")[0]
+        # Verify the user exists
+        try:
+            user_data = await self.jira_client._make_request(
+                "GET", f"/rest/api/2/user?username={username}"
+            )
+            # Verify it's the correct user by email if possible
+            if user_data:
+                user_email = user_data.get("emailAddress", "")
+                if not user_email or user_email.lower() == email.lower():
+                    return username
+        except Exception as e:
+            self.logger.debug(f"Failed to verify Red Hat user {username}: {e}")
+
+        return None
+
+    async def _search_user_v2(self, email: str) -> Optional[str]:
+        """Search for user using API v2."""
+        try:
+            # API v2 user picker endpoint
+            response = await self.jira_client._make_request(
+                "GET", "/rest/api/2/user/picker", params={"query": email}
+            )
+
+            # Check if we got users
+            if response and "users" in response:
+                for user in response["users"]:
+                    # Check for exact email match
+                    if user.get("emailAddress", "").lower() == email.lower():
+                        return user.get("name") or user.get("key")
+
+                # If only one user returned, assume it's the right one
+                if len(response["users"]) == 1:
+                    user = response["users"][0]
+                    return user.get("name") or user.get("key")
+
+        except Exception as e:
+            self.logger.debug(f"API v2 user picker failed: {e}")
+
+        return None
+
+    async def _search_user_v3(self, email: str) -> Optional[str]:
+        """Search for user using API v3."""
+        try:
+            search_params = {"query": email, "maxResults": 5}
+            response = await self.jira_client._make_request(
+                "GET", "/rest/api/3/user/search", params=search_params
+            )
+
+            # Process API v3 response
+            if response and isinstance(response, list):
+                for user in response:
+                    if user.get("emailAddress", "").lower() == email.lower():
+                        return user.get("name") or user.get("accountId")
+
+                if len(response) == 1:
+                    user = response[0]
+                    return user.get("name") or user.get("accountId")
+
+        except Exception as e:
+            self.logger.debug(f"API v3 user search failed: {e}")
 
         return None
 

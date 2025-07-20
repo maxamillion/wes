@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import ldap3
 from ldap3 import ALL, Connection, Server, Tls
-from ldap3.core.exceptions import LDAPBindError, LDAPException
+from ldap3.core.exceptions import LDAPBindError
 
 from ..utils.exceptions import AuthenticationError, WesError
 from ..utils.logging_config import get_logger, get_security_logger

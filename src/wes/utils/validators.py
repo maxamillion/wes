@@ -105,7 +105,8 @@ class InputValidator:
 
         # Basic JQL syntax validation
         # Allow common JQL operators and functions
-        allowed_pattern = r'^[a-zA-Z0-9\s\-_=<>!(),"\'.\+\*\[\]]+$'
+        # Updated to include @ / \ : characters commonly found in usernames
+        allowed_pattern = r'^[a-zA-Z0-9\s\-_=<>!(),"\'.\+\*\[\]@/\\:]+$'
         if not re.match(allowed_pattern, query):
             raise ValidationError("Query contains invalid characters")
 

@@ -25,7 +25,7 @@ except ImportError:
 
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
-from ..utils.validators import InputValidator
+from ..utils.validators import InputValidator, ValidationError
 
 
 class RedHatJiraClient:
@@ -340,7 +340,18 @@ class RedHatJiraClient:
             end_str = end_date.strftime("%Y-%m-%d")
 
             # Build user clause with Red Hat username handling
-            quoted_users = ",".join([f'"{user}"' for user in users])
+            # Escape special characters in usernames for JQL
+            escaped_users = []
+            for user in users:
+                # JQL requires escaping these special characters with backslashes
+                escaped_user = user
+                # Escape backslashes first (must be done before other escapes)
+                escaped_user = escaped_user.replace("\\", "\\\\")
+                # Escape quotes
+                escaped_user = escaped_user.replace('"', '\\"')
+                escaped_users.append(f'"{escaped_user}"')
+
+            quoted_users = ",".join(escaped_users)
             user_clause = f"assignee in ({quoted_users})"
 
             # Build date clause
@@ -349,7 +360,14 @@ class RedHatJiraClient:
             # Build project clause
             project_clause = ""
             if projects:
-                project_list = ",".join([f'"{proj}"' for proj in projects])
+                # Also escape project names
+                escaped_projects = []
+                for proj in projects:
+                    escaped_proj = proj
+                    escaped_proj = escaped_proj.replace("\\", "\\\\")
+                    escaped_proj = escaped_proj.replace('"', '\\"')
+                    escaped_projects.append(f'"{escaped_proj}"')
+                project_list = ",".join(escaped_projects)
                 project_clause = f" AND project in ({project_list})"
 
             # Add Red Hat specific filters if available
@@ -358,8 +376,17 @@ class RedHatJiraClient:
             # Combine clauses
             jql = f"{user_clause} AND {date_clause}{project_clause}{redhat_filters}"
 
+            # Log the users for debugging
+            self.logger.debug(f"Processing users: {users}")
+            self.logger.debug(f"Escaped users: {escaped_users}")
+
             # Validate JQL
-            InputValidator.validate_jira_query(jql)
+            try:
+                InputValidator.validate_jira_query(jql)
+            except ValidationError:
+                self.logger.error(f"JQL validation failed for query: {jql}")
+                self.logger.error(f"Users: {users}")
+                raise
 
             self.logger.debug(f"Built Red Hat JQL query: {jql}")
             return jql
