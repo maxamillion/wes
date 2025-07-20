@@ -119,10 +119,24 @@ class ServiceFactory:
         self._clients["gemini"] = client
         return client
 
-    async def create_redhat_jira_ldap_integration(self) -> RedHatJiraLDAPIntegration:
-        """Create Red Hat Jira client with LDAP integration."""
-        if "redhat_jira_ldap" in self._clients:
+    async def create_redhat_jira_ldap_integration(
+        self, force_recreate: bool = False
+    ) -> RedHatJiraLDAPIntegration:
+        """Create Red Hat Jira client with LDAP integration.
+
+        Args:
+            force_recreate: If True, recreate the client even if cached
+        """
+        if not force_recreate and "redhat_jira_ldap" in self._clients:
             return self._clients["redhat_jira_ldap"]
+
+        # Remove existing client if force recreating
+        if force_recreate and "redhat_jira_ldap" in self._clients:
+            old_client = self._clients.pop("redhat_jira_ldap")
+            try:
+                await old_client.close()
+            except Exception:
+                pass  # Ignore errors when closing old client
 
         # Get configuration
         jira_config = self.config_manager.get_jira_config()
@@ -169,6 +183,16 @@ class ServiceFactory:
             return await self.create_redhat_jira_ldap_integration()
         else:
             raise ValueError(f"Unknown service: {service_name}")
+
+    def clear_client(self, service_name: str) -> None:
+        """Clear a specific cached client.
+
+        Args:
+            service_name: Name of the service client to clear
+        """
+        if service_name in self._clients:
+            self.logger.info(f"Clearing cached client: {service_name}")
+            self._clients.pop(service_name)
 
     async def close_all(self) -> None:
         """Close all active clients."""

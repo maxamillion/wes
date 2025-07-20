@@ -366,7 +366,14 @@ class ConfigManager:
             # Update configuration
             for key, value in kwargs.items():
                 if hasattr(self._config.ldap, key):
+                    old_value = getattr(self._config.ldap, key)
                     setattr(self._config.ldap, key, value)
+                    self.logger.debug(f"LDAP config {key}: {old_value} -> {value}")
+                else:
+                    self.logger.warning(f"Unknown LDAP config key: {key}")
+
+            # Log the full LDAP config before saving
+            self.logger.debug(f"LDAP config before save: {self._config.ldap}")
 
             self._save_configuration()
             self.logger.info("LDAP configuration updated")

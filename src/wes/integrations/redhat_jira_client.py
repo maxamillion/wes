@@ -1,6 +1,7 @@
 """Red Hat Jira integration client with enhanced authentication and Red Hat-specific features."""
 
 import asyncio
+import json
 import time
 import warnings
 from datetime import datetime
@@ -666,6 +667,108 @@ class RedHatJiraClient:
                 self.logger.warning(f"Could not get server info: {e}")
 
         return info
+
+    async def _make_request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        """Make a direct API request to Jira.
+
+        This method provides compatibility with the user mapper.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            endpoint: API endpoint (e.g., '/rest/api/2/user')
+            params: Query parameters
+            headers: Additional headers
+            json_data: JSON payload for POST/PUT requests
+
+        Returns:
+            Response data
+        """
+        # Rate limiting
+        await self.rate_limiter.acquire()
+
+        try:
+            # Build full URL
+            url = f"{self.url}{endpoint}"
+
+            # Prepare headers
+            request_headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+            if headers:
+                request_headers.update(headers)
+
+            # Make request using the underlying session
+            if hasattr(self._client, "_session"):
+                session = self._client._session
+            else:
+                # Create a session if needed
+                session = requests.Session()
+                session.auth = (self.username, self.api_token)
+                session.verify = self.verify_ssl
+
+            response = session.request(
+                method=method,
+                url=url,
+                params=params,
+                headers=request_headers,
+                json=json_data,
+                timeout=self.timeout,
+            )
+
+            # Handle errors
+            if response.status_code == 429:
+                raise RateLimitError("Rate limit exceeded")
+            elif response.status_code >= 400:
+                # Log the response content for debugging
+                self.logger.error(
+                    f"API request failed with status {response.status_code}: "
+                    f"{response.text[:500]}..."
+                )
+                response.raise_for_status()
+
+            # Return JSON response
+            if response.content:
+                # Check if response is JSON
+                content_type = response.headers.get("content-type", "")
+                if "application/json" in content_type:
+                    try:
+                        return response.json()
+                    except json.JSONDecodeError as e:
+                        self.logger.error(
+                            f"Failed to parse JSON response: {e}\n"
+                            f"Response content: {response.text[:500]}..."
+                        )
+                        raise JiraIntegrationError(
+                            f"Invalid JSON response from Jira API: {e}"
+                        )
+                else:
+                    # Non-JSON response (might be HTML error page)
+                    self.logger.warning(
+                        f"Non-JSON response from Jira API. "
+                        f"Content-Type: {content_type}, "
+                        f"Status: {response.status_code}, "
+                        f"Content: {response.text[:500]}..."
+                    )
+                    # For some endpoints, empty response is OK
+                    if response.status_code == 200 and not response.text:
+                        return None
+                    raise JiraIntegrationError(
+                        f"Unexpected response format from Jira API. "
+                        f"Expected JSON but got {content_type}"
+                    )
+            return None
+
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"API request failed: {e}")
+            raise JiraIntegrationError(f"API request failed: {e}")
 
     async def close(self) -> None:
         """Close Red Hat Jira client connections."""

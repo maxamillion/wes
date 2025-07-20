@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ..core.config_manager import ConfigManager
 from ..utils.exceptions import JiraIntegrationError, WesError
 from ..utils.logging_config import get_logger
+from .jira_user_mapper import JiraUserMapper
 from .redhat_jira_client import RedHatJiraClient
 from .redhat_ldap_client import LDAPIntegrationError, RedHatLDAPClient
 
@@ -30,9 +31,14 @@ class RedHatJiraLDAPIntegration:
         # Initialize clients
         self.jira_client: Optional[RedHatJiraClient] = None
         self.ldap_client: Optional[RedHatLDAPClient] = None
+        self.user_mapper: Optional[JiraUserMapper] = None
 
         # Cache for LDAP queries
         self._ldap_cache: Dict[str, Tuple[List[str], Dict[str, Any], float]] = {}
+
+        # Cache directory
+        self._cache_dir = config_manager.config_dir / "cache"
+        self._cache_dir.mkdir(exist_ok=True)
 
     async def initialize(self) -> None:
         """Initialize Jira and LDAP clients."""
@@ -51,6 +57,12 @@ class RedHatJiraLDAPIntegration:
 
             # Initialize LDAP client if enabled
             if self.ldap_config.enabled:
+                self.logger.info(
+                    f"Initializing LDAP client with config: "
+                    f"server_url={self.ldap_config.server_url}, "
+                    f"use_ssl={self.ldap_config.use_ssl}, "
+                    f"validate_certs={self.ldap_config.validate_certs}"
+                )
                 self.ldap_client = RedHatLDAPClient(
                     server_url=self.ldap_config.server_url,
                     base_dn=self.ldap_config.base_dn,
@@ -61,6 +73,9 @@ class RedHatJiraLDAPIntegration:
 
                 # Validate LDAP connection
                 await self.ldap_client.validate_connection()
+
+            # Initialize user mapper with Jira client
+            self.user_mapper = JiraUserMapper(self.jira_client, self._cache_dir)
 
             self.logger.info("Red Hat Jira-LDAP integration initialized successfully")
 
@@ -158,7 +173,7 @@ class RedHatJiraLDAPIntegration:
     async def _fetch_team_members(
         self, manager_identifier: str, max_depth: int
     ) -> Tuple[List[str], Dict[str, Any]]:
-        """Fetch team members from LDAP.
+        """Fetch team members from LDAP and map to Jira usernames.
 
         Args:
             manager_identifier: Manager's email or username
@@ -168,12 +183,34 @@ class RedHatJiraLDAPIntegration:
             Tuple of (list of Jira usernames, organizational hierarchy)
         """
         try:
-            # Get team members and hierarchy from LDAP
-            users, hierarchy = await self.ldap_client.get_team_members_for_manager(
+            # Get organizational hierarchy from LDAP
+            hierarchy = await self.ldap_client.get_organizational_hierarchy(
                 manager_identifier, max_depth
             )
 
-            return users, hierarchy
+            # Extract all email addresses from hierarchy
+            emails = await self.ldap_client.extract_emails_from_hierarchy(hierarchy)
+
+            self.logger.info(
+                f"Found {len(emails)} emails in {manager_identifier}'s organization"
+            )
+
+            # Map emails to actual Jira usernames using Jira API
+            email_to_username = await self.user_mapper.map_emails_to_usernames(
+                emails, fallback_to_prefix=True  # Use email prefix if user not found
+            )
+
+            # Get unique usernames
+            usernames = list(set(email_to_username.values()))
+
+            self.logger.info(
+                f"Mapped {len(emails)} emails to {len(usernames)} unique Jira usernames"
+            )
+
+            # Add email-to-username mapping to hierarchy for enrichment
+            self._add_usernames_to_hierarchy(hierarchy, email_to_username)
+
+            return usernames, hierarchy
 
         except Exception as e:
             self.logger.error(f"LDAP query failed for {manager_identifier}: {e}")
@@ -201,6 +238,27 @@ class RedHatJiraLDAPIntegration:
 
         for key in keys_to_remove:
             del self._ldap_cache[key]
+
+    def _add_usernames_to_hierarchy(
+        self, hierarchy: Dict[str, Any], email_to_username: Dict[str, str]
+    ) -> None:
+        """Add Jira usernames to hierarchy nodes.
+
+        Args:
+            hierarchy: Organizational hierarchy
+            email_to_username: Mapping of email to Jira username
+        """
+
+        def add_username_to_node(node: Dict[str, Any]) -> None:
+            email = node.get("email")
+            if email and email in email_to_username:
+                node["jira_username"] = email_to_username[email]
+
+            # Recursively process direct reports
+            for report in node.get("direct_reports", []):
+                add_username_to_node(report)
+
+        add_username_to_node(hierarchy)
 
     def _enrich_activities_with_org_data(
         self, activities: List[Dict[str, Any]], hierarchy: Dict[str, Any]
