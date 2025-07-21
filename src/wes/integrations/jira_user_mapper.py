@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from ..utils.exceptions import AuthenticationError
 from ..utils.logging_config import get_logger
 
 
@@ -249,28 +250,77 @@ class JiraUserMapper:
                 return username
 
         except Exception as e:
-            self.logger.debug(f"User search failed for {email}: {e}")
+            # Log authentication errors at warning level
+            if isinstance(e, AuthenticationError) or "AuthenticationError" in str(
+                type(e).__name__
+            ):
+                self.logger.warning(
+                    f"Authentication error while searching for {email}: {e}"
+                )
+                # Re-raise authentication errors so they can be handled at a higher level
+                raise
+            else:
+                self.logger.debug(f"User search failed for {email}: {e}")
 
         return None
 
     async def _search_redhat_user(self, email: str) -> Optional[str]:
-        """Search for Red Hat user by email prefix."""
+        """Search for Red Hat user by email.
+
+        Uses the /rest/api/2/user/search endpoint to search for users by email.
+        This endpoint returns JSON array of user objects, unlike the /user endpoint
+        which may return non-JSON responses in some cases.
+
+        Args:
+            email: Email address to search for
+
+        Returns:
+            Username if found, None otherwise
+        """
         if "@redhat.com" not in email:
             return None
 
-        username = email.split("@")[0]
-        # Verify the user exists
+        # Use the user/search endpoint with the full email
         try:
-            user_data = await self.jira_client._make_request(
-                "GET", f"/rest/api/2/user?username={username}"
+            # Search for user by email using the correct endpoint
+            response = await self.jira_client._make_request(
+                "GET", f"/rest/api/2/user/search?username={email}"
             )
-            # Verify it's the correct user by email if possible
-            if user_data:
-                user_email = user_data.get("emailAddress", "")
-                if not user_email or user_email.lower() == email.lower():
-                    return username
+
+            # The response should be a list of users
+            if response and isinstance(response, list):
+                # Look for exact email match
+                for user in response:
+                    user_email = user.get("emailAddress", "")
+                    if user_email.lower() == email.lower():
+                        # Return the username/name field
+                        return user.get("name") or user.get("key")
+
+                # If no exact match but only one result, use it
+                if len(response) == 1:
+                    user = response[0]
+                    return user.get("name") or user.get("key")
+
+            # If user/search doesn't work, try with just the username prefix
+            username = email.split("@")[0]
+            response = await self.jira_client._make_request(
+                "GET", f"/rest/api/2/user/search?username={username}"
+            )
+
+            if response and isinstance(response, list):
+                for user in response:
+                    user_email = user.get("emailAddress", "")
+                    if user_email.lower() == email.lower():
+                        return user.get("name") or user.get("key")
+
         except Exception as e:
-            self.logger.debug(f"Failed to verify Red Hat user {username}: {e}")
+            # Log authentication errors at warning level so they're visible
+            if "AuthenticationError" in str(type(e).__name__):
+                self.logger.warning(
+                    f"Authentication error while searching for {email}: {e}"
+                )
+            else:
+                self.logger.debug(f"Failed to search Red Hat user {email}: {e}")
 
         return None
 

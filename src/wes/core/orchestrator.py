@@ -371,6 +371,10 @@ class WorkflowOrchestrator:
         """Stage 3: Fetch data from Jira."""
         self._update_progress("Fetching Jira activity data...")
 
+        # Check for cancellation before starting
+        if self.is_cancelled:
+            raise WesError("Operation cancelled by user")
+
         try:
             activity_data = await self.jira_client.get_user_activities(
                 users=users,
@@ -474,6 +478,10 @@ class WorkflowOrchestrator:
     ) -> Dict[str, Any]:
         """Stage 4: Generate AI summary."""
         self._update_progress("Generating AI summary...")
+
+        # Check for cancellation before starting
+        if self.is_cancelled:
+            raise WesError("Operation cancelled by user")
 
         try:
             # Filter out activities with processing errors before sending to Gemini

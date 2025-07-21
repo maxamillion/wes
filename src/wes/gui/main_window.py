@@ -430,9 +430,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.progress_status)
 
         # Cancel button
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.cancel_summary)
-        layout.addWidget(cancel_button)
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.cancel_summary)
+        layout.addWidget(self.cancel_button)
 
         self.main_stack.addWidget(self.progress_widget)
 
@@ -711,7 +711,9 @@ class MainWindow(QMainWindow):
         # Switch to progress view
         self.switch_view(ViewState.PROGRESS)
         self.progress_bar.setValue(0)
+        self.progress_bar.setEnabled(True)
         self.progress_status.setText("Initializing...")
+        self.cancel_button.setEnabled(True)
 
         # Create and start worker
         self.summary_worker = SummaryWorker(
@@ -735,9 +737,30 @@ class MainWindow(QMainWindow):
     def cancel_summary(self):
         """Cancel summary generation."""
         if self.summary_worker and self.summary_worker.isRunning():
+            self.logger.info("Cancelling summary generation...")
+
+            # Disable cancel button to prevent multiple clicks
+            self.cancel_button.setEnabled(False)
+
+            # Update UI to show cancellation in progress
+            self.progress_status.setText("Cancelling...")
+            self.progress_bar.setEnabled(False)
+
+            # Cancel the worker
             self.summary_worker.cancel()
+
+            # Request thread termination
             self.summary_worker.quit()
-            self.summary_worker.wait()
+
+            # Wait for thread to finish (with timeout)
+            if not self.summary_worker.wait(5000):  # 5 second timeout
+                self.logger.warning(
+                    "Worker thread did not terminate gracefully, forcing termination"
+                )
+                self.summary_worker.terminate()
+                self.summary_worker.wait()
+
+            self.logger.info("Summary generation cancelled")
 
         self.switch_view(ViewState.MAIN)
 

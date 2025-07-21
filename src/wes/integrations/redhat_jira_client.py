@@ -349,6 +349,24 @@ class RedHatJiraClient:
                 escaped_user = escaped_user.replace("\\", "\\\\")
                 # Escape quotes
                 escaped_user = escaped_user.replace('"', '\\"')
+                # Escape other special JQL characters
+                # Note: * is a wildcard in JQL and should be escaped if literal
+                escaped_user = escaped_user.replace("*", "\\*")
+                escaped_user = escaped_user.replace("?", "\\?")
+                escaped_user = escaped_user.replace("+", "\\+")
+                # Note: hyphen/minus doesn't need escaping in JQL
+                escaped_user = escaped_user.replace("&", "\\&")
+                escaped_user = escaped_user.replace("|", "\\|")
+                escaped_user = escaped_user.replace("!", "\\!")
+                escaped_user = escaped_user.replace("(", "\\(")
+                escaped_user = escaped_user.replace(")", "\\)")
+                escaped_user = escaped_user.replace("{", "\\{")
+                escaped_user = escaped_user.replace("}", "\\}")
+                escaped_user = escaped_user.replace("[", "\\[")
+                escaped_user = escaped_user.replace("]", "\\]")
+                escaped_user = escaped_user.replace("^", "\\^")
+                escaped_user = escaped_user.replace("~", "\\~")
+                escaped_user = escaped_user.replace(":", "\\:")
                 escaped_users.append(f'"{escaped_user}"')
 
             quoted_users = ",".join(escaped_users)
@@ -360,12 +378,31 @@ class RedHatJiraClient:
             # Build project clause
             project_clause = ""
             if projects:
-                # Also escape project names
+                # Also escape project names with same logic as usernames
                 escaped_projects = []
                 for proj in projects:
                     escaped_proj = proj
+                    # Escape backslashes first (must be done before other escapes)
                     escaped_proj = escaped_proj.replace("\\", "\\\\")
+                    # Escape quotes
                     escaped_proj = escaped_proj.replace('"', '\\"')
+                    # Escape other special JQL characters
+                    escaped_proj = escaped_proj.replace("*", "\\*")
+                    escaped_proj = escaped_proj.replace("?", "\\?")
+                    escaped_proj = escaped_proj.replace("+", "\\+")
+                    # Note: hyphen/minus doesn't need escaping in JQL
+                    escaped_proj = escaped_proj.replace("&", "\\&")
+                    escaped_proj = escaped_proj.replace("|", "\\|")
+                    escaped_proj = escaped_proj.replace("!", "\\!")
+                    escaped_proj = escaped_proj.replace("(", "\\(")
+                    escaped_proj = escaped_proj.replace(")", "\\)")
+                    escaped_proj = escaped_proj.replace("{", "\\{")
+                    escaped_proj = escaped_proj.replace("}", "\\}")
+                    escaped_proj = escaped_proj.replace("[", "\\[")
+                    escaped_proj = escaped_proj.replace("]", "\\]")
+                    escaped_proj = escaped_proj.replace("^", "\\^")
+                    escaped_proj = escaped_proj.replace("~", "\\~")
+                    escaped_proj = escaped_proj.replace(":", "\\:")
                     escaped_projects.append(f'"{escaped_proj}"')
                 project_list = ",".join(escaped_projects)
                 project_clause = f" AND project in ({project_list})"
@@ -735,10 +772,14 @@ class RedHatJiraClient:
             # Make request using the underlying session
             if hasattr(self._client, "_session"):
                 session = self._client._session
+                # Ensure Bearer token is in headers for Red Hat Jira
+                if "Authorization" not in request_headers:
+                    request_headers["Authorization"] = f"Bearer {self.api_token}"
             else:
                 # Create a session if needed
                 session = requests.Session()
-                session.auth = (self.username, self.api_token)
+                # Red Hat Jira uses Bearer token authentication
+                request_headers["Authorization"] = f"Bearer {self.api_token}"
                 session.verify = self.verify_ssl
 
             response = session.request(
@@ -787,6 +828,27 @@ class RedHatJiraClient:
                     # For some endpoints, empty response is OK
                     if response.status_code == 200 and not response.text:
                         return None
+                    # Check for specific HTML content indicating authentication issues
+                    if any(
+                        indicator in response.text
+                        for indicator in [
+                            "You are already logged in",
+                            "login",
+                            "Login",
+                            "sign in",
+                            "Sign In",
+                            "authenticate",
+                            "Authenticate",
+                        ]
+                    ):
+                        # Re-raise as AuthenticationError for proper handling
+                        raise AuthenticationError(
+                            "Jira API returned a login page instead of JSON data. "
+                            "This indicates an authentication problem. "
+                            "Please verify your Personal Access Token (PAT) is valid and "
+                            "has not expired. For Red Hat Jira, ensure you're using a PAT "
+                            "from https://issues.redhat.com/secure/ViewProfile.jspa"
+                        )
                     raise JiraIntegrationError(
                         f"Unexpected response format from Jira API. "
                         f"Expected JSON but got {content_type}"
