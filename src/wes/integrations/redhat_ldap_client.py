@@ -1,6 +1,7 @@
 """Red Hat LDAP integration client for organizational hierarchy queries."""
 
 import asyncio
+import os
 import ssl
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
@@ -80,7 +81,20 @@ class RedHatLDAPClient:
         self.base_dn = base_dn or self.LDAP_BASE_DN
         self.timeout = timeout or self.LDAP_TIMEOUT
         self.use_ssl = use_ssl
-        self.validate_certs = validate_certs
+
+        # Allow environment variable override for certificate validation
+        # This is a temporary workaround for SSL certificate issues
+        if os.environ.get("WES_LDAP_SKIP_CERT_VERIFY", "").lower() in (
+            "true",
+            "1",
+            "yes",
+        ):
+            self.logger.warning(
+                "SSL certificate verification disabled via environment variable"
+            )
+            self.validate_certs = False
+        else:
+            self.validate_certs = validate_certs
 
         self._connection: Optional[Connection] = None
         self._server: Optional[Server] = None
@@ -90,10 +104,20 @@ class RedHatLDAPClient:
         if self.validate_certs:
             return Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLS)
         else:
+            # Disable certificate validation
             return Tls(validate=ssl.CERT_NONE, version=ssl.PROTOCOL_TLS)
 
     def _initialize_connection(self) -> None:
         """Initialize LDAP connection to Red Hat server."""
+        # Set environment variables to control SSL behavior if needed
+        old_env = {}
+        if not self.validate_certs:
+            # Disable SSL verification via environment variables
+            old_env["LDAPTLS_REQCERT"] = os.environ.get("LDAPTLS_REQCERT")
+            old_env["PYTHONHTTPSVERIFY"] = os.environ.get("PYTHONHTTPSVERIFY")
+            os.environ["LDAPTLS_REQCERT"] = "never"
+            os.environ["PYTHONHTTPSVERIFY"] = "0"
+
         try:
             # Create TLS configuration
             tls_config = self._create_tls_configuration() if self.use_ssl else None
@@ -115,7 +139,9 @@ class RedHatLDAPClient:
                 raise_exceptions=True,
             )
 
-            self.logger.info(f"Connected to LDAP server: {self.server_url}")
+            self.logger.info(
+                f"Connected to LDAP server: {self.server_url} (validate_certs={self.validate_certs})"
+            )
             self.security_logger.log_authentication_attempt(
                 service="redhat_ldap",
                 username="anonymous",
@@ -134,6 +160,14 @@ class RedHatLDAPClient:
         except Exception as e:
             self.logger.error(f"Failed to initialize LDAP connection: {e}")
             raise LDAPIntegrationError(f"LDAP connection failed: {e}")
+        finally:
+            # Restore original environment variables
+            if not self.validate_certs:
+                for key, value in old_env.items():
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
 
     async def connect(self) -> None:
         """Establish connection to LDAP server."""
@@ -153,28 +187,59 @@ class RedHatLDAPClient:
 
     def _parse_user_entry(self, entry: Any) -> LDAPUser:
         """Parse LDAP entry into LDAPUser object."""
-        attributes = entry.entry_attributes_as_dict
+        try:
+            attributes = entry.entry_attributes_as_dict
 
-        # Extract attributes with safe defaults
-        uid = attributes.get("uid", [None])[0]
-        mail = attributes.get("mail", [None])[0]
-        display_name = attributes.get("displayName", [None])[0]
-        cn = attributes.get("cn", [None])[0]
-        manager = attributes.get("manager", [None])[0]
-        title = attributes.get("title", [None])[0]
-        department = attributes.get("departmentNumber", [None])[0]
+            # Log the raw attributes for debugging
+            self.logger.debug(f"LDAP entry DN: {entry.entry_dn}")
+            self.logger.debug(f"LDAP attributes: {list(attributes.keys())}")
 
-        # Use display name or cn as fallback
-        name = display_name or cn or uid
+            # Helper function to safely extract first value from attribute
+            def get_first_value(attr_list):
+                """Safely get the first value from an attribute list."""
+                if isinstance(attr_list, list) and len(attr_list) > 0:
+                    return attr_list[0]
+                return None
 
-        return LDAPUser(
-            uid=uid,
-            email=mail,
-            display_name=name,
-            manager_dn=manager,
-            title=title,
-            department=department,
-        )
+            # Extract attributes with safe defaults
+            uid = get_first_value(attributes.get("uid", []))
+            mail = get_first_value(attributes.get("mail", []))
+            display_name = get_first_value(attributes.get("displayName", []))
+            cn = get_first_value(attributes.get("cn", []))
+            manager = get_first_value(attributes.get("manager", []))
+            title = get_first_value(attributes.get("title", []))
+            department = get_first_value(attributes.get("departmentNumber", []))
+
+            # Validate we have at least a uid
+            if not uid:
+                self.logger.warning(f"LDAP entry missing uid: {entry.entry_dn}")
+                # Try to extract uid from DN if possible
+                dn_parts = entry.entry_dn.split(",")
+                for part in dn_parts:
+                    if part.strip().startswith("uid="):
+                        uid = part.strip()[4:]
+                        break
+
+                if not uid:
+                    raise ValueError(
+                        f"Cannot determine uid for entry: {entry.entry_dn}"
+                    )
+
+            # Use display name or cn as fallback
+            name = display_name or cn or uid
+
+            return LDAPUser(
+                uid=uid,
+                email=mail,
+                display_name=name,
+                manager_dn=manager,
+                title=title,
+                department=department,
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to parse LDAP entry: {e}")
+            self.logger.error(f"Entry data: {entry}")
+            raise
 
     async def search_user_by_email(self, email: str) -> Optional[LDAPUser]:
         """Search for a user by email address.

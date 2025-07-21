@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import google.generativeai as genai
 from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
+from ..utils.content_sanitizer import ContentSanitizer
 from ..utils.exceptions import (
     AuthenticationError,
     GeminiIntegrationError,
@@ -26,7 +27,7 @@ class GeminiClient:
 
     Focus on:
     - Key achievements and completed work
-    - Progress on important initiatives
+    - Progress on important initiatives, prioritize importance by jira priority level
     - Any blockers or risks that need executive attention
     - Team productivity insights
     - Upcoming priorities
@@ -43,7 +44,7 @@ class GeminiClient:
     def __init__(
         self,
         api_key: str,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-2.5-pro",
         rate_limit: int = 60,
         timeout: int = 60,
     ):
@@ -60,6 +61,9 @@ class GeminiClient:
 
         # Initialize rate limiter
         self.rate_limiter = self._create_rate_limiter()
+
+        # Initialize content sanitizer
+        self.sanitizer = ContentSanitizer()
 
         # Initialize Gemini client
         self._initialize_client()
@@ -103,13 +107,13 @@ class GeminiClient:
             # Configure API key
             genai.configure(api_key=self.api_key)
 
-            # Initialize model
+            # Initialize model with adjusted safety settings for technical content
             self.model = genai.GenerativeModel(
                 model_name=self.model_name,
                 safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
                     HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
                 },
             )
@@ -193,59 +197,133 @@ class GeminiClient:
         temperature: float = 0.7,
         max_tokens: int = 2048,
     ) -> Dict[str, Any]:
-        """Generate executive summary from Jira activity data."""
-        try:
-            # Rate limiting
-            await self.rate_limiter.acquire()
+        """Generate executive summary from Jira activity data with safety retry logic."""
+        max_retries = 3
+        last_error = None
 
-            # Validate and sanitize input data
-            sanitized_data = self._sanitize_activity_data(activity_data)
+        for attempt in range(max_retries):
+            try:
+                # Rate limiting
+                await self.rate_limiter.acquire()
 
-            # Prepare prompt
-            prompt = self._prepare_prompt(sanitized_data, custom_prompt)
+                # Progressively aggressive sanitization based on attempt
+                aggressive = attempt > 0
+                if attempt == 2:
+                    self.logger.warning(
+                        "Using maximum sanitization after safety filter blocks"
+                    )
 
-            # Generate summary
-            response = await self._generate_content(prompt, temperature, max_tokens)
+                # Validate and sanitize input data
+                sanitized_data = self._sanitize_activity_data(
+                    activity_data, aggressive=aggressive
+                )
 
-            # Process response
-            summary = self._process_response(response)
+                # On final attempt, use minimal data
+                if attempt == 2:
+                    self.logger.info("Final attempt: using minimal activity data")
+                    sanitized_data = [
+                        self.sanitizer.create_summary_safe_activity(activity)
+                        for activity in activity_data[:30]  # Limit to 30 activities
+                    ]
 
-            self.security_logger.log_api_request(
-                service="gemini",
-                endpoint="generate_content",
-                method="POST",
-                status_code=200,
-                input_tokens=len(prompt.split()),
-                output_tokens=len(summary.get("content", "").split()),
-            )
+                # Prepare prompt
+                prompt = self._prepare_prompt(sanitized_data, custom_prompt)
 
-            return summary
+                # Generate summary
+                response = await self._generate_content(prompt, temperature, max_tokens)
 
-        except Exception as e:
-            self.logger.error(f"Failed to generate summary: {e}")
-            raise GeminiIntegrationError(f"Failed to generate summary: {e}")
+                # Process response
+                summary = self._process_response(response)
+
+                self.security_logger.log_api_request(
+                    service="gemini",
+                    endpoint="generate_content",
+                    method="POST",
+                    status_code=200,
+                    input_tokens=len(prompt.split()),
+                    output_tokens=len(summary.get("content", "").split()),
+                )
+
+                return summary
+
+            except GeminiIntegrationError as e:
+                last_error = e
+                error_msg = str(e)
+
+                # Check if it's a safety filter error
+                if (
+                    "safety filter" in error_msg.lower()
+                    or "blocked" in error_msg.lower()
+                ):
+                    self.logger.warning(
+                        f"Attempt {attempt + 1} blocked by safety filters: {error_msg}"
+                    )
+
+                    if attempt < max_retries - 1:
+                        self.logger.info(
+                            f"Retrying with more aggressive sanitization..."
+                        )
+                        await asyncio.sleep(1)  # Brief delay before retry
+                        continue
+
+                    self.logger.error("All attempts failed due to safety filters")
+                    # Return a fallback summary
+                    return self._create_fallback_summary(activity_data, error_msg)
+                else:
+                    # For non-safety errors, don't retry
+                    raise
+
+            except Exception as e:
+                self.logger.error(f"Failed to generate summary: {e}")
+                raise GeminiIntegrationError(f"Failed to generate summary: {e}")
+
+        # If we get here, all retries failed
+        if last_error:
+            raise last_error
+        else:
+            raise GeminiIntegrationError("Failed to generate summary after all retries")
 
     def _sanitize_activity_data(
-        self, activity_data: List[Dict[str, Any]]
+        self, activity_data: List[Dict[str, Any]], aggressive: bool = False
     ) -> List[Dict[str, Any]]:
-        """Sanitize activity data for AI processing."""
+        """Sanitize activity data for AI processing with enhanced safety compliance."""
         sanitized_data = []
+        total_issues = []
 
-        for activity in activity_data:
-            sanitized_activity = {}
+        self.logger.info(
+            f"Sanitizing {len(activity_data)} activities for AI safety compliance"
+        )
 
-            # Sanitize text fields
-            for key, value in activity.items():
-                if isinstance(value, str):
-                    sanitized_activity[key] = InputValidator.sanitize_text(value)
-                elif isinstance(value, dict):
-                    sanitized_activity[key] = self._sanitize_dict(value)
-                elif isinstance(value, list):
-                    sanitized_activity[key] = self._sanitize_list(value)
-                else:
-                    sanitized_activity[key] = value
+        for i, activity in enumerate(activity_data):
+            # First detect problematic content
+            activity_text = json.dumps(activity, default=str)
+            issues = self.sanitizer.detect_problematic_content(activity_text)
+
+            if issues:
+                total_issues.extend(issues)
+                self.logger.debug(f"Activity {i} has potential issues: {issues}")
+
+            # Sanitize the activity
+            sanitized_activity = self.sanitizer.sanitize_jira_activity(
+                activity, aggressive
+            )
+
+            # If still too problematic, create a minimal safe version
+            if aggressive and issues:
+                self.logger.debug(
+                    f"Using minimal safe version for activity {activity.get('key', i)}"
+                )
+                sanitized_activity = self.sanitizer.create_summary_safe_activity(
+                    activity
+                )
 
             sanitized_data.append(sanitized_activity)
+
+        if total_issues:
+            self.logger.warning(
+                f"Found {len(set(total_issues))} types of potentially problematic content "
+                f"across {len(activity_data)} activities"
+            )
 
         return sanitized_data
 
@@ -339,30 +417,91 @@ class GeminiClient:
             else:
                 raise GeminiIntegrationError(f"Content generation failed: {e}")
 
+    def _check_finish_reason(self, candidate: Any) -> None:
+        """Check if response was blocked by safety filters."""
+        if not hasattr(candidate, "finish_reason"):
+            return
+
+        # Finish reason 2 = SAFETY, 3 = RECITATION, 4 = OTHER
+        finish_reason_errors = {
+            2: (
+                "Content was blocked by Gemini's safety filters. "
+                "The input data may contain content that violates the model's usage policies. "
+                "Try modifying the request or using different data."
+            ),
+            3: (
+                "Content was blocked due to recitation concerns. "
+                "The model detected potential copyright or citation issues."
+            ),
+            4: (
+                "Content generation was blocked for other reasons. "
+                "Please try again with different input."
+            ),
+        }
+
+        if candidate.finish_reason in finish_reason_errors:
+            raise GeminiIntegrationError(finish_reason_errors[candidate.finish_reason])
+
+    def _extract_content(self, response: Any) -> str:
+        """Extract text content from response."""
+        content = ""
+        try:
+            content = response.text
+        except Exception as text_error:
+            # If we can't get text due to finish_reason error, we already handled it above
+            # This catch is for other unexpected cases
+            if "finish_reason" in str(text_error) and "is 2" in str(text_error):
+                # This is a safety filter block that wasn't caught above
+                raise GeminiIntegrationError(
+                    "Content was blocked by Gemini's safety filters. "
+                    "The input data may contain content that violates the model's usage policies."
+                )
+            # Otherwise, try to get content from candidates manually
+            if hasattr(response, "candidates") and response.candidates:
+                for candidate in response.candidates:
+                    if hasattr(candidate, "content") and hasattr(
+                        candidate.content, "parts"
+                    ):
+                        for part in candidate.content.parts:
+                            if hasattr(part, "text"):
+                                content += part.text
+
+        return content
+
+    def _extract_usage_metadata(self, response: Any) -> Dict[str, Any]:
+        """Extract usage metadata from response."""
+        if not hasattr(response, "usage_metadata"):
+            return {}
+
+        return {
+            "prompt_token_count": getattr(
+                response.usage_metadata, "prompt_token_count", 0
+            ),
+            "candidates_token_count": getattr(
+                response.usage_metadata, "candidates_token_count", 0
+            ),
+            "total_token_count": getattr(
+                response.usage_metadata, "total_token_count", 0
+            ),
+        }
+
     def _process_response(self, response: Any) -> Dict[str, Any]:
         """Process AI response into structured format."""
         try:
-            # Extract text content
-            content = response.text if hasattr(response, "text") else str(response)
+            # First check if response was blocked by safety filters BEFORE trying to access text
+            if hasattr(response, "candidates") and response.candidates:
+                candidate = response.candidates[0]
+                self._check_finish_reason(candidate)
+
+            # Now try to extract text content
+            content = self._extract_content(response)
 
             # Basic validation
             if not content:
                 raise GeminiIntegrationError("Empty response from Gemini")
 
             # Parse response metadata
-            usage_metadata = {}
-            if hasattr(response, "usage_metadata"):
-                usage_metadata = {
-                    "prompt_token_count": getattr(
-                        response.usage_metadata, "prompt_token_count", 0
-                    ),
-                    "candidates_token_count": getattr(
-                        response.usage_metadata, "candidates_token_count", 0
-                    ),
-                    "total_token_count": getattr(
-                        response.usage_metadata, "total_token_count", 0
-                    ),
-                }
+            usage_metadata = self._extract_usage_metadata(response)
 
             # Structure response
             summary = {
@@ -375,6 +514,9 @@ class GeminiClient:
 
             return summary
 
+        except GeminiIntegrationError:
+            # Re-raise our custom errors
+            raise
         except Exception as e:
             self.logger.error(f"Failed to process response: {e}")
             raise GeminiIntegrationError(f"Failed to process response: {e}")
@@ -398,6 +540,96 @@ class GeminiClient:
             self.logger.error(f"Failed to extract safety ratings: {e}")
 
         return safety_ratings
+
+    def _create_fallback_summary(
+        self, activity_data: List[Dict[str, Any]], error_msg: str
+    ) -> Dict[str, Any]:
+        """Create a fallback summary when AI generation fails due to safety filters."""
+        self.logger.info("Creating fallback summary due to safety filter issues")
+
+        # Calculate basic statistics
+        total_activities = len(activity_data)
+        activities_by_type = {}
+        activities_by_status = {}
+        activities_by_assignee = {}
+
+        for activity in activity_data:
+            # Count by type
+            activity_type = activity.get("type", "Unknown")
+            activities_by_type[activity_type] = (
+                activities_by_type.get(activity_type, 0) + 1
+            )
+
+            # Count by status
+            status = activity.get("status", "Unknown")
+            activities_by_status[status] = activities_by_status.get(status, 0) + 1
+
+            # Count by assignee
+            assignee = activity.get("assignee", "Unassigned")
+            activities_by_assignee[assignee] = (
+                activities_by_assignee.get(assignee, 0) + 1
+            )
+
+        # Create a basic statistical summary
+        content = f"""# Executive Summary
+
+## Summary Generation Notice
+
+The AI-powered summary generation encountered content filtering issues.
+This is a basic statistical summary of the Jira activities.
+
+## Activity Overview
+
+**Total Activities**: {total_activities}
+
+### Activities by Type:
+"""
+        for activity_type, count in sorted(
+            activities_by_type.items(), key=lambda x: x[1], reverse=True
+        )[:10]:
+            content += f"- {activity_type}: {count}\n"
+
+        content += "\n### Activities by Status:\n"
+        for status, count in sorted(
+            activities_by_status.items(), key=lambda x: x[1], reverse=True
+        ):
+            content += f"- {status}: {count}\n"
+
+        content += "\n### Top Contributors:\n"
+        top_assignees = sorted(
+            activities_by_assignee.items(), key=lambda x: x[1], reverse=True
+        )[:10]
+        for assignee, count in top_assignees:
+            content += f"- {assignee}: {count} activities\n"
+
+        content += """
+## Recommendations
+
+1. Review the Jira data for any content that might trigger AI safety filters
+2. Consider removing or sanitizing descriptions with technical security terms
+3. Check for any customer complaints or aggressive language in comments
+4. Try generating summaries with smaller batches of activities
+
+## Technical Note
+
+The summary generation was blocked due to content safety filters. This typically occurs when:
+- Technical security terms are misinterpreted as harmful content
+- Bug descriptions contain aggressive or violent language
+- Customer feedback includes inappropriate content
+- Code snippets or logs contain patterns that trigger filters
+
+For assistance, please contact your system administrator.
+"""
+
+        return {
+            "content": content,
+            "model": "fallback_generator",
+            "usage": {"total_activities": total_activities},
+            "generated_at": time.time(),
+            "safety_ratings": [],
+            "error": f"AI generation blocked: {error_msg}",
+            "fallback": True,
+        }
 
     async def generate_insights(
         self, activity_data: List[Dict[str, Any]]

@@ -194,16 +194,69 @@ class JiraClient:
             start_str = start_date.strftime("%Y-%m-%d")
             end_str = end_date.strftime("%Y-%m-%d")
 
-            # Build user clause
-            user_clause = f"assignee in ({','.join(users)})"
+            # Build user clause with proper escaping
+            escaped_users = []
+            for user in users:
+                # JQL requires escaping these special characters with backslashes
+                escaped_user = user
+                # Escape backslashes first (must be done before other escapes)
+                escaped_user = escaped_user.replace("\\", "\\\\")
+                # Escape quotes
+                escaped_user = escaped_user.replace('"', '\\"')
+                # Escape other special JQL characters
+                escaped_user = escaped_user.replace("*", "\\*")
+                escaped_user = escaped_user.replace("?", "\\?")
+                escaped_user = escaped_user.replace("+", "\\+")
+                escaped_user = escaped_user.replace("-", "\\-")
+                escaped_user = escaped_user.replace("&", "\\&")
+                escaped_user = escaped_user.replace("|", "\\|")
+                escaped_user = escaped_user.replace("!", "\\!")
+                escaped_user = escaped_user.replace("(", "\\(")
+                escaped_user = escaped_user.replace(")", "\\)")
+                escaped_user = escaped_user.replace("{", "\\{")
+                escaped_user = escaped_user.replace("}", "\\}")
+                escaped_user = escaped_user.replace("[", "\\[")
+                escaped_user = escaped_user.replace("]", "\\]")
+                escaped_user = escaped_user.replace("^", "\\^")
+                escaped_user = escaped_user.replace("~", "\\~")
+                escaped_user = escaped_user.replace(":", "\\:")
+                escaped_users.append(f'"{escaped_user}"')
+
+            user_clause = f"assignee in ({','.join(escaped_users)})"
 
             # Build date clause
             date_clause = f"updated >= '{start_str}' AND updated <= '{end_str}'"
 
-            # Build project clause
+            # Build project clause with proper escaping
             project_clause = ""
             if projects:
-                project_clause = f" AND project in ({','.join(projects)})"
+                escaped_projects = []
+                for proj in projects:
+                    # JQL requires escaping these special characters with backslashes
+                    escaped_proj = proj
+                    # Escape backslashes first (must be done before other escapes)
+                    escaped_proj = escaped_proj.replace("\\", "\\\\")
+                    # Escape quotes
+                    escaped_proj = escaped_proj.replace('"', '\\"')
+                    # Escape other special JQL characters
+                    escaped_proj = escaped_proj.replace("*", "\\*")
+                    escaped_proj = escaped_proj.replace("?", "\\?")
+                    escaped_proj = escaped_proj.replace("+", "\\+")
+                    escaped_proj = escaped_proj.replace("-", "\\-")
+                    escaped_proj = escaped_proj.replace("&", "\\&")
+                    escaped_proj = escaped_proj.replace("|", "\\|")
+                    escaped_proj = escaped_proj.replace("!", "\\!")
+                    escaped_proj = escaped_proj.replace("(", "\\(")
+                    escaped_proj = escaped_proj.replace(")", "\\)")
+                    escaped_proj = escaped_proj.replace("{", "\\{")
+                    escaped_proj = escaped_proj.replace("}", "\\}")
+                    escaped_proj = escaped_proj.replace("[", "\\[")
+                    escaped_proj = escaped_proj.replace("]", "\\]")
+                    escaped_proj = escaped_proj.replace("^", "\\^")
+                    escaped_proj = escaped_proj.replace("~", "\\~")
+                    escaped_proj = escaped_proj.replace(":", "\\:")
+                    escaped_projects.append(f'"{escaped_proj}"')
+                project_clause = f" AND project in ({','.join(escaped_projects)})"
 
             # Combine clauses
             jql = f"{user_clause} AND {date_clause}{project_clause}"

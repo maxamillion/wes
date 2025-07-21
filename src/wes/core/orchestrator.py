@@ -209,14 +209,20 @@ class WorkflowOrchestrator:
 
             # Stage 3: Fetch Jira data
             if use_ldap_hierarchy and manager_identifier:
-                # Use LDAP to get team hierarchy
-                activity_data = await self._execute_stage(
-                    "fetch_jira_data_with_ldap",
-                    result,
-                    manager_identifier,
-                    start_date,
-                    end_date,
-                )
+                # Use LDAP to get team hierarchy - call method directly
+                self.current_stage = self.stages.index("fetch_jira_data")
+                self._update_progress("Fetching team hierarchy from LDAP...")
+                try:
+                    activity_data = await self._stage_fetch_jira_data_with_ldap(
+                        manager_identifier, start_date, end_date
+                    )
+                    result.stages_completed.append("fetch_jira_data")
+                    self.logger.info(
+                        f"Stage 3 completed: fetch_jira_data (LDAP variant)"
+                    )
+                except Exception as e:
+                    self.logger.error(f"Stage 3 failed: fetch_jira_data (LDAP) - {e}")
+                    raise WesError(f"Stage fetch_jira_data (LDAP) failed: {e}")
             else:
                 # Use standard user list
                 activity_data = await self._execute_stage(
@@ -365,6 +371,10 @@ class WorkflowOrchestrator:
         """Stage 3: Fetch data from Jira."""
         self._update_progress("Fetching Jira activity data...")
 
+        # Check for cancellation before starting
+        if self.is_cancelled:
+            raise WesError("Operation cancelled by user")
+
         try:
             activity_data = await self.jira_client.get_user_activities(
                 users=users,
@@ -468,6 +478,10 @@ class WorkflowOrchestrator:
     ) -> Dict[str, Any]:
         """Stage 4: Generate AI summary."""
         self._update_progress("Generating AI summary...")
+
+        # Check for cancellation before starting
+        if self.is_cancelled:
+            raise WesError("Operation cancelled by user")
 
         try:
             # Filter out activities with processing errors before sending to Gemini

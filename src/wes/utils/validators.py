@@ -105,9 +105,24 @@ class InputValidator:
 
         # Basic JQL syntax validation
         # Allow common JQL operators and functions
-        allowed_pattern = r'^[a-zA-Z0-9\s\-_=<>!(),"\'.\+\*\[\]]+$'
+        # Updated to include @ / \ : * and other special characters with escaping
+        # Also allow escaped special characters like \* \? \+ etc.
+        allowed_pattern = r'^[a-zA-Z0-9\s\-_=<>!(),"\'.\+\*\[\]@/\\:?&|{}^~]+$'
         if not re.match(allowed_pattern, query):
             raise ValidationError("Query contains invalid characters")
+
+        return True
+
+    @staticmethod
+    def validate_email(email: str) -> bool:
+        """Validate email format."""
+        if not email:
+            return False
+
+        # Email validation pattern
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(pattern, email):
+            raise ValidationError("Invalid email format")
 
         return True
 
@@ -434,7 +449,7 @@ class JQLValidator:
 class PromptValidator:
     """Validate AI prompts for security."""
 
-    MAX_PROMPT_LENGTH = 50000  # Token estimation
+    MAX_PROMPT_LENGTH = 500000  # Token estimation
 
     INJECTION_PATTERNS = [
         r"ignore\s+previous\s+instructions",

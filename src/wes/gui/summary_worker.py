@@ -67,6 +67,7 @@ class SummaryWorker(QThread):
 
     def run(self):
         """Run the summary generation workflow."""
+        loop = None
         try:
             self.logger.info("Starting summary generation in background")
 
@@ -86,9 +87,6 @@ class SummaryWorker(QThread):
                 )
             )
 
-            # Close the loop
-            loop.close()
-
             # Emit result
             if result.status.value == "completed":
                 self.logger.info("Summary generation completed successfully")
@@ -101,9 +99,36 @@ class SummaryWorker(QThread):
                 self.logger.error(f"Summary generation failed: {error_msg}")
                 self.generation_failed.emit(error_msg)
 
+        except asyncio.CancelledError:
+            self.logger.info("Summary generation was cancelled")
+            self.generation_failed.emit("Generation cancelled by user")
         except Exception as e:
-            self.logger.error(f"Summary worker error: {e}")
-            self.generation_failed.emit(str(e))
+            # Check if the error message indicates cancellation
+            error_msg = str(e)
+            if "cancelled by user" in error_msg.lower():
+                self.logger.info("Summary generation cancelled by user")
+                self.generation_failed.emit("Generation cancelled by user")
+            else:
+                self.logger.error(f"Summary worker error: {e}")
+                self.generation_failed.emit(error_msg)
+        finally:
+            # Always clean up the event loop
+            if loop is not None:
+                try:
+                    # Cancel all running tasks
+                    pending = asyncio.all_tasks(loop)
+                    for task in pending:
+                        task.cancel()
+
+                    # Wait briefly for tasks to cancel
+                    if pending:
+                        loop.run_until_complete(
+                            asyncio.gather(*pending, return_exceptions=True)
+                        )
+
+                    loop.close()
+                except Exception as e:
+                    self.logger.error(f"Error closing event loop: {e}")
 
     def cancel(self):
         """Cancel the summary generation."""

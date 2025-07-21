@@ -194,7 +194,8 @@ class TestRedHatJiraIntegration:
             # Test Red Hat specific filters
             filters = client._get_redhat_specific_filters()
             assert isinstance(filters, str)
-            assert len(filters) > 0
+            # Currently no Red Hat specific filters are configured
+            assert filters == ""
 
             await client.close()
 

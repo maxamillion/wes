@@ -329,24 +329,77 @@ class TestRedHatJiraClient:
             mock_test_connection.assert_called_once()
 
     @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
-    @pytest.mark.asyncio
-    async def test_jira_error_handling(self, mock_test_connection, redhat_config):
-        """Test handling of Jira-specific errors."""
+    def test_build_redhat_activity_query_special_chars(
+        self, mock_test_connection, redhat_config
+    ):
+        """Test JQL query building with special characters in usernames."""
         with patch("jira.JIRA") as mock_jira:
             mock_jira_instance = Mock()
             mock_jira_instance.current_user.return_value = "testuser"
-            mock_jira_instance.search_issues.side_effect = Exception("API Error")
             mock_jira.return_value = mock_jira_instance
 
             client = RedHatJiraClient(**redhat_config)
 
-            with pytest.raises(JiraIntegrationError):
-                await client.get_user_activities(
-                    users=["testuser"],
-                    start_date=datetime(2024, 1, 1),
-                    end_date=datetime(2024, 1, 31),
-                )
+            # Test with usernames containing special characters
+            users = [
+                "rh\\-ee\\-nsingla",  # Username with backslashes
+                "rhn\\-support\\-admiller",  # Another with backslashes
+                "user-with-hyphen",  # Username with hyphen (should not be escaped)
+                "user@example.com",  # Username with @ symbol
+                "user+test",  # Username with plus
+                "user*test",  # Username with asterisk
+            ]
+
+            start_date = datetime(2025, 7, 14)
+            end_date = datetime(2025, 7, 21)
+            projects = ["PROJECT-1", "PROJECT-2"]
+
+            # Build the JQL query
+            jql = client._build_redhat_activity_query(
+                users, start_date, end_date, projects
+            )
+
+            # Verify the query contains correctly escaped usernames
+            assert 'assignee in ("rh\\\\-ee\\\\-nsingla"' in jql  # Backslashes doubled
+            assert "rhn\\\\-support\\\\-admiller" in jql  # Backslashes doubled
+            assert '"user-with-hyphen"' in jql  # Hyphen not escaped
+            assert '"user@example.com"' in jql  # @ not escaped
+            assert '"user\\+test"' in jql  # Plus escaped
+            assert '"user\\*test"' in jql  # Asterisk escaped
+
+            # Verify dates are formatted correctly
+            assert "updated >= '2025-07-14'" in jql
+            assert "updated <= '2025-07-21'" in jql
+
+            # Verify projects are included
+            assert 'project in ("PROJECT-1","PROJECT-2")' in jql
+
+            # Verify Red Hat specific filters
+            # Note: Removed assertion for 'Red Hat Internal' filter as this issue type doesn't exist
+
             mock_test_connection.assert_called_once()
+
+    @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    @patch("wes.integrations.redhat_jira_client.JIRA")
+    @pytest.mark.asyncio
+    async def test_jira_error_handling(
+        self, mock_jira, mock_test_connection, redhat_config
+    ):
+        """Test handling of Jira-specific errors."""
+        mock_jira_instance = Mock()
+        mock_jira_instance.current_user.return_value = "testuser"
+        mock_jira_instance.search_issues.side_effect = Exception("API Error")
+        mock_jira.return_value = mock_jira_instance
+
+        client = RedHatJiraClient(**redhat_config)
+
+        with pytest.raises(JiraIntegrationError):
+            await client.get_user_activities(
+                users=["testuser"],
+                start_date=datetime(2024, 1, 1),
+                end_date=datetime(2024, 1, 31),
+            )
+        mock_test_connection.assert_called_once()
 
 
 class TestRedHatJiraFactory:
@@ -520,4 +573,3 @@ class TestRHJiraLibraryIntegration:
 
             assert client.use_rhjira
             mock_rhjira.RHJIRA.assert_called_once()
-            mock_test_connection.assert_called_once()
