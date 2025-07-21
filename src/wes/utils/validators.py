@@ -449,7 +449,7 @@ class JQLValidator:
 class PromptValidator:
     """Validate AI prompts for security."""
 
-    MAX_PROMPT_LENGTH = 50000  # Token estimation
+    MAX_PROMPT_LENGTH = 500000  # Token estimation
 
     INJECTION_PATTERNS = [
         r"ignore\s+previous\s+instructions",
