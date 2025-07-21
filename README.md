@@ -1,5 +1,5 @@
 # Wes - Weekly Executive Summary
-[![Quick Checks](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml/badge.svg)](https://github.com/maxamillion/wes/actions/workflows/quick-checks.yml)
+[![Tests](https://github.com/maxamillion/wes/actions/workflows/tests.yml/badge.svg)](https://github.com/maxamillion/wes/actions/workflows/tests.yml)
 
 A cross-platform desktop application that automates the creation of executive summaries by integrating Jira activity data with Google's Gemini AI and exporting summaries in multiple formats.
 
