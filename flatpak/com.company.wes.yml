@@ -1,0 +1,172 @@
+app-id: com.company.wes
+runtime: org.kde.Platform
+runtime-version: '6.6'
+sdk: org.kde.Sdk
+command: wes
+finish-args:
+  # X11 + XShm access
+  - --socket=x11
+  - --share=ipc
+  # Wayland access
+  - --socket=wayland
+  # Network access for API calls
+  - --share=network
+  # Access to user's home directory for config and exports
+  - --filesystem=home
+  # Access to XDG directories
+  - --filesystem=xdg-config:create
+  - --filesystem=xdg-documents:create
+  # GPU acceleration
+  - --device=dri
+  # Sound (for notifications if implemented)
+  - --socket=pulseaudio
+  # D-Bus access for desktop integration
+  - --socket=session-bus
+  # Allow access to host fonts
+  - --filesystem=/usr/share/fonts:ro
+  - --filesystem=/usr/local/share/fonts:ro
+  - --filesystem=~/.fonts:ro
+  - --filesystem=~/.local/share/fonts:ro
+  # Environment variables
+  - --env=QT_QPA_PLATFORM=xcb
+  - --env=PYTHONDONTWRITEBYTECODE=1
+
+modules:
+  # Python 3.11
+  - name: python3
+    buildsystem: simple
+    build-commands:
+      - /usr/bin/python3 -m venv /app/venv
+      - /app/venv/bin/pip install --upgrade pip setuptools wheel
+    
+  # PySide6 and Qt dependencies
+  - name: pyside6-deps
+    buildsystem: simple
+    build-commands:
+      - /app/venv/bin/pip install --no-deps --no-cache-dir PySide6-Essentials==6.6.0 PySide6-Addons==6.6.0 shiboken6==6.6.0
+
+  # Application dependencies
+  - name: python-deps
+    buildsystem: simple
+    build-commands:
+      - /app/venv/bin/pip install --no-deps --no-cache-dir 
+          requests>=2.31.0
+          httpx>=0.25.0
+          cryptography>=41.0.0
+          keyring>=24.0.0
+          pydantic>=2.5.0
+          toml>=0.10.2
+          python-dotenv>=1.0.0
+          jira>=3.5.0
+          atlassian-python-api>=3.41.0
+          google-generativeai>=0.3.0
+          python-dateutil>=2.8.0
+          structlog>=23.2.0
+          validators>=0.22.0
+          asyncio>=3.4.3
+          aiohttp>=3.9.0
+          reportlab>=4.0.0
+          ldap3>=2.9.0
+
+  # WES application
+  - name: wes
+    buildsystem: simple
+    build-commands:
+      # Copy application source
+      - cp -r src/wes /app/
+      # Create launcher script
+      - |
+        cat > /app/bin/wes << 'EOF'
+        #!/bin/bash
+        export PYTHONPATH=/app:$PYTHONPATH
+        export QT_QPA_PLATFORM_PLUGIN_PATH=/app/venv/lib/python3.11/site-packages/PySide6/Qt/plugins/platforms
+        exec /app/venv/bin/python -m wes.main "$@"
+        EOF
+      - chmod +x /app/bin/wes
+      # Create desktop entry
+      - |
+        cat > /app/share/applications/com.company.wes.desktop << 'EOF'
+        [Desktop Entry]
+        Type=Application
+        Name=WES
+        Comment=Executive Summary Tool - Automated summary generation
+        Icon=com.company.wes
+        Exec=wes
+        Terminal=false
+        Categories=Office;Utility;
+        Keywords=summary;jira;executive;report;
+        StartupNotify=true
+        EOF
+      # Create metainfo
+      - mkdir -p /app/share/metainfo
+      - |
+        cat > /app/share/metainfo/com.company.wes.metainfo.xml << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <component type="desktop-application">
+          <id>com.company.wes</id>
+          <name>WES</name>
+          <summary>Executive Summary Tool</summary>
+          <description>
+            <p>
+              WES (Wes) is a cross-platform desktop application that automates 
+              executive summary creation by integrating Jira activity data with 
+              Google's Gemini AI and exporting summaries in multiple formats.
+            </p>
+            <p>Features:</p>
+            <ul>
+              <li>Automated summary generation from Jira data</li>
+              <li>AI-powered content creation using Google Gemini</li>
+              <li>Multiple export formats (Markdown, HTML, PDF, Text)</li>
+              <li>Secure credential storage with encryption</li>
+              <li>Cross-platform support</li>
+            </ul>
+          </description>
+          <launchable type="desktop-id">com.company.wes.desktop</launchable>
+          <categories>
+            <category>Office</category>
+            <category>Utility</category>
+          </categories>
+          <provides>
+            <binary>wes</binary>
+          </provides>
+          <content_rating type="oars-1.1" />
+          <releases>
+            <release version="1.0.0" date="2024-01-01">
+              <description>
+                <p>Initial release with core functionality</p>
+              </description>
+            </release>
+          </releases>
+          <url type="homepage">https://github.com/company/wes</url>
+          <url type="bugtracker">https://github.com/company/wes/issues</url>
+          <developer_name>Engineering Team</developer_name>
+          <project_license>MIT</project_license>
+          <screenshots>
+            <screenshot type="default">
+              <caption>Main application window</caption>
+              <image>https://raw.githubusercontent.com/company/wes/main/docs/screenshots/main.png</image>
+            </screenshot>
+          </screenshots>
+        </component>
+        EOF
+      # Copy icon (placeholder - should be replaced with actual icon)
+      - mkdir -p /app/share/icons/hicolor/scalable/apps
+      - |
+        cat > /app/share/icons/hicolor/scalable/apps/com.company.wes.svg << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+          <rect width="128" height="128" rx="16" fill="#2563eb"/>
+          <text x="64" y="80" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">WES</text>
+        </svg>
+        EOF
+    sources:
+      - type: dir
+        path: ../
+
+cleanup:
+  - /include
+  - /lib/debug
+  - /lib/pkgconfig
+  - /share/man
+  - '*.la'
+  - '*.a'

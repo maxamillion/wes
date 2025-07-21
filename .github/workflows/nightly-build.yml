@@ -1,0 +1,336 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      release_build:
+        description: 'Create a release build'
+        required: false
+        default: false
+        type: boolean
+  push:
+    tags:
+      - 'v*'
+      - 'nightly-*'
+
+env:
+  PYTHON_VERSION: '3.11'
+  UV_VERSION: '0.5.16'
+  
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: wes-linux
+            build_cmd: make build-linux
+          - os: windows-latest
+            platform: windows
+            artifact_name: wes-windows
+            build_cmd: make build-windows
+          - os: macos-latest
+            platform: macos
+            artifact_name: wes-macos
+            build_cmd: make build-macos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            DATE=$(date +%Y%m%d)
+            echo "BUILD_VERSION=$VERSION-nightly-$DATE" >> $GITHUB_OUTPUT
+            echo "RELEASE_NAME=Nightly Build $DATE" >> $GITHUB_OUTPUT
+            echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "BUILD_VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "RELEASE_NAME=Release $VERSION" >> $GITHUB_OUTPUT
+            echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+          else
+            COMMIT=$(git rev-parse --short HEAD)
+            echo "BUILD_VERSION=$VERSION-dev-$COMMIT" >> $GITHUB_OUTPUT
+            echo "RELEASE_NAME=Development Build" >> $GITHUB_OUTPUT
+            echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        shell: bash
+        run: |
+          curl -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            libxrender1 \
+            libgomp1 \
+            libgstreamer-plugins-base1.0-0 \
+            libxcb-xinerama0 \
+            libxcb-cursor0 \
+            libxkbcommon-x11-0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xfixes0 \
+            xvfb
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          uv sync --frozen --extra dev
+          uv run python -m pip list
+
+      - name: Run tests
+        if: github.event.inputs.release_build != 'true'
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            export QT_QPA_PLATFORM=offscreen
+            export QT_LOGGING_RULES="*.debug=false;qt.qpa.xcb=false"
+          fi
+          make test-unit
+        continue-on-error: true
+
+      - name: Build executable
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            export QT_QPA_PLATFORM=offscreen
+          fi
+          SKIP_TESTS=true ${{ matrix.build_cmd }}
+
+      - name: Package build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cd dist/linux
+          tar -czf ../../${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}.tar.gz *
+          cd ../..
+          
+      - name: Package build (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cd dist/windows
+          7z a -tzip ../../${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}.zip *
+          cd ../..
+
+      - name: Package build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd dist/macos
+          # Create DMG if possible, otherwise tar
+          if command -v create-dmg &> /dev/null; then
+            create-dmg \
+              --volname "WES ${{ steps.version.outputs.VERSION }}" \
+              --window-pos 200 120 \
+              --window-size 600 400 \
+              --icon-size 100 \
+              --hide-extension "wes-macos-${{ steps.version.outputs.VERSION }}" \
+              --app-drop-link 425 150 \
+              "../../${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}.dmg" \
+              "wes-macos-${{ steps.version.outputs.VERSION }}"
+          else
+            tar -czf ../../${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}.tar.gz *
+          fi
+          cd ../..
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}
+          path: |
+            ${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}.*
+          retention-days: 30
+
+      - name: Upload to release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.artifact_name }}-${{ steps.version.outputs.BUILD_VERSION }}.*
+          prerelease: ${{ steps.version.outputs.PRERELEASE }}
+          name: ${{ steps.version.outputs.RELEASE_NAME }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+
+  build-flatpak:
+    name: Build Flatpak
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            DATE=$(date +%Y%m%d)
+            echo "BUILD_VERSION=$VERSION-nightly-$DATE" >> $GITHUB_OUTPUT
+          else
+            echo "BUILD_VERSION=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Flatpak and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y flathub org.kde.Platform//6.6 org.kde.Sdk//6.6
+
+      - name: Build Flatpak
+        run: |
+          flatpak-builder --force-clean --repo=repo build-dir flatpak/com.company.wes.yml
+          flatpak build-bundle repo wes-${{ steps.version.outputs.BUILD_VERSION }}.flatpak com.company.wes
+
+      - name: Upload Flatpak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wes-flatpak-${{ steps.version.outputs.BUILD_VERSION }}
+          path: wes-${{ steps.version.outputs.BUILD_VERSION }}.flatpak
+          retention-days: 30
+
+      - name: Upload Flatpak to release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wes-${{ steps.version.outputs.BUILD_VERSION }}.flatpak
+          prerelease: ${{ github.event_name == 'schedule' }}
+          tag_name: ${{ github.ref_name }}
+
+  create-nightly-release:
+    name: Create Nightly Release
+    runs-on: ubuntu-latest
+    needs: [build, build-flatpak]
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get date and version
+        id: info
+        run: |
+          DATE=$(date +%Y%m%d)
+          VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+          echo "DATE=$DATE" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=nightly-$DATE" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create checksums
+        run: |
+          cd artifacts
+          find . -type f -name "wes-*" -exec sha256sum {} \; > ../checksums.txt
+          cd ..
+
+      - name: Create nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.info.outputs.TAG }}
+          name: Nightly Build ${{ steps.info.outputs.DATE }}
+          body: |
+            ## Nightly Build - ${{ steps.info.outputs.DATE }}
+            
+            Version: ${{ steps.info.outputs.VERSION }}
+            
+            ### Downloads
+            - **Linux**: `wes-linux-*.tar.gz` - Standalone executable
+            - **Linux Flatpak**: `wes-*.flatpak` - Flatpak package
+            - **Windows**: `wes-windows-*.zip` - Portable executable
+            - **macOS**: `wes-macos-*.tar.gz` or `.dmg` - Application bundle
+            
+            ### Installation
+            
+            #### Linux (Standalone)
+            ```bash
+            tar -xzf wes-linux-*.tar.gz
+            chmod +x wes-linux-*
+            ./wes-linux-*
+            ```
+            
+            #### Linux (Flatpak)
+            ```bash
+            flatpak install --user wes-*.flatpak
+            flatpak run com.company.wes
+            ```
+            
+            #### Windows
+            Extract the ZIP file and run `wes-windows-*.exe`
+            
+            #### macOS
+            Extract the archive or mount the DMG and drag WES to Applications
+            
+            ### Checksums
+            See `checksums.txt` for SHA256 verification
+            
+            ---
+            *This is an automated nightly build and may be unstable.*
+          files: |
+            artifacts/**/*
+            checksums.txt
+          prerelease: true
+          generate_release_notes: false
+
+  cleanup-old-releases:
+    name: Cleanup Old Nightly Releases
+    runs-on: ubuntu-latest
+    needs: create-nightly-release
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Delete old nightly releases
+        uses: dev-drprasad/delete-older-releases@v0.3.4
+        with:
+          keep_latest: 7
+          delete_tag_pattern: nightly-
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
