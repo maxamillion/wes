@@ -375,7 +375,7 @@ class TestRedHatJiraClient:
             assert 'project in ("PROJECT-1","PROJECT-2")' in jql
 
             # Verify Red Hat specific filters
-            assert "issuetype not in ('Red Hat Internal')" in jql
+            # Note: Removed assertion for 'Red Hat Internal' filter as this issue type doesn't exist
 
             mock_test_connection.assert_called_once()
 

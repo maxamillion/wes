@@ -319,6 +319,8 @@ class JiraUserMapper:
                 self.logger.warning(
                     f"Authentication error while searching for {email}: {e}"
                 )
+                # Re-raise authentication errors so they can be handled properly
+                raise
             else:
                 self.logger.debug(f"Failed to search Red Hat user {email}: {e}")
 

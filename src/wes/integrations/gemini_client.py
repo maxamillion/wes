@@ -342,8 +342,50 @@ class GeminiClient:
     def _process_response(self, response: Any) -> Dict[str, Any]:
         """Process AI response into structured format."""
         try:
-            # Extract text content
-            content = response.text if hasattr(response, "text") else str(response)
+            # First check if response was blocked by safety filters BEFORE trying to access text
+            if hasattr(response, "candidates") and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, "finish_reason"):
+                    # Finish reason 2 = SAFETY, 3 = RECITATION, 4 = OTHER
+                    if candidate.finish_reason == 2:
+                        raise GeminiIntegrationError(
+                            "Content was blocked by Gemini's safety filters. "
+                            "The input data may contain content that violates the model's usage policies. "
+                            "Try modifying the request or using different data."
+                        )
+                    elif candidate.finish_reason == 3:
+                        raise GeminiIntegrationError(
+                            "Content was blocked due to recitation concerns. "
+                            "The model detected potential copyright or citation issues."
+                        )
+                    elif candidate.finish_reason == 4:
+                        raise GeminiIntegrationError(
+                            "Content generation was blocked for other reasons. "
+                            "Please try again with different input."
+                        )
+
+            # Now try to extract text content
+            content = ""
+            try:
+                content = response.text
+            except Exception as text_error:
+                # If we can't get text due to finish_reason error, we already handled it above
+                # This catch is for other unexpected cases
+                if "finish_reason" in str(text_error) and "is 2" in str(text_error):
+                    # This is a safety filter block that wasn't caught above
+                    raise GeminiIntegrationError(
+                        "Content was blocked by Gemini's safety filters. "
+                        "The input data may contain content that violates the model's usage policies."
+                    )
+                # Otherwise, try to get content from candidates manually
+                if hasattr(response, "candidates") and response.candidates:
+                    for candidate in response.candidates:
+                        if hasattr(candidate, "content") and hasattr(
+                            candidate.content, "parts"
+                        ):
+                            for part in candidate.content.parts:
+                                if hasattr(part, "text"):
+                                    content += part.text
 
             # Basic validation
             if not content:
@@ -375,6 +417,9 @@ class GeminiClient:
 
             return summary
 
+        except GeminiIntegrationError:
+            # Re-raise our custom errors
+            raise
         except Exception as e:
             self.logger.error(f"Failed to process response: {e}")
             raise GeminiIntegrationError(f"Failed to process response: {e}")

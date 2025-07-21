@@ -139,33 +139,53 @@ class RedHatJiraClient:
             if RHJIRA_AVAILABLE:
                 # Check if rhjira has RHJIRA class, otherwise use JIRA
                 if hasattr(rhjira, "RHJIRA"):
-                    # Use Red Hat specific client if available with Bearer token
+                    # Use Red Hat specific client if available
+                    # Don't pass token_auth - we'll set up Bearer auth via session
                     self._client = rhjira.RHJIRA(
                         server=self.url,
-                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
                         options=options,
                     )
                 elif hasattr(rhjira, "JIRA"):
                     # Some versions of rhjira might provide JIRA instead of RHJIRA
+                    # Don't pass token_auth - we'll set up Bearer auth via session
                     self._client = rhjira.JIRA(
                         server=self.url,
-                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
                         options=options,
                     )
                 else:
                     # Fallback to standard JIRA
+                    # Don't pass token_auth - we'll set up Bearer auth via session
                     self._client = JIRA(
                         server=self.url,
-                        token_auth=self.api_token,  # Use Bearer token instead of basic auth
                         options=options,
                     )
             else:
-                # Fallback to standard JIRA with Red Hat Bearer token
+                # Fallback to standard JIRA
+                # Don't pass token_auth - we'll set up Bearer auth via session
                 self._client = JIRA(
                     server=self.url,
-                    token_auth=self.api_token,  # Use Bearer token instead of basic auth
                     options=options,
                 )
+
+            # Set up Bearer token authentication for Red Hat Jira
+            # Create a session with Bearer token in headers
+            session = requests.Session()
+            session.headers.update(
+                {
+                    "Authorization": f"Bearer {self.api_token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-Atlassian-Token": "no-check",  # Disable XSRF check for API calls
+                }
+            )
+
+            # Handle SSL verification
+            if not self.verify_ssl:
+                session.verify = False
+                warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+
+            # Override the client's session to use our Bearer token session
+            self._client._session = session
 
             self.logger.info("Initialized Red Hat Jira client with rhjira library")
 
@@ -203,21 +223,28 @@ class RedHatJiraClient:
                 session.verify = False
                 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
-            # Red Hat Jira uses Personal Access Tokens with Bearer authentication
-            # Set up Bearer token authentication for Red Hat Jira
+            # Red Hat Jira authentication options:
+            # 1. Personal Access Tokens (PAT) with Bearer authentication
+            # 2. Some instances might require Basic auth with the token as password
+
+            # Try Bearer token first (most common for modern Jira)
             session.headers.update(
                 {
                     "Authorization": f"Bearer {self.api_token}",
                     "Content-Type": "application/json",
                     "Accept": "application/json",
+                    "X-Atlassian-Token": "no-check",  # Disable XSRF check for API calls
                 }
             )
 
+            # For Red Hat Jira, we need to use a custom authentication approach
+            # The python-jira library's token_auth doesn't work properly with Bearer tokens
+            # So we'll create the JIRA client without authentication and rely on our session
             self._client = JIRA(
                 server=self.url,
-                token_auth=self.api_token,  # Use token_auth instead of basic_auth
                 options=options,
                 get_server_info=False,  # Skip server info for faster init
+                # Don't pass token_auth - we'll use our custom session instead
             )
 
             # Override session for Red Hat Bearer token authentication
@@ -235,6 +262,16 @@ class RedHatJiraClient:
         """Test Red Hat Jira connection with enhanced validation."""
         try:
             # Test basic connectivity
+            # First, ensure the session has the Bearer token
+            if hasattr(self._client, "_session") and self._client._session:
+                if "Authorization" not in self._client._session.headers:
+                    self._client._session.headers["Authorization"] = (
+                        f"Bearer {self.api_token}"
+                    )
+                self.logger.debug(
+                    f"Session headers: {list(self._client._session.headers.keys())}"
+                )
+
             user = self._client.current_user()
             self.logger.info(f"Connected to Red Hat Jira as user: {user}")
 
@@ -254,7 +291,15 @@ class RedHatJiraClient:
             if "401" in str(e) or "unauthorized" in error_str:
                 raise AuthenticationError(
                     "Red Hat Jira authentication failed. Please ensure you're using a valid "
-                    "Personal Access Token (PAT)."
+                    "Personal Access Token (PAT) from https://issues.redhat.com/secure/ViewProfile.jspa. "
+                    "Click on 'Personal Access Tokens' in the left menu to create one."
+                )
+            # Check for HTML response indicating login page
+            elif "you are already logged in" in error_str or "login" in error_str:
+                raise AuthenticationError(
+                    "Red Hat Jira returned a login page instead of API response. "
+                    "This usually means the Bearer token authentication is not working. "
+                    "Please verify your Personal Access Token (PAT) is valid."
                 )
             else:
                 raise AuthenticationError(f"Red Hat Jira connection test failed: {e}")
@@ -435,9 +480,9 @@ class RedHatJiraClient:
         """Get Red Hat specific JQL filters."""
         filters = []
 
-        # Add Red Hat specific issue type filters
-        # Exclude internal-only issue types from general queries
-        filters.append("issuetype not in ('Red Hat Internal')")
+        # Add Red Hat specific issue type filters if needed
+        # Note: Removed the 'Red Hat Internal' filter as this issue type doesn't exist
+        # You can add valid filters here based on your Jira instance configuration
 
         # Join filters with AND
         return " AND " + " AND ".join(filters) if filters else ""
@@ -472,11 +517,22 @@ class RedHatJiraClient:
                     self.logger.warning(f"Could not get Red Hat specific fields: {e}")
 
             # Search for issues
+            # Note: We need to ensure our Bearer token session is being used
+            # The python-jira library sometimes creates new sessions internally
+            # Make sure the session has our Bearer token
+            if hasattr(self._client, "_session") and self._client._session:
+                # Ensure Bearer token is in headers
+                if "Authorization" not in self._client._session.headers:
+                    self._client._session.headers["Authorization"] = (
+                        f"Bearer {self.api_token}"
+                    )
+
             issues = self._client.search_issues(
                 jql,
                 maxResults=max_results,
                 expand="changelog" if include_comments else None,
                 fields=",".join(fields),
+                validateQuery=True,
             )
 
             activities = []
@@ -627,11 +683,23 @@ class RedHatJiraClient:
                 for item in history.items:
                     change = {
                         "field": item.field,
-                        "from": InputValidator.sanitize_text(item.fromString or ""),
-                        "to": InputValidator.sanitize_text(item.toString or ""),
-                        "author": history.author.displayName,
-                        "created": history.created,
+                        "from": InputValidator.sanitize_text(
+                            getattr(item, "fromString", "") or ""
+                        ),
+                        "to": InputValidator.sanitize_text(
+                            getattr(item, "toString", "") or ""
+                        ),
+                        "author": "Unknown",  # Default value
+                        "created": getattr(history, "created", None),
                     }
+
+                    # Safely extract author information
+                    if hasattr(history, "author"):
+                        if hasattr(history.author, "displayName"):
+                            change["author"] = history.author.displayName
+                        elif hasattr(history.author, "name"):
+                            change["author"] = history.author.name
+
                     changes.append(change)
 
         except Exception as e:
@@ -644,20 +712,37 @@ class RedHatJiraClient:
         comments = []
 
         try:
+            # Ensure Bearer token is set before making comment requests
+            if hasattr(self._client, "_session") and self._client._session:
+                if "Authorization" not in self._client._session.headers:
+                    self._client._session.headers["Authorization"] = (
+                        f"Bearer {self.api_token}"
+                    )
+
             issue_comments = self._client.comments(issue)
 
             for comment in issue_comments:
                 comment_data = {
-                    "id": comment.id,
-                    "author": comment.author.displayName,
-                    "body": InputValidator.sanitize_text(comment.body),
-                    "created": comment.created,
-                    "updated": (
-                        comment.updated
-                        if hasattr(comment, "updated")
-                        else comment.created
-                    ),
+                    "id": getattr(comment, "id", "unknown"),
+                    "author": "Unknown",  # Default value
+                    "body": InputValidator.sanitize_text(getattr(comment, "body", "")),
+                    "created": getattr(comment, "created", None),
+                    "updated": None,
                 }
+
+                # Safely extract author information
+                if hasattr(comment, "author"):
+                    if hasattr(comment.author, "displayName"):
+                        comment_data["author"] = comment.author.displayName
+                    elif hasattr(comment.author, "name"):
+                        comment_data["author"] = comment.author.name
+
+                # Safely extract updated timestamp
+                if hasattr(comment, "updated"):
+                    comment_data["updated"] = comment.updated
+                elif comment_data["created"]:
+                    comment_data["updated"] = comment_data["created"]
+
                 comments.append(comment_data)
 
         except Exception as e:
@@ -765,6 +850,7 @@ class RedHatJiraClient:
             request_headers = {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
+                "X-Atlassian-Token": "no-check",  # Disable XSRF check for API calls
             }
             if headers:
                 request_headers.update(headers)
@@ -772,9 +858,9 @@ class RedHatJiraClient:
             # Make request using the underlying session
             if hasattr(self._client, "_session"):
                 session = self._client._session
-                # Ensure Bearer token is in headers for Red Hat Jira
-                if "Authorization" not in request_headers:
-                    request_headers["Authorization"] = f"Bearer {self.api_token}"
+                # Always ensure Bearer token is in headers for Red Hat Jira
+                # This overrides any existing Authorization header to ensure it's correct
+                request_headers["Authorization"] = f"Bearer {self.api_token}"
             else:
                 # Create a session if needed
                 session = requests.Session()
