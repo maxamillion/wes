@@ -532,7 +532,7 @@ class RedHatJiraClient:
                 maxResults=max_results,
                 expand="changelog" if include_comments else None,
                 fields=",".join(fields),
-                validateQuery=True,
+                validate_query=True,
             )
 
             activities = []
