@@ -380,24 +380,26 @@ class TestRedHatJiraClient:
             mock_test_connection.assert_called_once()
 
     @patch("wes.integrations.redhat_jira_client.RedHatJiraClient._test_connection")
+    @patch("wes.integrations.redhat_jira_client.JIRA")
     @pytest.mark.asyncio
-    async def test_jira_error_handling(self, mock_test_connection, redhat_config):
+    async def test_jira_error_handling(
+        self, mock_jira, mock_test_connection, redhat_config
+    ):
         """Test handling of Jira-specific errors."""
-        with patch("jira.JIRA") as mock_jira:
-            mock_jira_instance = Mock()
-            mock_jira_instance.current_user.return_value = "testuser"
-            mock_jira_instance.search_issues.side_effect = Exception("API Error")
-            mock_jira.return_value = mock_jira_instance
+        mock_jira_instance = Mock()
+        mock_jira_instance.current_user.return_value = "testuser"
+        mock_jira_instance.search_issues.side_effect = Exception("API Error")
+        mock_jira.return_value = mock_jira_instance
 
-            client = RedHatJiraClient(**redhat_config)
+        client = RedHatJiraClient(**redhat_config)
 
-            with pytest.raises(JiraIntegrationError):
-                await client.get_user_activities(
-                    users=["testuser"],
-                    start_date=datetime(2024, 1, 1),
-                    end_date=datetime(2024, 1, 31),
-                )
-            mock_test_connection.assert_called_once()
+        with pytest.raises(JiraIntegrationError):
+            await client.get_user_activities(
+                users=["testuser"],
+                start_date=datetime(2024, 1, 1),
+                end_date=datetime(2024, 1, 31),
+            )
+        mock_test_connection.assert_called_once()
 
 
 class TestRedHatJiraFactory:

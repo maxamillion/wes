@@ -265,11 +265,10 @@ class GeminiClient:
                         )
                         await asyncio.sleep(1)  # Brief delay before retry
                         continue
-                    else:
-                        self.logger.error("All attempts failed due to safety filters")
 
-                        # Return a fallback summary
-                        return self._create_fallback_summary(activity_data, error_msg)
+                    self.logger.error("All attempts failed due to safety filters")
+                    # Return a fallback summary
+                    return self._create_fallback_summary(activity_data, error_msg)
                 else:
                     # For non-safety errors, don't retry
                     raise
@@ -418,72 +417,91 @@ class GeminiClient:
             else:
                 raise GeminiIntegrationError(f"Content generation failed: {e}")
 
+    def _check_finish_reason(self, candidate: Any) -> None:
+        """Check if response was blocked by safety filters."""
+        if not hasattr(candidate, "finish_reason"):
+            return
+
+        # Finish reason 2 = SAFETY, 3 = RECITATION, 4 = OTHER
+        finish_reason_errors = {
+            2: (
+                "Content was blocked by Gemini's safety filters. "
+                "The input data may contain content that violates the model's usage policies. "
+                "Try modifying the request or using different data."
+            ),
+            3: (
+                "Content was blocked due to recitation concerns. "
+                "The model detected potential copyright or citation issues."
+            ),
+            4: (
+                "Content generation was blocked for other reasons. "
+                "Please try again with different input."
+            ),
+        }
+
+        if candidate.finish_reason in finish_reason_errors:
+            raise GeminiIntegrationError(finish_reason_errors[candidate.finish_reason])
+
+    def _extract_content(self, response: Any) -> str:
+        """Extract text content from response."""
+        content = ""
+        try:
+            content = response.text
+        except Exception as text_error:
+            # If we can't get text due to finish_reason error, we already handled it above
+            # This catch is for other unexpected cases
+            if "finish_reason" in str(text_error) and "is 2" in str(text_error):
+                # This is a safety filter block that wasn't caught above
+                raise GeminiIntegrationError(
+                    "Content was blocked by Gemini's safety filters. "
+                    "The input data may contain content that violates the model's usage policies."
+                )
+            # Otherwise, try to get content from candidates manually
+            if hasattr(response, "candidates") and response.candidates:
+                for candidate in response.candidates:
+                    if hasattr(candidate, "content") and hasattr(
+                        candidate.content, "parts"
+                    ):
+                        for part in candidate.content.parts:
+                            if hasattr(part, "text"):
+                                content += part.text
+
+        return content
+
+    def _extract_usage_metadata(self, response: Any) -> Dict[str, Any]:
+        """Extract usage metadata from response."""
+        if not hasattr(response, "usage_metadata"):
+            return {}
+
+        return {
+            "prompt_token_count": getattr(
+                response.usage_metadata, "prompt_token_count", 0
+            ),
+            "candidates_token_count": getattr(
+                response.usage_metadata, "candidates_token_count", 0
+            ),
+            "total_token_count": getattr(
+                response.usage_metadata, "total_token_count", 0
+            ),
+        }
+
     def _process_response(self, response: Any) -> Dict[str, Any]:
         """Process AI response into structured format."""
         try:
             # First check if response was blocked by safety filters BEFORE trying to access text
             if hasattr(response, "candidates") and response.candidates:
                 candidate = response.candidates[0]
-                if hasattr(candidate, "finish_reason"):
-                    # Finish reason 2 = SAFETY, 3 = RECITATION, 4 = OTHER
-                    if candidate.finish_reason == 2:
-                        raise GeminiIntegrationError(
-                            "Content was blocked by Gemini's safety filters. "
-                            "The input data may contain content that violates the model's usage policies. "
-                            "Try modifying the request or using different data."
-                        )
-                    elif candidate.finish_reason == 3:
-                        raise GeminiIntegrationError(
-                            "Content was blocked due to recitation concerns. "
-                            "The model detected potential copyright or citation issues."
-                        )
-                    elif candidate.finish_reason == 4:
-                        raise GeminiIntegrationError(
-                            "Content generation was blocked for other reasons. "
-                            "Please try again with different input."
-                        )
+                self._check_finish_reason(candidate)
 
             # Now try to extract text content
-            content = ""
-            try:
-                content = response.text
-            except Exception as text_error:
-                # If we can't get text due to finish_reason error, we already handled it above
-                # This catch is for other unexpected cases
-                if "finish_reason" in str(text_error) and "is 2" in str(text_error):
-                    # This is a safety filter block that wasn't caught above
-                    raise GeminiIntegrationError(
-                        "Content was blocked by Gemini's safety filters. "
-                        "The input data may contain content that violates the model's usage policies."
-                    )
-                # Otherwise, try to get content from candidates manually
-                if hasattr(response, "candidates") and response.candidates:
-                    for candidate in response.candidates:
-                        if hasattr(candidate, "content") and hasattr(
-                            candidate.content, "parts"
-                        ):
-                            for part in candidate.content.parts:
-                                if hasattr(part, "text"):
-                                    content += part.text
+            content = self._extract_content(response)
 
             # Basic validation
             if not content:
                 raise GeminiIntegrationError("Empty response from Gemini")
 
             # Parse response metadata
-            usage_metadata = {}
-            if hasattr(response, "usage_metadata"):
-                usage_metadata = {
-                    "prompt_token_count": getattr(
-                        response.usage_metadata, "prompt_token_count", 0
-                    ),
-                    "candidates_token_count": getattr(
-                        response.usage_metadata, "candidates_token_count", 0
-                    ),
-                    "total_token_count": getattr(
-                        response.usage_metadata, "total_token_count", 0
-                    ),
-                }
+            usage_metadata = self._extract_usage_metadata(response)
 
             # Structure response
             summary = {
