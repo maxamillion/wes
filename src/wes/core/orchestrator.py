@@ -17,6 +17,8 @@ from ..utils.exceptions import (
     WesError,
 )
 from ..utils.logging_config import get_logger, get_security_logger
+from ..gui.jira_review_dialog import JiraReviewDialog
+from PySide6.QtWidgets import QApplication
 
 
 class WorkflowStatus(Enum):
@@ -96,6 +98,7 @@ class WorkflowOrchestrator:
             "validate_configuration",
             "initialize_clients",
             "fetch_jira_data",
+            "review_jira_data",
             "generate_summary",
             "finalize",
         ]
@@ -233,7 +236,12 @@ class WorkflowOrchestrator:
 
             result.activity_count = len(activity_data)
 
-            # Stage 4: Generate summary
+            # Stage 4: Review Jira Data
+            proceed = await self._execute_stage("review_jira_data", result, activity_data)
+            if not proceed:
+                return self._handle_cancellation(result)
+
+            # Stage 5: Generate summary
             summary = await self._execute_stage(
                 "generate_summary", result, activity_data, custom_prompt
             )
@@ -472,6 +480,27 @@ class WorkflowOrchestrator:
 
         except Exception as e:
             raise JiraIntegrationError(f"Failed to fetch Jira data with LDAP: {e}")
+
+    async def _stage_review_jira_data(self, activity_data: List[Dict[str, Any]]) -> bool:
+        """Stage 4: Show Jira data to the user for review."""
+        self._update_progress("Waiting for user review of Jira data...")
+
+        if not activity_data:
+            self.logger.info("No Jira data to review, skipping.")
+            return True
+
+        app = QApplication.instance()
+        if not app:
+            self.logger.warning("No QApplication instance found. Cannot show review dialog.")
+            return True
+
+        review_dialog = JiraReviewDialog(jira_data=activity_data)
+        if review_dialog.exec():
+            self.logger.info("User approved Jira data.")
+            return True
+        else:
+            self.logger.info("User cancelled after reviewing Jira data.")
+            return False
 
     async def _stage_generate_summary(
         self, activity_data: List[Dict[str, Any]], custom_prompt: Optional[str] = None
