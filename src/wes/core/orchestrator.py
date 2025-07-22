@@ -18,7 +18,8 @@ from ..utils.exceptions import (
 )
 from ..utils.logging_config import get_logger, get_security_logger
 from ..gui.jira_review_dialog import JiraReviewDialog
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QEventLoop, QTimer
+from PySide6.QtWidgets import QApplication, QDialog
 
 
 class WorkflowStatus(Enum):
@@ -482,7 +483,7 @@ class WorkflowOrchestrator:
             raise JiraIntegrationError(f"Failed to fetch Jira data with LDAP: {e}")
 
     async def _stage_review_jira_data(self, activity_data: List[Dict[str, Any]]) -> bool:
-        """Stage 4: Show Jira data to the user for review."""
+        """Stage 4: Show Jira data to the user for review on the main GUI thread."""
         self._update_progress("Waiting for user review of Jira data...")
 
         if not activity_data:
@@ -494,8 +495,23 @@ class WorkflowOrchestrator:
             self.logger.warning("No QApplication instance found. Cannot show review dialog.")
             return True
 
-        review_dialog = JiraReviewDialog(jira_data=activity_data)
-        if review_dialog.exec():
+        # Use an event loop to wait for the dialog to close on the main thread
+        loop = QEventLoop()
+        result = False
+
+        def show_dialog_and_quit_loop():
+            nonlocal result
+            review_dialog = JiraReviewDialog(jira_data=activity_data)
+            if review_dialog.exec() == QDialog.Accepted:
+                result = True
+            else:
+                result = False
+            loop.quit()
+
+        QTimer.singleShot(0, show_dialog_and_quit_loop)
+        loop.exec()
+
+        if result:
             self.logger.info("User approved Jira data.")
             return True
         else:
