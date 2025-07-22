@@ -236,7 +236,11 @@ class JiraConfigPage(ConfigPageBase):
         if jira_type == JiraType.CLOUD and "@" not in config["username"]:
             return ValidationResult(
                 is_valid=False,
-                message="Cloud Jira requires email address as username",
+                message=(
+                    "Cloud Jira requires email address as username. "
+                    "If you're using a Server/Data Center or Red Hat Jira instance, "
+                    "please select the correct type above."
+                ),
                 service=self.service_type,
                 details={"field": "username"},
             )
@@ -306,7 +310,10 @@ class JiraConfigPage(ConfigPageBase):
             if "@" in username and "." in username:
                 return True, "Valid email address"
             else:
-                return False, "Cloud Jira requires email address"
+                return (
+                    False,
+                    "Cloud Jira requires email address (select different type above if needed)",
+                )
 
         # Red Hat Jira and Server allow various username formats
         elif jira_type in [JiraType.REDHAT, JiraType.SERVER]:

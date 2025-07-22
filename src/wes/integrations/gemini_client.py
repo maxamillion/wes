@@ -119,7 +119,7 @@ class GeminiClient:
             )
 
             # Test connection
-            self._test_connection()
+            self.test_connection()
 
             self.security_logger.log_authentication_attempt(
                 service="gemini", success=True
@@ -133,7 +133,7 @@ class GeminiClient:
             )
             raise AuthenticationError(f"Gemini authentication failed: {e}")
 
-    def _test_connection(self) -> None:
+    def test_connection(self) -> None:
         """Test Gemini connection with a simple request."""
         try:
             # Use a simple math question to avoid content filters

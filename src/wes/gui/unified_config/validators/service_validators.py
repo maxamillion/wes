@@ -42,7 +42,11 @@ class JiraValidator(BaseValidator):
             if "@" not in username:
                 return ValidationResult(
                     is_valid=False,
-                    message="Cloud Jira requires email address as username",
+                    message=(
+                        "Cloud Jira requires email address as username. "
+                        "If you're using a Server/Data Center or Red Hat Jira instance, "
+                        "please select the correct type above."
+                    ),
                     service=self.service_type,
                     details={"field": "username", "jira_type": "cloud"},
                 )

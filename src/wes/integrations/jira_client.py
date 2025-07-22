@@ -107,7 +107,7 @@ class JiraClient:
             )
 
             # Test connection
-            self._test_connection()
+            self.test_connection()
 
             self.security_logger.log_authentication_attempt(
                 service="jira", username=self.username, success=True
@@ -124,7 +124,7 @@ class JiraClient:
             self.logger.error(f"Failed to initialize Jira client: {e}")
             raise JiraIntegrationError(f"Failed to initialize Jira client: {e}")
 
-    def _test_connection(self) -> None:
+    def test_connection(self) -> None:
         """Test Jira connection."""
         try:
             # Get current user to test authentication
