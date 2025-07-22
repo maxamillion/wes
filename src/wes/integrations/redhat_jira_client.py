@@ -12,7 +12,7 @@ import requests
 # Try to import rhjira if available, fallback to standard jira
 # To install rhjira: pip install git+https://gitlab.com/prarit/rhjira-python.git
 # Note: rhjira is an optional dependency for Red Hat Jira optimization
-from jira import JIRA
+from jira import JIRA, JIRAError
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -55,6 +55,7 @@ class RedHatJiraClient:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
         self.use_rhjira = use_rhjira and RHJIRA_AVAILABLE
+        self.issue_cache = {}
 
         # Initialize rate limiter
         self.rate_limiter = self._create_rate_limiter(rate_limit)
@@ -393,7 +394,7 @@ class RedHatJiraClient:
                 # Escape backslashes first (must be done before other escapes)
                 escaped_user = escaped_user.replace("\\", "\\\\")
                 # Escape quotes
-                escaped_user = escaped_user.replace('"', '\\"')
+                escaped_user = escaped_user.replace('"', '\"')
                 # Escape other special JQL characters
                 # Note: * is a wildcard in JQL and should be escaped if literal
                 escaped_user = escaped_user.replace("*", "\\*")
@@ -430,7 +431,7 @@ class RedHatJiraClient:
                     # Escape backslashes first (must be done before other escapes)
                     escaped_proj = escaped_proj.replace("\\", "\\\\")
                     # Escape quotes
-                    escaped_proj = escaped_proj.replace('"', '\\"')
+                    escaped_proj = escaped_proj.replace('"', '\"')
                     # Escape other special JQL characters
                     escaped_proj = escaped_proj.replace("*", "\\*")
                     escaped_proj = escaped_proj.replace("?", "\\?")
@@ -549,6 +550,42 @@ class RedHatJiraClient:
             else:
                 raise JiraIntegrationError(f"Red Hat Jira query failed: {e}")
 
+    async def _get_issue_hierarchy(self, issue_id: str, current_depth: int = 0, max_depth: int = 5) -> Dict[str, Any]:
+        """Recursively fetch issue hierarchy (parent, epic, etc.)."""
+        if issue_id in self.issue_cache:
+            return self.issue_cache[issue_id]
+
+        if current_depth >= max_depth:
+            self.logger.warning(f"Max hierarchy depth reached for issue {issue_id}")
+            return None
+
+        try:
+            await self.rate_limiter.acquire()
+            issue = self._client.issue(
+                issue_id, fields="summary,issuetype,parent"
+            )
+        except JIRAError as e:
+            self.logger.error(f"Failed to fetch issue {issue_id}: {e}")
+            return None
+
+        hierarchy = {
+            "issue": {
+                "key": issue.key,
+                "summary": issue.fields.summary,
+                "type": issue.fields.issuetype.name,
+            }
+        }
+
+        if hasattr(issue.fields, "parent") and issue.fields.parent:
+            parent_hierarchy = await self._get_issue_hierarchy(
+                issue.fields.parent.key, current_depth + 1, max_depth
+            )
+            if parent_hierarchy:
+                hierarchy["issue"]["parent"] = parent_hierarchy["issue"]
+
+        self.issue_cache[issue_id] = hierarchy
+        return hierarchy
+
     async def _process_redhat_issue(
         self, issue: Any, include_comments: bool
     ) -> Dict[str, Any]:
@@ -556,6 +593,8 @@ class RedHatJiraClient:
         try:
             # Log the issue being processed for debugging
             self.logger.debug(f"Processing issue {issue.key}")
+
+            hierarchy = await self._get_issue_hierarchy(issue.key)
 
             # Build basic activity data with safe field access
             activity = {
@@ -580,6 +619,7 @@ class RedHatJiraClient:
                 "project": "Unknown",
                 "project_name": "Unknown Project",
                 "changes": [],
+                "hierarchy": hierarchy,
             }
 
             # Safely extract assignee
@@ -990,3 +1030,55 @@ def get_redhat_jira_client(
 ) -> RedHatJiraClient:
     """Factory function to create Red Hat Jira client."""
     return RedHatJiraClient(url=url, username=username, api_token=api_token, **kwargs)
+
+
+async def main():
+    """Example usage of RedHatJiraClient."""
+    import os
+
+    # Load from environment variables for testing
+    jira_url = os.environ.get("JIRA_URL")
+    jira_user = os.environ.get("JIRA_USER")
+    jira_token = os.environ.get("JIRA_TOKEN")
+
+    if not all([jira_url, jira_user, jira_token]):
+        print("Please set JIRA_URL, JIRA_USER, and JIRA_TOKEN environment variables")
+        return
+
+    try:
+        client = RedHatJiraClient(
+            url=jira_url,
+            username=jira_user,
+            api_token=jira_token,
+            use_rhjira=True,
+        )
+
+        # Test connection
+        print("Connection info:", client.get_connection_info())
+
+        # Get projects
+        projects = await client.get_projects()
+        print(f"Found {len(projects)} projects")
+        if projects:
+            print(f"  - Example: {projects[0]['name']} ({projects[0]['key']})")
+
+        # Get user activities
+        start_date = datetime(2023, 1, 1)
+        end_date = datetime(2023, 1, 31)
+        activities = await client.get_user_activities(
+            users=[jira_user],
+            start_date=start_date,
+            end_date=end_date,
+        )
+        print(f"Found {len(activities)} activities for user {jira_user}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    finally:
+        if "client" in locals():
+            await client.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

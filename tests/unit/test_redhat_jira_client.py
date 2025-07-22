@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 
@@ -200,6 +200,7 @@ class TestRedHatJiraClient:
             mock_jira.return_value = mock_jira_instance
 
             client = RedHatJiraClient(**redhat_config)
+            client._get_issue_hierarchy = AsyncMock(return_value=None)
 
             start_date = datetime(2024, 1, 1)
             end_date = datetime(2024, 1, 31)

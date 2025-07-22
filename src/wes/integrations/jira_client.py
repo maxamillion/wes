@@ -68,6 +68,7 @@ class JiraClient:
         self.username = username
         self.api_token = api_token
         self.timeout = timeout
+        self.issue_cache = {}
 
         # Check if this is a Red Hat Jira instance
         self.is_redhat = is_redhat_jira(url)
@@ -202,10 +203,10 @@ class JiraClient:
                 # Escape backslashes first (must be done before other escapes)
                 escaped_user = escaped_user.replace("\\", "\\\\")
                 # Escape quotes
-                escaped_user = escaped_user.replace('"', '\\"')
+                escaped_user = escaped_user.replace('"', '\"')
                 # Escape other special JQL characters
                 escaped_user = escaped_user.replace("*", "\\*")
-                escaped_user = escaped_user.replace("?", "\\?")
+                escaped_user = escaped_user.replace("", "\\")
                 escaped_user = escaped_user.replace("+", "\\+")
                 escaped_user = escaped_user.replace("-", "\\-")
                 escaped_user = escaped_user.replace("&", "\\&")
@@ -237,10 +238,10 @@ class JiraClient:
                     # Escape backslashes first (must be done before other escapes)
                     escaped_proj = escaped_proj.replace("\\", "\\\\")
                     # Escape quotes
-                    escaped_proj = escaped_proj.replace('"', '\\"')
+                    escaped_proj = escaped_proj.replace('"', '\"')
                     # Escape other special JQL characters
                     escaped_proj = escaped_proj.replace("*", "\\*")
-                    escaped_proj = escaped_proj.replace("?", "\\?")
+                    escaped_proj = escaped_proj.replace("", "\\")
                     escaped_proj = escaped_proj.replace("+", "\\+")
                     escaped_proj = escaped_proj.replace("-", "\\-")
                     escaped_proj = escaped_proj.replace("&", "\\&")
@@ -299,11 +300,48 @@ class JiraClient:
         except Exception as e:
             raise JiraIntegrationError(f"Failed to execute query: {e}")
 
+    async def _get_issue_hierarchy(self, issue_id: str, current_depth: int = 0, max_depth: int = 5) -> Dict[str, Any]:
+        """Recursively fetch issue hierarchy (parent, epic, etc.)."""
+        if issue_id in self.issue_cache:
+            return self.issue_cache[issue_id]
+
+        if current_depth >= max_depth:
+            self.logger.warning(f"Max hierarchy depth reached for issue {issue_id}")
+            return None
+
+        try:
+            await self.rate_limiter.acquire()
+            issue = self._jira_client.issue(
+                issue_id, fields="summary,issuetype,parent"
+            )
+        except JIRAError as e:
+            self.logger.error(f"Failed to fetch issue {issue_id}: {e}")
+            return None
+
+        hierarchy = {
+            "issue": {
+                "key": issue.key,
+                "summary": issue.fields.summary,
+                "type": issue.fields.issuetype.name,
+            }
+        }
+
+        if hasattr(issue.fields, "parent") and issue.fields.parent:
+            parent_hierarchy = await self._get_issue_hierarchy(
+                issue.fields.parent.key, current_depth + 1, max_depth
+            )
+            if parent_hierarchy:
+                hierarchy["issue"]["parent"] = parent_hierarchy["issue"]
+
+        self.issue_cache[issue_id] = hierarchy
+        return hierarchy
+
     async def _process_issue(
         self, issue: Any, include_comments: bool
     ) -> Dict[str, Any]:
         """Process individual issue into activity data."""
         try:
+            hierarchy = await self._get_issue_hierarchy(issue.key)
             activity = {
                 "id": issue.key,
                 "type": "issue",
@@ -324,6 +362,7 @@ class JiraClient:
                 "project": issue.fields.project.key,
                 "project_name": issue.fields.project.name,
                 "changes": [],
+                "hierarchy": hierarchy,
             }
 
             # Add changelog if requested
