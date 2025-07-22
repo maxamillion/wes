@@ -10,6 +10,7 @@ from jira import JIRA, JIRAError
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
 from ..utils.validators import InputValidator
+from .jira_hierarchy_resolver import JiraHierarchyResolver
 from .redhat_jira_client import RedHatJiraClient, is_redhat_jira
 
 
@@ -55,6 +56,7 @@ class JiraClient:
         api_token: str,
         rate_limit: int = 100,
         timeout: int = 30,
+        hierarchy_config: Optional[Dict[str, Any]] = None,
     ):
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
@@ -68,6 +70,7 @@ class JiraClient:
         self.username = username
         self.api_token = api_token
         self.timeout = timeout
+        self.hierarchy_config = hierarchy_config
 
         # Check if this is a Red Hat Jira instance
         self.is_redhat = is_redhat_jira(url)
@@ -91,6 +94,11 @@ class JiraClient:
             self._jira_client: Optional[JIRA] = None
             self._redhat_client = None
             self._initialize_client()
+
+        # Initialize hierarchy resolver
+        self.hierarchy_resolver = None
+        if hierarchy_config and hierarchy_config.get("fetch_parents", True):
+            self.hierarchy_resolver = JiraHierarchyResolver(self, hierarchy_config)
 
     def _initialize_client(self) -> None:
         """Initialize JIRA client with authentication."""
@@ -166,6 +174,15 @@ class JiraClient:
 
             # Execute query
             activities = await self._execute_query(jql, max_results, include_comments)
+
+            # Enrich with hierarchy if enabled
+            if self.hierarchy_resolver:
+                self.logger.info("Enriching activities with hierarchy data")
+                activities = (
+                    await self.hierarchy_resolver.enrich_activities_with_hierarchy(
+                        activities
+                    )
+                )
 
             self.security_logger.log_api_request(
                 service="jira",
@@ -275,12 +292,43 @@ class JiraClient:
     ) -> List[Dict[str, Any]]:
         """Execute JQL query and return results."""
         try:
+            # Build fields list based on configuration
+            fields = [
+                "summary",
+                "description",
+                "status",
+                "assignee",
+                "created",
+                "updated",
+                "priority",
+                "issuelinks",
+                "project",
+                "issuetype",
+                "components",
+                "labels",
+            ]
+
+            # Add hierarchy fields if enabled
+            if self.hierarchy_config and self.hierarchy_config.get(
+                "fetch_parents", True
+            ):
+                fields.extend(
+                    [
+                        "parent",  # Modern parent field
+                        self.hierarchy_config.get(
+                            "epic_link_field", "customfield_10007"
+                        ),  # Legacy epic link
+                        "fixVersions",  # Release context
+                        "subtasks",  # Child issues
+                    ]
+                )
+
             # Search for issues
             issues = self._jira_client.search_issues(
                 jql,
                 maxResults=max_results,
                 expand="changelog" if include_comments else None,
-                fields="summary,description,status,assignee,created,updated,priority,issuelinks",
+                fields=",".join(fields),
             )
 
             activities = []
@@ -325,6 +373,82 @@ class JiraClient:
                 "project_name": issue.fields.project.name,
                 "changes": [],
             }
+
+            # Add issue type for hierarchy determination
+            if hasattr(issue.fields, "issuetype"):
+                activity["issuetype"] = issue.fields.issuetype.name
+
+            # Add hierarchical fields if enabled
+            if self.hierarchy_config and self.hierarchy_config.get(
+                "fetch_parents", True
+            ):
+                # Modern parent field
+                if hasattr(issue.fields, "parent") and issue.fields.parent:
+                    activity["parent"] = {
+                        "key": issue.fields.parent.key,
+                        "summary": (
+                            InputValidator.sanitize_text(
+                                issue.fields.parent.fields.summary
+                            )
+                            if hasattr(issue.fields.parent.fields, "summary")
+                            else None
+                        ),
+                    }
+
+                # Legacy epic link field
+                epic_field = self.hierarchy_config.get(
+                    "epic_link_field", "customfield_10007"
+                )
+                if hasattr(issue.fields, epic_field):
+                    epic_value = getattr(issue.fields, epic_field)
+                    if epic_value:
+                        activity[epic_field] = epic_value
+
+                # Components
+                if hasattr(issue.fields, "components"):
+                    activity["components"] = [
+                        {"name": c.name, "id": c.id} for c in issue.fields.components
+                    ]
+
+                # Labels
+                if hasattr(issue.fields, "labels"):
+                    activity["labels"] = [
+                        InputValidator.sanitize_text(label)
+                        for label in issue.fields.labels
+                    ]
+
+                # Fix versions
+                if hasattr(issue.fields, "fixVersions"):
+                    activity["fixVersions"] = [
+                        {"name": v.name, "id": v.id} for v in issue.fields.fixVersions
+                    ]
+
+                # Subtasks
+                if hasattr(issue.fields, "subtasks"):
+                    activity["subtasks"] = [
+                        {
+                            "key": st.key,
+                            "summary": InputValidator.sanitize_text(st.fields.summary),
+                        }
+                        for st in issue.fields.subtasks
+                    ]
+
+                # Issue links (already fetched but enhance processing)
+                if hasattr(issue.fields, "issuelinks"):
+                    activity["issuelinks"] = []
+                    for link in issue.fields.issuelinks:
+                        link_data = {
+                            "type": {
+                                "name": link.type.name,
+                                "inward": link.type.inward,
+                                "outward": link.type.outward,
+                            }
+                        }
+                        if hasattr(link, "outwardIssue"):
+                            link_data["outwardIssue"] = {"key": link.outwardIssue.key}
+                        if hasattr(link, "inwardIssue"):
+                            link_data["inwardIssue"] = {"key": link.inwardIssue.key}
+                        activity["issuelinks"].append(link_data)
 
             # Add changelog if requested
             if include_comments and hasattr(issue, "changelog"):

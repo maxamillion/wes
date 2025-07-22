@@ -41,6 +41,43 @@ class GeminiClient:
     Executive Summary:
     """
 
+    HIERARCHY_AWARE_PROMPT = """
+    You are an executive assistant creating a strategic summary for senior leadership.
+    Please analyze the following Jira activity data with organizational context and create an executive summary.
+
+    ORGANIZATIONAL CONTEXT:
+    {organizational_context}
+
+    STRATEGIC HIERARCHY:
+    {strategic_hierarchy}
+
+    When analyzing the work, consider:
+    - How activities align with strategic initiatives and epics
+    - Progress towards organizational outcomes and objectives
+    - Cross-team dependencies and collaboration patterns
+    - Risk exposure based on blocked items and their strategic importance
+    - Resource allocation across different strategic priorities
+
+    Focus your summary on:
+    - Strategic progress: How are we advancing key epics and initiatives?
+    - Outcome achievement: What organizational goals are being met?
+    - Team effectiveness: How well are teams executing across the hierarchy?
+    - Risk assessment: What strategic work is blocked or at risk?
+    - Resource insights: Where is effort being concentrated?
+
+    Format as a strategic executive briefing with sections for:
+    1. Strategic Progress Summary
+    2. Key Achievements by Initiative
+    3. Risks and Blockers (with strategic impact)
+    4. Cross-team Collaboration Highlights
+    5. Recommendations for Leadership Attention
+
+    DETAILED ACTIVITY DATA:
+    {activity_data}
+
+    Strategic Executive Summary:
+    """
+
     def __init__(
         self,
         api_key: str,
@@ -363,14 +400,39 @@ class GeminiClient:
         self, activity_data: List[Dict[str, Any]], custom_prompt: Optional[str] = None
     ) -> str:
         """Prepare prompt for AI generation."""
-        # Convert activity data to JSON string
-        activity_json = json.dumps(activity_data, indent=2, default=str)
+        # Check if we have hierarchy data to use enhanced prompt
+        has_hierarchy = any(
+            activity.get("hierarchy") or activity.get("organizational_context")
+            for activity in activity_data
+        )
 
-        # Use custom prompt or default
-        if custom_prompt:
-            prompt = custom_prompt.format(activity_data=activity_json)
+        if has_hierarchy and not custom_prompt:
+            # Extract organizational context and hierarchy
+            org_context = self._extract_organizational_summary(activity_data)
+            hierarchy_tree = self._build_strategic_hierarchy(activity_data)
+
+            # Convert activity data to JSON string
+            activity_json = json.dumps(activity_data, indent=2, default=str)
+
+            # Use hierarchy-aware prompt
+            prompt = self.HIERARCHY_AWARE_PROMPT.format(
+                organizational_context=org_context,
+                strategic_hierarchy=hierarchy_tree,
+                activity_data=activity_json,
+            )
+
+            self.logger.info("Using hierarchy-aware prompt for enhanced context")
         else:
-            prompt = self.DEFAULT_EXECUTIVE_PROMPT.format(activity_data=activity_json)
+            # Convert activity data to JSON string
+            activity_json = json.dumps(activity_data, indent=2, default=str)
+
+            # Use custom prompt or default
+            if custom_prompt:
+                prompt = custom_prompt.format(activity_data=activity_json)
+            else:
+                prompt = self.DEFAULT_EXECUTIVE_PROMPT.format(
+                    activity_data=activity_json
+                )
 
         # Validate prompt length (Gemini has token limits)
         if len(prompt.split()) > 30000:  # Conservative limit
@@ -378,7 +440,13 @@ class GeminiClient:
             truncated_data = activity_data[:50]  # Limit to 50 activities
             activity_json = json.dumps(truncated_data, indent=2, default=str)
 
-            if custom_prompt:
+            if has_hierarchy and not custom_prompt:
+                prompt = self.HIERARCHY_AWARE_PROMPT.format(
+                    organizational_context=org_context,
+                    strategic_hierarchy=hierarchy_tree,
+                    activity_data=activity_json,
+                )
+            elif custom_prompt:
                 prompt = custom_prompt.format(activity_data=activity_json)
             else:
                 prompt = self.DEFAULT_EXECUTIVE_PROMPT.format(
@@ -388,6 +456,126 @@ class GeminiClient:
             self.logger.warning("Activity data truncated due to prompt length limits")
 
         return prompt
+
+    def _extract_organizational_summary(
+        self, activity_data: List[Dict[str, Any]]
+    ) -> str:
+        """Extract organizational context summary from activities."""
+        projects = set()
+        components = set()
+        strategies = set()
+        outcomes = set()
+        releases = set()
+
+        for activity in activity_data:
+            # Extract project info
+            if activity.get("project"):
+                projects.add(activity["project"])
+
+            # Extract from organizational context
+            org_ctx = activity.get("organizational_context", {})
+            if org_ctx:
+                components.update(org_ctx.get("components", []))
+                strategies.update(org_ctx.get("strategy_tags", []))
+                outcomes.update(org_ctx.get("outcome_tags", []))
+                if org_ctx.get("release"):
+                    releases.add(org_ctx["release"])
+
+            # Extract from hierarchy
+            hierarchy = activity.get("hierarchy", {})
+            if hierarchy and hierarchy.get("parent"):
+                parent_labels = hierarchy["parent"].get("labels", {})
+                strategies.update(parent_labels.get("strategies", []))
+                outcomes.update(parent_labels.get("outcomes", []))
+
+        context_parts = []
+        if projects:
+            context_parts.append(f"Projects: {', '.join(sorted(projects))}")
+        if components:
+            context_parts.append(f"Components: {', '.join(sorted(components))}")
+        if strategies:
+            context_parts.append(
+                f"Strategic Initiatives: {', '.join(sorted(strategies))}"
+            )
+        if outcomes:
+            context_parts.append(f"Target Outcomes: {', '.join(sorted(outcomes))}")
+        if releases:
+            context_parts.append(f"Releases: {', '.join(sorted(releases))}")
+
+        return (
+            "\n".join(context_parts)
+            if context_parts
+            else "No organizational context available"
+        )
+
+    def _build_strategic_hierarchy(self, activity_data: List[Dict[str, Any]]) -> str:
+        """Build a strategic hierarchy view from activities."""
+        # Group by epic/parent
+        hierarchy_map = {}
+
+        for activity in activity_data:
+            hierarchy = activity.get("hierarchy", {})
+
+            # If it has a parent, group under parent
+            if hierarchy and hierarchy.get("parent"):
+                parent_key = hierarchy["parent"]["key"]
+                parent_title = hierarchy["parent"]["title"]
+                parent_type = hierarchy["parent"]["type"]
+
+                if parent_key not in hierarchy_map:
+                    hierarchy_map[parent_key] = {
+                        "title": parent_title,
+                        "type": parent_type,
+                        "children": [],
+                    }
+
+                hierarchy_map[parent_key]["children"].append(
+                    {
+                        "key": activity["id"],
+                        "title": activity["title"],
+                        "status": activity["status"],
+                        "priority": activity.get("priority", "None"),
+                    }
+                )
+            else:
+                # Top-level items without parents
+                if "TOP_LEVEL" not in hierarchy_map:
+                    hierarchy_map["TOP_LEVEL"] = {
+                        "title": "Standalone Issues",
+                        "type": "Group",
+                        "children": [],
+                    }
+
+                hierarchy_map["TOP_LEVEL"]["children"].append(
+                    {
+                        "key": activity["id"],
+                        "title": activity["title"],
+                        "status": activity["status"],
+                        "priority": activity.get("priority", "None"),
+                    }
+                )
+
+        # Format hierarchy as text
+        hierarchy_lines = []
+        for parent_key, parent_data in sorted(hierarchy_map.items()):
+            if parent_key != "TOP_LEVEL" or parent_data["children"]:
+                hierarchy_lines.append(
+                    f"\n{parent_data['type']}: {parent_data['title']} "
+                    f"({parent_key if parent_key != 'TOP_LEVEL' else ''})"
+                )
+                for child in sorted(
+                    parent_data["children"], key=lambda x: x["priority"]
+                ):
+                    hierarchy_lines.append(
+                        f"  - {child['key']}: {child['title']} "
+                        f"[{child['status']}] (Priority: {child['priority']})"
+                    )
+
+        return (
+            "\n".join(hierarchy_lines)
+            if hierarchy_lines
+            else "No hierarchy structure available"
+        )
 
     async def _generate_content(
         self, prompt: str, temperature: float, max_tokens: int

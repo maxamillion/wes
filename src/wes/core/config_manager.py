@@ -24,6 +24,19 @@ class JiraConfig:
     default_query: str = ""
     rate_limit: int = 100
     timeout: int = 30
+    # Hierarchy configuration
+    hierarchy_config: dict = field(
+        default_factory=lambda: {
+            "fetch_parents": True,
+            "epic_link_field": "customfield_10007",
+            "max_hierarchy_depth": 3,
+            "cache_ttl": 3600,
+            "strategy_labels": ["strategy:", "initiative:"],
+            "outcome_labels": ["outcome:", "goal:", "objective:"],
+            "include_components": True,
+            "include_fix_versions": True,
+        }
+    )
 
 
 @dataclass

@@ -65,6 +65,7 @@ class ServiceFactory:
                 api_token=api_token,
                 rate_limit=jira_config.rate_limit,
                 timeout=jira_config.timeout,
+                hierarchy_config=jira_config.hierarchy_config,
             )
             self._clients["redhat_jira"] = client
         else:
@@ -74,6 +75,7 @@ class ServiceFactory:
                 api_token=api_token,
                 rate_limit=jira_config.rate_limit,
                 timeout=jira_config.timeout,
+                hierarchy_config=jira_config.hierarchy_config,
             )
             self._clients["jira"] = client
 

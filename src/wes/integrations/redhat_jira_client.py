@@ -26,6 +26,7 @@ except ImportError:
 from ..utils.exceptions import AuthenticationError, JiraIntegrationError, RateLimitError
 from ..utils.logging_config import get_logger, get_security_logger
 from ..utils.validators import InputValidator, ValidationError
+from .jira_hierarchy_resolver import JiraHierarchyResolver
 
 
 class RedHatJiraClient:
@@ -40,6 +41,7 @@ class RedHatJiraClient:
         timeout: int = 30,
         verify_ssl: bool = True,
         use_rhjira: bool = True,
+        hierarchy_config: Optional[Dict[str, Any]] = None,
     ):
         self.logger = get_logger(__name__)
         self.security_logger = get_security_logger()
@@ -55,6 +57,7 @@ class RedHatJiraClient:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
         self.use_rhjira = use_rhjira and RHJIRA_AVAILABLE
+        self.hierarchy_config = hierarchy_config
 
         # Initialize rate limiter
         self.rate_limiter = self._create_rate_limiter(rate_limit)
@@ -62,6 +65,11 @@ class RedHatJiraClient:
         # Initialize client
         self._client: Optional[Any] = None
         self._initialize_client()
+
+        # Initialize hierarchy resolver
+        self.hierarchy_resolver = None
+        if hierarchy_config and hierarchy_config.get("fetch_parents", True):
+            self.hierarchy_resolver = JiraHierarchyResolver(self, hierarchy_config)
 
     def _create_rate_limiter(self, max_requests: int):
         """Create rate limiter for Red Hat Jira."""
