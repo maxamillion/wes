@@ -261,7 +261,7 @@ jobs:
           echo "TAG=nightly-$DATE" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts/
 
